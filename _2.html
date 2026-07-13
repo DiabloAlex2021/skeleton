@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legs and Feet Mesh Live Preview</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --ink: #171511;
+      --muted: #70695f;
+      --line: rgba(23, 21, 17, 0.14);
+      --gold: #b48b45;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at 50% 12%, #fffaf0 0%, var(--bg) 42%, #e8dfcf 100%);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(23,21,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,21,17,.026) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    .page {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 0;
+      padding: 18px clamp(12px, 3vw, 42px);
+    }
+
+    .copy { display: none; }
+
+    .stage {
+      position: relative;
+      height: min(96vh, 920px);
+      display: grid;
+      place-items: center;
+      padding-top: 0;
+      overflow: visible;
+    }
+
+    canvas {
+      width: min(92vw, 820px);
+      height: min(96vh, 920px);
+      max-width: 100%;
+      max-height: 92vh;
+      cursor: grab;
+      touch-action: none;
+      filter: drop-shadow(0 38px 74px rgba(63, 47, 24, .18));
+    }
+
+    .hint {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.34);
+      backdrop-filter: blur(10px);
+    }
+
+    .control-panel {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(86px, 1fr));
+      gap: 8px;
+      align-items: center;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.46);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .panel-title {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #171511;
+      margin-bottom: 2px;
+    }
+
+    .toggle {
+      width: 100%; min-width: 86px;
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 999px;
+      background: #171511;
+      color: #fffaf0;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .toggle.active#toggleAllColors { background: #111511; color: white; }
+    .toggle.active#toggleHead { background: #111111; color: white; }
+    .toggle.active#toggleNeck { background: #565656; color: white; }
+    .toggle.active#toggleTorso { background: #ff7a00; color: white; }
+    .toggle.active#toggleWaist { background: #c96a2b; color: white; }
+    .toggle.active#togglePelvis { background: #8a4f2a; color: white; }
+    .toggle.active#toggleHip { background: #a0522d; color: white; }
+    .toggle.active#toggleShoulder { background: #00a884; color: white; }
+    .toggle.active#toggleArm { background: #00bcd4; color: #171511; }
+    .toggle.active#toggleElbow { background: #00838f; color: white; }
+    .toggle.active#toggleWrist { background: #4dd0e1; color: #171511; }
+    .toggle.active#togglePalm { background: #26a69a; color: white; }
+    .toggle.active#toggleFinger { background: #66bb6a; color: #171511; }
+    .toggle.active#toggleThigh { background: #7b2cff; color: white; }
+    .toggle.active#toggleCalf { background: #1f6fff; color: white; }
+    .toggle.active#toggleKnee { background: #ff2f92; color: white; }
+    .toggle.active#toggleAnkle { background: #d31616; color: white; }
+    .toggle.active#toggleHeel { background: #6d4c41; color: white; }
+    .toggle.active#toggleFoot { background: #e7b900; color: #171511; }
+    .toggle.active#toggleToe { background: #f4a261; color: #171511; }
+    .toggle.active#toggleToeNails { background: #6f1028; color: white; }
+    .toggle.active#toggleBone { background: #8b6a2f; color: white; }
+
+    .zoom-title { margin-top: 6px; }
+
+    .zoom-btn { background: rgba(255,255,255,.70); color: #171511; }
+    .zoom-btn:active { transform: scale(.97); }
+    #runToggle.active { background: #171511; color: #fffaf0; }
+
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      .page { min-height: 100vh; height: auto; grid-template-columns: 1fr; }
+      canvas { width: min(94vw, 680px); height: min(112vw, 860px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="stage" aria-label="interactive human mesh feet preview">
+      <canvas id="figure"></canvas>
+      <div class="control-panel" aria-label="mesh color controls">
+        <div class="panel-title">Mesh Color</div>
+        <button class="toggle" id="toggleAllColors" type="button">All Off</button>
+        <button class="toggle" id="toggleHead" type="button">Head</button>
+        <button class="toggle" id="toggleNeck" type="button">Neck</button>
+        <button class="toggle" id="toggleTorso" type="button">Torso</button>
+        <button class="toggle" id="toggleWaist" type="button">Waist</button>
+        <button class="toggle" id="togglePelvis" type="button">Pelvis</button>
+        <button class="toggle" id="toggleHip" type="button">Hip</button>
+        <button class="toggle" id="toggleShoulder" type="button">Shoulder</button>
+        <button class="toggle" id="toggleArm" type="button">Arm</button>
+        <button class="toggle" id="toggleElbow" type="button">Elbow</button>
+        <button class="toggle" id="toggleWrist" type="button">Wrist</button>
+        <button class="toggle" id="togglePalm" type="button">Palm</button>
+        <button class="toggle" id="toggleFinger" type="button">Finger</button>
+        <button class="toggle" id="toggleThigh" type="button">Thigh</button>
+        <button class="toggle" id="toggleCalf" type="button">Calf</button>
+        <button class="toggle" id="toggleKnee" type="button">Knee</button>
+        <button class="toggle" id="toggleAnkle" type="button">Ankle</button>
+        <button class="toggle" id="toggleHeel" type="button">Heel</button>
+        <button class="toggle" id="toggleFoot" type="button">Foot</button>
+        <button class="toggle" id="toggleToe" type="button">Toe</button>
+        <button class="toggle" id="toggleToeNails" type="button">Toenails</button>
+        <button class="toggle" id="toggleBone" type="button">Bone</button>
+        <div class="panel-title zoom-title">Zoom</div>
+        <button class="toggle zoom-btn" id="zoomIn" type="button">Zoom In</button>
+        <button class="toggle zoom-btn" id="zoomOut" type="button">Zoom Out</button>
+        <button class="toggle zoom-btn" id="zoomReset" type="button">Reset</button>
+        <div class="panel-title zoom-title">Motion</div>
+        <button class="toggle zoom-btn" id="runToggle" type="button">Run Motion</button>
+      </div>
+      <div class="hint">Drag to inspect legs and feet</div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('figure');
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    let width = 0, height = 0, scale = 1;
+    let points = [], links = [], tick = 0;
+    // Initial camera matches the reference: full-body, left-facing front/side angle.
+    const INITIAL_ROTATION_X = -0.14;
+    const INITIAL_ROTATION_Y = -1.32;
+    let rotationX = INITIAL_ROTATION_X, rotationY = INITIAL_ROTATION_Y, velocityX = 0, velocityY = 0;
+    let isDragging = false, lastPointerX = 0, lastPointerY = 0, lastMoveTime = 0;
+    let zoomScale = 1, runMotion = false, runTime = 0;
+
+    const meshControls = {
+      head: { color: '#111111', colorized: false },
+      neck: { color: '#565656', colorized: false },
+      torso: { color: '#ff7a00', colorized: false },
+      waist: { color: '#c96a2b', colorized: false },
+      pelvis: { color: '#8a4f2a', colorized: false },
+      hip: { color: '#a0522d', colorized: false },
+      shoulder: { color: '#00a884', colorized: false },
+      arm: { color: '#00bcd4', colorized: false },
+      elbow: { color: '#00838f', colorized: false },
+      wrist: { color: '#4dd0e1', colorized: false },
+      palm: { color: '#26a69a', colorized: false },
+      finger: { color: '#66bb6a', colorized: false },
+      thigh: { color: '#7b2cff', colorized: false },
+      calf: { color: '#1f6fff', colorized: false },
+      knee: { color: '#ff2f92', colorized: false },
+      ankle: { color: '#d31616', colorized: false },
+      heel: { color: '#6d4c41', colorized: false },
+      foot: { color: '#e7b900', colorized: false },
+      toe: { color: '#f4a261', colorized: false },
+      toeNails: { color: '#6f1028', colorized: false },
+      bone: { color: '#8b6a2f', colorized: false }
+    };
+
+    function setupMeshControls() {
+      const colorBindings = [
+        ['head','toggleHead'], ['neck','toggleNeck'], ['torso','toggleTorso'], ['waist','toggleWaist'],
+        ['pelvis','togglePelvis'], ['hip','toggleHip'], ['shoulder','toggleShoulder'], ['arm','toggleArm'],
+        ['elbow','toggleElbow'], ['wrist','toggleWrist'], ['palm','togglePalm'], ['finger','toggleFinger'],
+        ['thigh','toggleThigh'], ['calf','toggleCalf'], ['knee','toggleKnee'], ['ankle','toggleAnkle'],
+        ['heel','toggleHeel'], ['foot','toggleFoot'], ['toe','toggleToe'], ['toeNails','toggleToeNails'], ['bone','toggleBone']
+      ];
+
+      colorBindings.forEach(([key, id]) => {
+        const toggle = document.getElementById(id);
+        toggle?.addEventListener('click', () => {
+          meshControls[key].colorized = !meshControls[key].colorized;
+          toggle.classList.toggle('active', meshControls[key].colorized);
+          syncAllColorToggle();
+        });
+      });
+
+      const allToggle = document.getElementById('toggleAllColors');
+      function syncAllColorToggle() {
+        const allActive = colorBindings.every(([key]) => meshControls[key]?.colorized);
+        allToggle?.classList.toggle('active', allActive);
+        if (allToggle) allToggle.textContent = allActive ? 'All On' : 'All Off';
+      }
+
+      allToggle?.addEventListener('click', () => {
+        const shouldTurnOn = !colorBindings.every(([key]) => meshControls[key]?.colorized);
+        colorBindings.forEach(([key, id]) => {
+          meshControls[key].colorized = shouldTurnOn;
+          document.getElementById(id)?.classList.toggle('active', shouldTurnOn);
+        });
+        syncAllColorToggle();
+      });
+
+      syncAllColorToggle();
+      document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale = Math.min(2.4, zoomScale * 1.12); resize(); });
+      document.getElementById('zoomOut')?.addEventListener('click', () => { zoomScale = Math.max(.45, zoomScale / 1.12); resize(); });
+      document.getElementById('zoomReset')?.addEventListener('click', () => { zoomScale = 1; resize(); });
+      document.getElementById('runToggle')?.addEventListener('click', e => { runMotion = !runMotion; e.currentTarget.classList.toggle('active', runMotion); });
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+      const clean = hex.replace('#','');
+      const value = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+      return `rgba(${(value>>16)&255},${(value>>8)&255},${value&255},${alpha})`;
+    }
+
+    function meshControlKey(part) {
+      if (part === 'head') return 'head';
+      if (part === 'neck') return 'neck';
+      if (part === 'torso') return 'torso';
+      if (part === 'waist') return 'waist';
+      if (part === 'pelvis') return 'pelvis';
+      if (part === 'hipSurface') return 'hip';
+      if (part === 'shoulder') return 'shoulder';
+      if (part === 'arm') return 'arm';
+      if (part === 'elbow') return 'elbow';
+      if (part === 'wrist') return 'wrist';
+      if (part === 'palm') return 'palm';
+      if (['knuckle','finger','fingerJoint','fingerTip'].includes(part)) return 'finger';
+      if (part === 'leg') return 'thigh';
+      if (part === 'calfMesh') return 'calf';
+      if (part === 'knee') return 'knee';
+      if (part === 'ankle') return 'ankle';
+      if (part === 'heel') return 'heel';
+      if (part === 'foot' || part === 'forefoot') return 'foot';
+      if (['toe','toeJoint','toeTip'].includes(part)) return 'toe';
+      if (part === 'toeNail') return 'toeNails';
+      if (part === 'bone') return 'bone';
+      return '';
+    }
+    function meshDisplayColor(part) {
+      const key = meshControlKey(part);
+      if (key && meshControls[key].colorized) return meshControls[key].color;
+      if (key) return '#111111';
+      return '';
+    }
+
+    function addPoint(x, y, z, part, weight = 1) {
+      points.push({ x, y, z, part, weight, jitter: ((points.length * 9301) % 997) / 997 });
+      return points.length - 1;
+    }
+    function addLink(a, b, strength = 1) { if (a >= 0 && b >= 0) links.push({ a, b, strength }); }
+    function normalize(v) { const len = Math.hypot(v.x,v.y,v.z) || 1; return { x:v.x/len, y:v.y/len, z:v.z/len }; }
+    function cross(a,b) { return { x:a.y*b.z-a.z*b.y, y:a.z*b.x-a.x*b.z, z:a.x*b.y-a.y*b.x }; }
+    function basisFromEndpoints(a,b) {
+      const axis = normalize({ x:b.x-a.x, y:b.y-a.y, z:b.z-a.z });
+      const helper = Math.abs(axis.y) < .95 ? {x:0,y:1,z:0} : {x:1,y:0,z:0};
+      const side = normalize(cross(axis, helper));
+      const forward = normalize(cross(side, axis));
+      return { axis, side, forward };
+    }
+
+    function buildEllipsoid(cx, cy, cz, rx, ry, rz, latSteps, lonSteps, part) {
+      const grid = [];
+      for (let i=0;i<=latSteps;i++) {
+        const v = -Math.PI/2 + Math.PI*i/latSteps, row=[];
+        const ringScale = Math.cos(v);
+        for (let j=0;j<lonSteps;j++) {
+          const u = Math.PI*2*j/lonSteps;
+          row.push(addPoint(cx + rx*ringScale*Math.sin(u), cy + ry*Math.sin(v), cz + rz*ringScale*Math.cos(u), part, 1));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=latSteps;i++) for (let j=0;j<lonSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%lonSteps], .78);
+        if (i < latSteps) addLink(grid[i][j], grid[i+1][j], .78);
+      }
+      return grid;
+    }
+
+    function buildTaperedTube(a,b,rA,rB,ringSteps,radialSteps,part) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps, radius=rA+(rB-rA)*t;
+        const center = { x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, z:a.z+(b.z-a.z)*t };
+        const row=[];
+        for (let j=0;j<radialSteps;j++) {
+          const angle=Math.PI*2*j/radialSteps;
+          row.push(addPoint(
+            center.x + Math.cos(angle)*basis.side.x*radius + Math.sin(angle)*basis.forward.x*radius,
+            center.y + Math.cos(angle)*basis.side.y*radius + Math.sin(angle)*basis.forward.y*radius,
+            center.z + Math.cos(angle)*basis.side.z*radius + Math.sin(angle)*basis.forward.z*radius,
+            part, .96));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=ringSteps;i++) for (let j=0;j<radialSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%radialSteps], .72);
+        if (i < ringSteps) addLink(grid[i][j], grid[i+1][j], .8);
+      }
+      return grid;
+    }
+
+    function connectGridToGrid(gridA, gridB, stepA = 2, stepB = 2, strength = .55) {
+      for (let i=0;i<Math.min(gridA.length, gridB.length);i+=stepA) {
+        const rowA=gridA[i], rowB=gridB[Math.min(gridB.length-1, Math.floor(i*gridB.length/gridA.length))];
+        for (let j=0;j<Math.min(rowA.length,rowB.length);j+=stepB) addLink(rowA[j], rowB[j%rowB.length], strength);
+      }
+    }
+    function bonePoint(x,y,z,weight=1.05) { return addPoint(x,y,z,'bone',weight); }
+
+    function buildFoot(side, ankleX, ankleY, ankleZ) {
+      const sign = side === 'left' ? -1 : 1, footScale=.72, talusZ=ankleZ-.125, footZ=ankleZ-.145;
+      const ankle = buildEllipsoid(ankleX, ankleY-.085, talusZ, .092,.082,.092,7,14,'ankle');
+      const heel = buildEllipsoid(ankleX, ankleY+.105, footZ-.095*footScale, .158*footScale,.100*footScale,.145*footScale,7,16,'heel');
+      const arch = buildTaperedTube({x:ankleX,y:ankleY+.075,z:footZ+.075}, {x:ankleX+sign*.012,y:ankleY+.135,z:footZ+.335*footScale}, .122*footScale,.102*footScale,8,14,'foot');
+      const forefoot = buildEllipsoid(ankleX+sign*.014, ankleY+.170, footZ+.488*footScale, .202*footScale,.074*footScale,.158*footScale,6,18,'forefoot');
+      connectGridToGrid(ankle, heel,1,2,.72); connectGridToGrid(ankle, arch,1,2,.72); connectGridToGrid(heel, arch,1,2,.66); connectGridToGrid(arch, forefoot,1,2,.72);
+      const navicularMidfoot=bonePoint(ankleX+sign*.012, ankleY+.115, footZ+.260*footScale,.72);
+      const toeOffsets=[-.145,-.065,.012,.085,.150].map(v=>v*sign*footScale);
+      const toeLengths=[.235,.214,.192,.168,.145].map(v=>v*footScale);
+      const toeWidths=[.064,.052,.048,.041,.036].map(v=>v*footScale);
+      const toeBaseBones=[];
+      for(let i=0;i<5;i++){
+        const baseX=ankleX+toeOffsets[i], baseY=ankleY+.176+Math.abs(i-2)*.004, baseZ=footZ+.575*footScale-i*.004, tipZ=baseZ+toeLengths[i];
+        const toe=buildTaperedTube({x:baseX,y:baseY,z:baseZ},{x:baseX+sign*(i-2)*.008,y:baseY+.014,z:tipZ},toeWidths[i],toeWidths[i]*.60,4,10,'toe');
+        const joint=buildEllipsoid(baseX,baseY,baseZ+.024,toeWidths[i]*.86,toeWidths[i]*.58,toeWidths[i]*.82,4,10,'toeJoint');
+        const tip=buildEllipsoid(baseX+sign*(i-2)*.008,baseY+.014,tipZ+.016,toeWidths[i]*.54,toeWidths[i]*.40,toeWidths[i]*.52,4,10,'toeTip');
+        connectGridToGrid(forefoot,joint,2,2,.46); connectGridToGrid(joint,toe,1,2,.64); connectGridToGrid(toe,tip,1,2,.60);
+        const toeBaseBone=bonePoint(baseX,baseY+.015,baseZ+.008,.60), toeTipBone=bonePoint(baseX+sign*(i-2)*.008,baseY+.018,tipZ+.010,.56);
+        const nail=addPoint(baseX+sign*(i-2)*.008,baseY-.010,tipZ+.042,'toeNail',.92);
+        addLink(toeTipBone,nail,.34); toeBaseBones.push(toeBaseBone); addLink(navicularMidfoot,toeBaseBone,.62); addLink(toeBaseBone,toeTipBone,.64);
+      }
+      for(let i=0;i<toeBaseBones.length-1;i++) addLink(toeBaseBones[i],toeBaseBones[i+1],.52);
+      return { ankle, heel, arch, forefoot };
+    }
+
+    function buildHand(side, wristX, wristY, wristZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const palm = buildEllipsoid(wristX + sign * .028, wristY + .150, wristZ + .030, .145, .180, .095, 7, 16, 'palm');
+
+      connectGridToGrid(wrist, palm, 1, 2, .68);
+
+      const wristBone = bonePoint(wristX, wristY, wristZ + .030, .70);
+      const palmCenter = bonePoint(wristX + sign * .025, wristY + .140, wristZ + .070, .72);
+      const palmTop = bonePoint(wristX + sign * .025, wristY + .270, wristZ + .072, .66);
+      addLink(wristBone, palmCenter, .76);
+      addLink(palmCenter, palmTop, .72);
+
+      // Restored full hand mesh: four fingers with knuckles, middle joints, tips, and metacarpal guide lines.
+      const fingerOffsets = [-.085, -.030, .030, .085].map(v => v * sign);
+      const fingerLengths = [.245, .285, .265, .215];
+      const fingerWidths = [.034, .038, .036, .031];
+      const fingerBaseBones = [];
+
+      for (let i = 0; i < 4; i++) {
+        const baseX = wristX + sign * .025 + fingerOffsets[i];
+        const baseY = wristY + .292;
+        const baseZ = wristZ + .060 - Math.abs(i - 1.5) * .010;
+        const midY = baseY + fingerLengths[i] * .48;
+        const tipY = baseY + fingerLengths[i];
+        const curlX = sign * (i - 1.5) * .010;
+
+        const baseKnuckle = buildEllipsoid(baseX, baseY, baseZ, fingerWidths[i] * 1.18, fingerWidths[i] * .96, fingerWidths[i] * 1.05, 4, 10, 'knuckle');
+        const fingerA = buildTaperedTube(
+          { x: baseX, y: baseY + .012, z: baseZ },
+          { x: baseX + curlX, y: midY, z: baseZ + .010 },
+          fingerWidths[i], fingerWidths[i] * .82, 4, 9, 'finger'
+        );
+        const middleJoint = buildEllipsoid(baseX + curlX, midY, baseZ + .010, fingerWidths[i] * .86, fingerWidths[i] * .80, fingerWidths[i] * .80, 4, 9, 'fingerJoint');
+        const fingerB = buildTaperedTube(
+          { x: baseX + curlX, y: midY + .010, z: baseZ + .010 },
+          { x: baseX + curlX * 1.4, y: tipY, z: baseZ + .018 },
+          fingerWidths[i] * .78, fingerWidths[i] * .50, 4, 9, 'finger'
+        );
+        const tip = buildEllipsoid(baseX + curlX * 1.4, tipY + .010, baseZ + .018, fingerWidths[i] * .54, fingerWidths[i] * .64, fingerWidths[i] * .54, 4, 9, 'fingerTip');
+
+        connectGridToGrid(palm, baseKnuckle, 2, 2, .46);
+        connectGridToGrid(baseKnuckle, fingerA, 1, 2, .66);
+        connectGridToGrid(fingerA, middleJoint, 1, 2, .62);
+        connectGridToGrid(middleJoint, fingerB, 1, 2, .62);
+        connectGridToGrid(fingerB, tip, 1, 2, .58);
+
+        const baseBone = bonePoint(baseX, baseY, baseZ + .026, .52);
+        const midBone = bonePoint(baseX + curlX, midY, baseZ + .035, .48);
+        const tipBone = bonePoint(baseX + curlX * 1.4, tipY, baseZ + .040, .44);
+        fingerBaseBones.push(baseBone);
+        addLink(palmCenter, baseBone, .58);
+        addLink(baseBone, midBone, .62);
+        addLink(midBone, tipBone, .58);
+      }
+
+      for (let i = 0; i < fingerBaseBones.length - 1; i++) {
+        addLink(fingerBaseBones[i], fingerBaseBones[i + 1], .48);
+      }
+
+      // Restored thumb, angled away from the palm for a readable natural hand silhouette.
+      const thumbBaseX = wristX - sign * .110;
+      const thumbBaseY = wristY + .145;
+      const thumbBaseZ = wristZ + .055;
+      const thumbMidX = wristX - sign * .185;
+      const thumbMidY = wristY + .220;
+      const thumbTipX = wristX - sign * .230;
+      const thumbTipY = wristY + .305;
+      const thumbBase = buildEllipsoid(thumbBaseX, thumbBaseY, thumbBaseZ, .048, .052, .045, 4, 10, 'knuckle');
+      const thumbA = buildTaperedTube(
+        { x: thumbBaseX, y: thumbBaseY, z: thumbBaseZ },
+        { x: thumbMidX, y: thumbMidY, z: thumbBaseZ + .012 },
+        .044, .037, 4, 9, 'finger'
+      );
+      const thumbJoint = buildEllipsoid(thumbMidX, thumbMidY, thumbBaseZ + .012, .036, .038, .034, 4, 9, 'fingerJoint');
+      const thumbB = buildTaperedTube(
+        { x: thumbMidX, y: thumbMidY, z: thumbBaseZ + .012 },
+        { x: thumbTipX, y: thumbTipY, z: thumbBaseZ + .020 },
+        .034, .024, 4, 9, 'finger'
+      );
+      const thumbTip = buildEllipsoid(thumbTipX, thumbTipY, thumbBaseZ + .020, .030, .034, .028, 4, 9, 'fingerTip');
+
+      connectGridToGrid(palm, thumbBase, 2, 2, .52);
+      connectGridToGrid(thumbBase, thumbA, 1, 2, .66);
+      connectGridToGrid(thumbA, thumbJoint, 1, 2, .62);
+      connectGridToGrid(thumbJoint, thumbB, 1, 2, .62);
+      connectGridToGrid(thumbB, thumbTip, 1, 2, .58);
+
+      const thumbBaseBone = bonePoint(thumbBaseX, thumbBaseY, thumbBaseZ + .025, .50);
+      const thumbMidBone = bonePoint(thumbMidX, thumbMidY, thumbBaseZ + .038, .46);
+      const thumbTipBone = bonePoint(thumbTipX, thumbTipY, thumbBaseZ + .044, .42);
+      addLink(wristBone, thumbBaseBone, .58);
+      addLink(thumbBaseBone, thumbMidBone, .60);
+      addLink(thumbMidBone, thumbTipBone, .56);
+
+      return { wrist, palm };
+    }
+
+    function buildHuman() {
+      points=[]; links=[];
+      const pelvisCenter=buildEllipsoid(0,.26,-.045,.42,.135,.18,7,22,'pelvis');
+      const hipBar=buildTaperedTube({x:-.34,y:.34,z:-.045},{x:.34,y:.34,z:-.045},.145,.145,4,18,'pelvis');
+      connectGridToGrid(pelvisCenter,hipBar,1,2,.72);
+      const waist=buildEllipsoid(0,.02,-.030,.34,.18,.22,8,22,'waist');
+      const abdomen=buildEllipsoid(0,-.38,-.010,.39,.42,.26,12,24,'torso');
+      const chest=buildEllipsoid(0,-.92,-.035,.56,.48,.34,13,28,'torso');
+      const neck=buildTaperedTube({x:0,y:-1.36,z:-.018},{x:0,y:-1.58,z:-.010},.150,.118,4,14,'neck');
+      // Initial posture matches the reference: head slightly lowered/forward, arms relaxed at sides.
+      const head=buildEllipsoid(0,-1.92,.045,.30,.36,.29,11,20,'head');
+      // Head accessory removed: no shades, no cap.
+      connectGridToGrid(pelvisCenter,waist,1,2,.66); connectGridToGrid(waist,abdomen,1,2,.66); connectGridToGrid(abdomen,chest,1,3,.66); connectGridToGrid(chest,neck,2,2,.62); connectGridToGrid(neck,head,1,3,.48);
+      const lShoulder=buildEllipsoid(-.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
+      const rShoulder=buildEllipsoid(.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
+      connectGridToGrid(chest,lShoulder,2,3,.58); connectGridToGrid(chest,rShoulder,2,3,.58);
+      // Arms are moved slightly away from the torso so restored hands remain visible.
+      const lUpperArm=buildTaperedTube({x:-.58,y:-1.05,z:.045},{x:-.72,y:-.44,z:.075},.128,.108,10,14,'arm');
+      const lElbow=buildEllipsoid(-.72,-.37,.075,.110,.110,.110,7,14,'elbow');
+      const lForearm=buildTaperedTube({x:-.72,y:-.30,z:.075},{x:-.62,y:.43,z:.115},.100,.078,11,12,'arm');
+      const lHand=buildHand('left',-.62,.43,.115);
+      const rUpperArm=buildTaperedTube({x:.58,y:-1.05,z:-.045},{x:.72,y:-.44,z:-.075},.128,.108,10,14,'arm');
+      const rElbow=buildEllipsoid(.72,-.37,-.075,.110,.110,.110,7,14,'elbow');
+      const rForearm=buildTaperedTube({x:.72,y:-.30,z:-.075},{x:.62,y:.43,z:-.115},.100,.078,11,12,'arm');
+      const rHand=buildHand('right',.62,.43,-.115);
+      connectGridToGrid(lShoulder,lUpperArm,1,2,.74); connectGridToGrid(lUpperArm,lElbow,1,2,.76); connectGridToGrid(lElbow,lForearm,1,2,.76); connectGridToGrid(lForearm,lHand.wrist,1,2,.56);
+      connectGridToGrid(rShoulder,rUpperArm,1,2,.74); connectGridToGrid(rUpperArm,rElbow,1,2,.76); connectGridToGrid(rElbow,rForearm,1,2,.76); connectGridToGrid(rForearm,rHand.wrist,1,2,.56);
+
+      function buildCorrectedSide(side) {
+        const sign = side === 'left' ? -1 : 1;
+        const phase = runMotion ? runTime + (side === 'left' ? 0 : Math.PI) : 0;
+        const swing = runMotion ? Math.sin(phase) : 0;
+        const lift = runMotion ? Math.max(0, Math.sin(phase + Math.PI * .35)) : 0;
+        const backLift = runMotion ? Math.max(0, Math.sin(phase + Math.PI)) : 0;
+        const hipX=sign*.30, thighTopX=sign*.24;
+        const kneeX=sign*(.30+.035*swing), ankleX=sign*(.30+.040*swing);
+        const kneeY=1.58-.075*lift+.035*backLift, shinBottomY=2.580-.145*lift+.030*backLift, ankleY=2.725-.145*lift+.030*backLift;
+        const kneeZ=-.05+.155*swing, ankleZ=-.020+.210*swing, footZ=.10+.260*swing;
+        const hipBall=buildEllipsoid(hipX,.38,-.055,.145,.130,.130,7,14,'hipSurface');
+        connectGridToGrid(hipBar,hipBall,1,2,.62); connectGridToGrid(pelvisCenter,hipBall,1,2,.52);
+        const thigh=buildTaperedTube({x:thighTopX,y:.42,z:-.045},{x:kneeX,y:kneeY,z:kneeZ},.18,.14,14,14,'leg');
+        const knee=buildEllipsoid(kneeX,kneeY+.08,kneeZ,.155,.155,.155,8,16,'knee');
+        const shin=buildTaperedTube({x:kneeX,y:kneeY+.040,z:kneeZ},{x:ankleX,y:shinBottomY,z:ankleZ},.155,.104,14,14,'calfMesh');
+        const ankleCollar=buildTaperedTube({x:ankleX,y:shinBottomY-.050,z:ankleZ},{x:ankleX,y:shinBottomY+.020,z:ankleZ},.104,.096,3,14,'calfMesh');
+        const foot=buildFoot(side,ankleX,ankleY,footZ);
+        connectGridToGrid(hipBall,thigh,1,3,.46); connectGridToGrid(thigh,knee,2,2,.76); connectGridToGrid(knee,shin,2,2,.76); connectGridToGrid(shin,ankleCollar,1,1,.78); connectGridToGrid(ankleCollar,foot.ankle,1,2,.30);
+      }
+      buildCorrectedSide('left'); buildCorrectedSide('right');
+    }
+
+    function resize() {
+      const rect=canvas.getBoundingClientRect(); width=rect.width; height=rect.height;
+      canvas.width=Math.floor(width*dpr); canvas.height=Math.floor(height*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      scale=Math.min(width*.225,height*.112)*zoomScale;
+      buildHuman();
+    }
+    function rotatePoint(p) {
+      const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
+      let x=p.x*cy+p.z*sy, z=-p.x*sy+p.z*cy, y=p.y;
+      return { x, y:y*cx-z*sx, z:y*sx+z*cx };
+    }
+    function smoothstep(e0,e1,x){ const v=Math.max(0,Math.min(1,(x-e0)/(e1-e0))); return v*v*(3-2*v); }
+    function projectPoint(p){ const r=rotatePoint(p), camera=5.2, perspective=camera/(camera-r.z); return {...p,rx:r.x,ry:r.y,rz:r.z,perspective,sx:r.x*scale*perspective,sy:r.y*scale*perspective,visible:camera-r.z>.5}; }
+    function partInk(part){
+      const key=meshControlKey(part); if(key) return meshDisplayColor(part);
+      if(part==='cap') return '#020202'; if(part==='bone') return '#8b6a2f'; if(part==='head') return '#111111'; if(part==='torso') return '#171511'; if(part==='pelvis') return '#26231d'; if(part==='knee'||part==='elbow') return '#15120d';
+      return '#37322b';
+    }
+    function strokeInkForLink(a,b){
+      const aKey=meshControlKey(a.part), bKey=meshControlKey(b.part);
+      if(a.part==='bone'||b.part==='bone') return 'rgba(139,106,47,.82)';
+      if(a.part==='cap'||b.part==='cap') return 'rgba(0,0,0,1)';
+      if(aKey&&aKey===bKey) return hexToRgba(meshDisplayColor(a.part),.90);
+      if(aKey&&!bKey) return hexToRgba(meshDisplayColor(a.part),.62);
+      if(bKey&&!aKey) return hexToRgba(meshDisplayColor(b.part),.62);
+      return 'rgba(23,21,17,.74)';
+    }
+    function draw(){
+      if(runMotion){ runTime+=.075; buildHuman(); }
+      ctx.clearRect(0,0,width,height);
+      if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY=velocityY*.985+.003*.015; }
+      rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01;
+      const projected=points.map(projectPoint); ctx.save(); ctx.translate(width/2,height/2+scale*.06);
+      const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,'rgba(255,255,255,.42)'); aura.addColorStop(.55,'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
+      for(const link of links){ const a=projected[link.a], b=projected[link.b]; if(!a||!b||!a.visible||!b.visible) continue; const depth=smoothstep(-1.8,1.3,(a.rz+b.rz)/2); const pulse=.88+.12*Math.sin(tick*3+link.a*.13); const isShadeLink = a.part === 'cap' || b.part === 'cap'; ctx.globalAlpha=isShadeLink ? 1 : Math.min(.48,link.strength*(.18+.62*depth)*pulse); ctx.strokeStyle=strokeInkForLink(a,b); ctx.lineWidth=Math.max(.35,scale/320)*(.5+link.strength*.55)*((a.perspective+b.perspective)/2)*(isShadeLink ? 1.35 : 1); ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke(); }
+      const ordered=projected.filter(p=>p.visible).sort((a,b)=>a.rz-b.rz);
+      for(const p of ordered){ const depth=smoothstep(-1.75,1.35,p.rz); const scan=.93+.07*Math.sin(tick*7+p.ry*14+p.jitter*8); const size=Math.max(.65,scale/138)*p.weight*p.perspective*(.82+.36*depth)*(p.part === 'cap' ? 1.28 : 1); ctx.globalAlpha=p.part === 'cap' ? 1 : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)); ctx.fillStyle=partInk(p.part); ctx.beginPath(); ctx.arc(p.sx,p.sy,size,0,Math.PI*2); ctx.fill(); }
+      ctx.globalAlpha=.16; ctx.strokeStyle='rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
+      ctx.restore(); requestAnimationFrame(draw);
+    }
+    function pointerDown(e){ isDragging=true; canvas.style.cursor='grabbing'; lastPointerX=e.clientX; lastPointerY=e.clientY; lastMoveTime=performance.now(); velocityX=0; velocityY=0; canvas.setPointerCapture(e.pointerId); }
+    function pointerMove(e){ if(!isDragging) return; const now=performance.now(), dx=e.clientX-lastPointerX, dy=e.clientY-lastPointerY, dt=Math.max(16,now-lastMoveTime), sensitivity=.0065; rotationY+=dx*sensitivity; rotationX+=dy*sensitivity; velocityY=dx*sensitivity*(16/dt); velocityX=dy*sensitivity*(16/dt); lastPointerX=e.clientX; lastPointerY=e.clientY; lastMoveTime=now; }
+    function pointerUp(e){ isDragging=false; canvas.style.cursor='grab'; try{ canvas.releasePointerCapture(e.pointerId); }catch(_){} }
+    canvas.addEventListener('wheel', e=>{ e.preventDefault(); zoomScale=Math.max(.45,Math.min(2.4,zoomScale*(e.deltaY<0?1.08:1/1.08))); resize(); }, { passive:false });
+    canvas.addEventListener('pointerdown',pointerDown); canvas.addEventListener('pointermove',pointerMove); canvas.addEventListener('pointerup',pointerUp); canvas.addEventListener('pointercancel',pointerUp); canvas.addEventListener('pointerleave',e=>{ if(isDragging) pointerUp(e); });
+    window.addEventListener('resize',resize);
+    setupMeshControls(); resize(); draw();
+  </script>
+</body>
+</html>

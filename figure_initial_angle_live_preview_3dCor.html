@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legs and Feet Mesh Live Preview</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --ink: #171511;
+      --muted: #70695f;
+      --line: rgba(23, 21, 17, 0.14);
+      --gold: #b48b45;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at 50% 12%, #fffaf0 0%, var(--bg) 42%, #e8dfcf 100%);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(23,21,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,21,17,.026) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    .page {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 0;
+      padding: 18px clamp(12px, 3vw, 42px);
+    }
+
+    .copy { display: none; }
+
+    .stage {
+      position: relative;
+      height: min(96vh, 920px);
+      display: grid;
+      place-items: center;
+      padding-top: 0;
+      overflow: visible;
+    }
+
+    canvas {
+      width: min(92vw, 820px);
+      height: min(96vh, 920px);
+      max-width: 100%;
+      max-height: 92vh;
+      cursor: grab;
+      touch-action: none;
+      filter: drop-shadow(0 38px 74px rgba(63, 47, 24, .18));
+    }
+
+    .camera-readout {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      z-index: 6;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #171511;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.52);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 24px rgba(63, 47, 24, .10);
+      white-space: pre-line;
+      line-height: 1.45;
+    }
+
+    .hint {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.34);
+      backdrop-filter: blur(10px);
+    }
+
+    .view-console {
+      position: absolute;
+      right: 20px;
+      bottom: 316px;
+      z-index: 6;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(64px, 1fr));
+      gap: 7px;
+      width: 154px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.46);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .view-title {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #171511;
+    }
+
+    .view-btn {
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: rgba(255,255,255,.76);
+      color: #171511;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .view-btn.active {
+      background: #171511;
+      color: #fffaf0;
+    }
+
+    .direction-console {
+      position: absolute;
+      right: 20px;
+      bottom: 72px;
+      z-index: 6;
+      display: grid;
+      grid-template-columns: repeat(3, 38px);
+      gap: 7px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.46);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .direction-title,
+    .direction-readout,
+    .direction-turns {
+      grid-column: 1 / -1;
+    }
+
+    .direction-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #171511;
+    }
+
+    .direction-readout {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+      min-height: 31px;
+      white-space: pre-line;
+    }
+
+    .dir-btn {
+      width: 38px;
+      height: 34px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: rgba(255,255,255,.76);
+      color: #171511;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .dir-btn.active {
+      background: #171511;
+      color: #fffaf0;
+    }
+
+    .dir-forward,
+    .dir-back {
+      grid-column: 2;
+    }
+
+    .dir-left {
+      grid-column: 1;
+    }
+
+    .direction-turns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .turn-btn {
+      width: 100%;
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: rgba(255,255,255,.76);
+      color: #171511;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .control-panel {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(86px, 1fr));
+      gap: 8px;
+      align-items: center;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.46);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .panel-title {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #171511;
+      margin-bottom: 2px;
+    }
+
+    .toggle {
+      width: 100%; min-width: 86px;
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 999px;
+      background: #171511;
+      color: #fffaf0;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .toggle.active#toggleAllColors { background: #111511; color: white; }
+    .toggle.active#toggleHead { background: #111111; color: white; }
+    .toggle.active#toggleNeck { background: #565656; color: white; }
+    .toggle.active#toggleTorso { background: #ff7a00; color: white; }
+    .toggle.active#toggleWaist { background: #c96a2b; color: white; }
+    .toggle.active#togglePelvis { background: #8a4f2a; color: white; }
+    .toggle.active#toggleHip { background: #a0522d; color: white; }
+    .toggle.active#toggleShoulder { background: #00a884; color: white; }
+    .toggle.active#toggleArm { background: #00bcd4; color: #171511; }
+    .toggle.active#toggleElbow { background: #00838f; color: white; }
+    .toggle.active#toggleWrist { background: #4dd0e1; color: #171511; }
+    .toggle.active#togglePalm { background: #26a69a; color: white; }
+    .toggle.active#toggleFinger { background: #66bb6a; color: #171511; }
+    .toggle.active#toggleThigh { background: #7b2cff; color: white; }
+    .toggle.active#toggleCalf { background: #1f6fff; color: white; }
+    .toggle.active#toggleKnee { background: #ff2f92; color: white; }
+    .toggle.active#toggleAnkle { background: #d31616; color: white; }
+    .toggle.active#toggleHeel { background: #6d4c41; color: white; }
+    .toggle.active#toggleFoot { background: #e7b900; color: #171511; }
+    .toggle.active#toggleToe { background: #f4a261; color: #171511; }
+    .toggle.active#toggleToeNails { background: #6f1028; color: white; }
+    .toggle.active#toggleBoot { background: #14100c; color: white; }
+    .toggle.active#toggleBone { background: #8b6a2f; color: white; }
+
+    .zoom-title { margin-top: 6px; }
+
+    .zoom-btn { background: rgba(255,255,255,.70); color: #171511; }
+    .zoom-btn:active { transform: scale(.97); }
+    #runToggle.active,
+    #autoMovesToggle.active,
+    #spinToggle.active,
+    #moonwalkToggle.active { background: #171511; color: #fffaf0; }
+
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      .page { min-height: 100vh; height: auto; grid-template-columns: 1fr; }
+      canvas { width: min(94vw, 680px); height: min(112vw, 860px); }
+      .view-console { right: 10px; bottom: 304px; }
+      .direction-console { right: 10px; bottom: 64px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="stage" aria-label="interactive human mesh feet preview">
+      <canvas id="figure"></canvas>
+      <div class="control-panel" aria-label="mesh color controls">
+        <div class="panel-title">Mesh Color</div>
+        <button class="toggle" id="toggleAllColors" type="button">All Off</button>
+        <button class="toggle" id="toggleHead" type="button">Head</button>
+        <button class="toggle" id="toggleNeck" type="button">Neck</button>
+        <button class="toggle" id="toggleTorso" type="button">Torso</button>
+        <button class="toggle" id="toggleWaist" type="button">Waist</button>
+        <button class="toggle" id="togglePelvis" type="button">Pelvis</button>
+        <button class="toggle" id="toggleHip" type="button">Hip</button>
+        <button class="toggle" id="toggleShoulder" type="button">Shoulder</button>
+        <button class="toggle" id="toggleArm" type="button">Arm</button>
+        <button class="toggle" id="toggleElbow" type="button">Elbow</button>
+        <button class="toggle" id="toggleWrist" type="button">Wrist</button>
+        <button class="toggle" id="togglePalm" type="button">Palm</button>
+        <button class="toggle" id="toggleFinger" type="button">Finger</button>
+        <button class="toggle" id="toggleThigh" type="button">Thigh</button>
+        <button class="toggle" id="toggleCalf" type="button">Calf</button>
+        <button class="toggle" id="toggleKnee" type="button">Knee</button>
+        <button class="toggle" id="toggleAnkle" type="button">Ankle</button>
+        <button class="toggle" id="toggleHeel" type="button">Heel</button>
+        <button class="toggle" id="toggleFoot" type="button">Foot</button>
+        <button class="toggle" id="toggleToe" type="button">Toe</button>
+        <button class="toggle" id="toggleToeNails" type="button">Toenails</button>
+        <button class="toggle" id="toggleBoot" type="button">Boot</button>
+        <button class="toggle" id="toggleBone" type="button">Bone</button>
+        <div class="panel-title zoom-title">Zoom</div>
+        <button class="toggle zoom-btn" id="zoomIn" type="button">Zoom In</button>
+        <button class="toggle zoom-btn" id="zoomOut" type="button">Zoom Out</button>
+        <button class="toggle zoom-btn" id="zoomReset" type="button">Reset</button>
+        <div class="panel-title zoom-title">Motion</div>
+        <button class="toggle zoom-btn" id="runToggle" type="button">Run Motion</button>
+        <button class="toggle zoom-btn" id="jumpAction" type="button">Jump</button>
+        <button class="toggle zoom-btn" id="moonwalkToggle" type="button">Moonwalk</button>
+        <button class="toggle zoom-btn" id="spinToggle" type="button">Spin</button>
+        <button class="toggle zoom-btn" id="autoMovesToggle" type="button">Auto Moves</button>
+      </div>
+      <div class="camera-readout" id="cameraReadout">Camera X: 0.58 | Y: -0.47 | Zoom: 1.00</div>
+      <div class="view-console" aria-label="camera view controls">
+        <div class="view-title">Camera View</div>
+        <button class="view-btn active" id="viewInitial" type="button">Initial</button>
+        <button class="view-btn" id="viewFront" type="button">Front</button>
+        <button class="view-btn" id="viewSide" type="button">Side</button>
+        <button class="view-btn" id="viewTop" type="button">Top</button>
+      </div>
+      <div class="direction-console" aria-label="walk direction controls">
+        <div class="direction-title">Walk Direction</div>
+        <div class="direction-readout" id="walkDirectionReadout">Forward 0 deg</div>
+        <button class="dir-btn dir-forward active" id="walkDirForward" type="button" aria-label="walk forward">W</button>
+        <button class="dir-btn dir-left" id="walkDirLeft" type="button" aria-label="walk left">A</button>
+        <button class="dir-btn dir-reset" id="walkDirReset" type="button" aria-label="reset direction">0</button>
+        <button class="dir-btn dir-right" id="walkDirRight" type="button" aria-label="walk right">D</button>
+        <button class="dir-btn dir-back" id="walkDirBack" type="button" aria-label="walk backward">S</button>
+        <div class="direction-turns">
+          <button class="turn-btn" id="walkTurnLeft" type="button">-15</button>
+          <button class="turn-btn" id="walkTurnRight" type="button">+15</button>
+        </div>
+      </div>
+      <div class="hint">Drag figure to inspect; drag boots on/off</div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('figure');
+    const ctx = canvas.getContext('2d', { alpha: true });
+    const cameraReadout = document.getElementById('cameraReadout');
+
+    let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    let width = 0, height = 0, scale = 1;
+    let points = [], links = [], faces = [], tick = 0;
+    const INITIAL_ROTATION_X = 0.58;
+    const INITIAL_ROTATION_Y = -0.47;
+    const CAMERA_VIEWS = {
+      initial: { x: INITIAL_ROTATION_X, y: INITIAL_ROTATION_Y, id: 'viewInitial' },
+      front: { x: 0, y: 0, id: 'viewFront' },
+      side: { x: 0, y: Math.PI / 2, id: 'viewSide' },
+      top: { x: -Math.PI / 2 + .08, y: 0, id: 'viewTop' }
+    };
+    let rotationX = INITIAL_ROTATION_X, rotationY = INITIAL_ROTATION_Y, velocityX = 0, velocityY = 0;
+    let isDragging = false, lastPointerX = 0, lastPointerY = 0, lastMoveTime = 0;
+    let zoomScale = 1, runMotion = false, runTime = 0, runBlend = 0;
+    let moonwalkMotion = false, moonwalkBlend = 0;
+    let spinMotion = false, spinBlend = 0, spinAngle = 0;
+    let jumpActive = false, jumpTime = 1;
+    let walkHeading = 0, walkHeadingTarget = 0, walkMoveBlend = 0;
+    let walkPosition = { x: 0, z: 0 }, walkVelocity = { x: 0, z: 0 };
+    const walkKeys = { w: false, a: false, s: false, d: false };
+    let autoMovesActive = false, autoMoveIndex = 0, autoMoveClock = 0, autoMovePhase = 'buffer';
+    const AUTO_MOVES = [
+      { label: 'Run', kind: 'run', duration: 150, buffer: 42 },
+      { label: 'Walk W', kind: 'walk', key: 'w', duration: 105, buffer: 34 },
+      { label: 'Jump', kind: 'jump', duration: 72, buffer: 44 },
+      { label: 'Walk D', kind: 'walk', key: 'd', duration: 105, buffer: 34 },
+      { label: 'Spin', kind: 'spin', duration: 132, buffer: 42 },
+      { label: 'Moonwalk', kind: 'moonwalk', duration: 145, buffer: 42 },
+      { label: 'Walk S', kind: 'walk', key: 's', duration: 105, buffer: 34 },
+      { label: 'Walk A', kind: 'walk', key: 'a', duration: 105, buffer: 34 }
+    ];
+    let lastFrameStamp = 0;
+    const bootState = {
+      left: { offset: { x: 0, y: 0, z: 0 }, attached: true },
+      right: { offset: { x: 0, y: 0, z: 0 }, attached: true }
+    };
+    const bootAnchors = { left: { x: 0, y: 0, z: 0 }, right: { x: 0, y: 0, z: 0 } };
+    let activeDrag = null, lastProjected = [];
+
+    const meshControls = {
+      head: { color: '#111111', colorized: false },
+      neck: { color: '#565656', colorized: false },
+      torso: { color: '#ff7a00', colorized: false },
+      waist: { color: '#c96a2b', colorized: false },
+      pelvis: { color: '#8a4f2a', colorized: false },
+      hip: { color: '#a0522d', colorized: false },
+      shoulder: { color: '#00a884', colorized: false },
+      arm: { color: '#00bcd4', colorized: false },
+      elbow: { color: '#00838f', colorized: false },
+      wrist: { color: '#4dd0e1', colorized: false },
+      palm: { color: '#26a69a', colorized: false },
+      finger: { color: '#66bb6a', colorized: false },
+      thigh: { color: '#7b2cff', colorized: false },
+      calf: { color: '#1f6fff', colorized: false },
+      knee: { color: '#ff2f92', colorized: false },
+      ankle: { color: '#d31616', colorized: false },
+      heel: { color: '#6d4c41', colorized: false },
+      foot: { color: '#e7b900', colorized: false },
+      toe: { color: '#f4a261', colorized: false },
+      toeNails: { color: '#6f1028', colorized: false },
+      boot: { color: '#14100c', colorized: false },
+      bone: { color: '#8b6a2f', colorized: false }
+    };
+
+    function setupMeshControls() {
+      const colorBindings = [
+        ['head','toggleHead'], ['neck','toggleNeck'], ['torso','toggleTorso'], ['waist','toggleWaist'],
+        ['pelvis','togglePelvis'], ['hip','toggleHip'], ['shoulder','toggleShoulder'], ['arm','toggleArm'],
+        ['elbow','toggleElbow'], ['wrist','toggleWrist'], ['palm','togglePalm'], ['finger','toggleFinger'],
+        ['thigh','toggleThigh'], ['calf','toggleCalf'], ['knee','toggleKnee'], ['ankle','toggleAnkle'],
+        ['heel','toggleHeel'], ['foot','toggleFoot'], ['toe','toggleToe'], ['toeNails','toggleToeNails'],
+        ['boot','toggleBoot'], ['bone','toggleBone']
+      ];
+
+      colorBindings.forEach(([key, id]) => {
+        const toggle = document.getElementById(id);
+        toggle?.addEventListener('click', () => {
+          meshControls[key].colorized = !meshControls[key].colorized;
+          toggle.classList.toggle('active', meshControls[key].colorized);
+          syncAllColorToggle();
+        });
+      });
+
+      const allToggle = document.getElementById('toggleAllColors');
+      function syncAllColorToggle() {
+        const allActive = colorBindings.every(([key]) => meshControls[key]?.colorized);
+        allToggle?.classList.toggle('active', allActive);
+        if (allToggle) allToggle.textContent = allActive ? 'All On' : 'All Off';
+      }
+
+      allToggle?.addEventListener('click', () => {
+        const shouldTurnOn = !colorBindings.every(([key]) => meshControls[key]?.colorized);
+        colorBindings.forEach(([key, id]) => {
+          meshControls[key].colorized = shouldTurnOn;
+          document.getElementById(id)?.classList.toggle('active', shouldTurnOn);
+        });
+        syncAllColorToggle();
+      });
+
+      syncAllColorToggle();
+      document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale = Math.min(2.4, zoomScale * 1.12); resize(); });
+      document.getElementById('zoomOut')?.addEventListener('click', () => { zoomScale = Math.max(.45, zoomScale / 1.12); resize(); });
+      document.getElementById('zoomReset')?.addEventListener('click', () => { zoomScale = 1; setCameraView('initial'); resize(); });
+      document.getElementById('viewInitial')?.addEventListener('click', () => setCameraView('initial'));
+      document.getElementById('viewFront')?.addEventListener('click', () => setCameraView('front'));
+      document.getElementById('viewSide')?.addEventListener('click', () => setCameraView('side'));
+      document.getElementById('viewTop')?.addEventListener('click', () => setCameraView('top'));
+      document.getElementById('runToggle')?.addEventListener('click', e => {
+        stopAutoMovesForManual();
+        runMotion = !runMotion;
+        if (runMotion) {
+          moonwalkMotion = false;
+          document.getElementById('moonwalkToggle')?.classList.remove('active');
+          spinMotion = false;
+          document.getElementById('spinToggle')?.classList.remove('active');
+          if (runBlend <= .001) runTime = 0;
+        }
+        e.currentTarget.classList.toggle('active', runMotion);
+      });
+      document.getElementById('jumpAction')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        jumpActive = true;
+        jumpTime = 0;
+        runMotion = false;
+        moonwalkMotion = false;
+        spinMotion = false;
+        document.getElementById('runToggle')?.classList.remove('active');
+        document.getElementById('moonwalkToggle')?.classList.remove('active');
+        document.getElementById('spinToggle')?.classList.remove('active');
+      });
+      document.getElementById('moonwalkToggle')?.addEventListener('click', e => {
+        stopAutoMovesForManual();
+        moonwalkMotion = !moonwalkMotion;
+        if (moonwalkMotion) {
+          runMotion = false;
+          document.getElementById('runToggle')?.classList.remove('active');
+          spinMotion = false;
+          document.getElementById('spinToggle')?.classList.remove('active');
+          if (moonwalkBlend <= .001) runTime = 0;
+        }
+        e.currentTarget.classList.toggle('active', moonwalkMotion);
+      });
+      document.getElementById('spinToggle')?.addEventListener('click', e => {
+        stopAutoMovesForManual();
+        spinMotion = !spinMotion;
+        if (spinMotion) {
+          runMotion = false;
+          moonwalkMotion = false;
+          clearWalkKeys();
+          document.getElementById('runToggle')?.classList.remove('active');
+          document.getElementById('moonwalkToggle')?.classList.remove('active');
+          if (spinBlend <= .001) {
+            runTime = 0;
+            spinAngle = 0;
+          }
+        }
+        e.currentTarget.classList.toggle('active', spinMotion);
+      });
+      document.getElementById('autoMovesToggle')?.addEventListener('click', () => setAutoMoves(!autoMovesActive));
+      bindWalkButton('walkDirForward', 'w');
+      bindWalkButton('walkDirLeft', 'a');
+      bindWalkButton('walkDirRight', 'd');
+      bindWalkButton('walkDirBack', 's');
+      document.getElementById('walkDirReset')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        resetWalkPosition();
+      });
+      document.getElementById('walkTurnLeft')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget - Math.PI / 12);
+      });
+      document.getElementById('walkTurnRight')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget + Math.PI / 12);
+      });
+      syncCameraViewButtons();
+      syncWalkDirectionConsole();
+    }
+
+    function bindWalkButton(id, key) {
+      const button = document.getElementById(id);
+      if (!button) return;
+      const start = e => {
+        e.preventDefault();
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkKey(key, true);
+        try { button.setPointerCapture(e.pointerId); } catch (_) {}
+      };
+      const stop = e => {
+        e.preventDefault();
+        setWalkKey(key, false);
+        try { button.releasePointerCapture(e.pointerId); } catch (_) {}
+      };
+      button.addEventListener('pointerdown', start);
+      button.addEventListener('pointerup', stop);
+      button.addEventListener('pointercancel', stop);
+      button.addEventListener('pointerleave', e => { if (walkKeys[key]) stop(e); });
+    }
+
+    function normalizeAngle(angle) {
+      return Math.atan2(Math.sin(angle), Math.cos(angle));
+    }
+
+    function syncCameraViewButtons() {
+      Object.values(CAMERA_VIEWS).forEach(view => {
+        const active = Math.abs(rotationX - view.x) < .012 && Math.abs(normalizeAngle(rotationY - view.y)) < .012;
+        document.getElementById(view.id)?.classList.toggle('active', active);
+      });
+    }
+
+    function setCameraView(name) {
+      const view = CAMERA_VIEWS[name];
+      if (!view) return;
+      rotationX = view.x;
+      rotationY = view.y;
+      velocityX = 0;
+      velocityY = 0;
+      syncCameraViewButtons();
+      updateCameraReadout();
+    }
+
+    function angleDegrees(angle) {
+      const deg = Math.round(normalizeAngle(angle) * 180 / Math.PI);
+      return deg === -180 ? 180 : deg;
+    }
+
+    function walkDirectionName(angle) {
+      const deg = angleDegrees(angle);
+      if (Math.abs(deg) <= 22) return 'Forward';
+      if (Math.abs(Math.abs(deg) - 180) <= 22) return 'Back';
+      if (deg < 0 && Math.abs(deg + 90) <= 22) return 'Left';
+      if (deg > 0 && Math.abs(deg - 90) <= 22) return 'Right';
+      return deg < 0 ? 'Turn left' : 'Turn right';
+    }
+
+    function syncWalkDirectionConsole() {
+      const readout = document.getElementById('walkDirectionReadout');
+      const deg = angleDegrees(walkHeadingTarget);
+      if (readout) readout.textContent = `${walkDirectionName(walkHeadingTarget)} ${deg} deg\nX ${walkPosition.x.toFixed(2)}  Z ${walkPosition.z.toFixed(2)}`;
+      const states = [
+        ['walkDirForward', 0],
+        ['walkDirLeft', -Math.PI / 2],
+        ['walkDirRight', Math.PI / 2],
+        ['walkDirBack', Math.PI]
+      ];
+      states.forEach(([id, angle]) => {
+        const active = Math.abs(normalizeAngle(walkHeadingTarget - angle)) < .001;
+        document.getElementById(id)?.classList.toggle('active', active);
+      });
+      document.getElementById('walkDirReset')?.classList.toggle('active', Math.abs(normalizeAngle(walkHeadingTarget)) < .001);
+    }
+
+    function setWalkHeading(angle) {
+      walkHeadingTarget = normalizeAngle(angle);
+      syncWalkDirectionConsole();
+    }
+
+    function setWalkKey(key, active) {
+      if (!Object.prototype.hasOwnProperty.call(walkKeys, key)) return;
+      walkKeys[key] = active;
+      const ids = { w: 'walkDirForward', a: 'walkDirLeft', s: 'walkDirBack', d: 'walkDirRight' };
+      document.getElementById(ids[key])?.classList.toggle('active', active);
+    }
+
+    function clearWalkKeys() {
+      Object.keys(walkKeys).forEach(key => setWalkKey(key, false));
+    }
+
+    function resetWalkPosition() {
+      clearWalkKeys();
+      walkPosition = { x: 0, z: 0 };
+      walkVelocity = { x: 0, z: 0 };
+      walkMoveBlend = 0;
+      setWalkHeading(0);
+    }
+
+    function walkInputVector() {
+      const x = (walkKeys.d ? 1 : 0) - (walkKeys.a ? 1 : 0);
+      const z = (walkKeys.w ? 1 : 0) - (walkKeys.s ? 1 : 0);
+      const length = Math.hypot(x, z);
+      return length > .001 ? { x: x / length, z: z / length, active: true } : { x: 0, z: 0, active: false };
+    }
+
+    function updateWalkDisplacement(frameStep) {
+      const input = walkInputVector();
+      const targetSpeed = .018;
+      const targetVelocity = input.active ? { x: input.x * targetSpeed, z: input.z * targetSpeed } : { x: 0, z: 0 };
+      if (input.active) walkHeadingTarget = normalizeAngle(Math.atan2(input.x, input.z));
+      walkVelocity.x += (targetVelocity.x - walkVelocity.x) * Math.min(1, .22 * frameStep);
+      walkVelocity.z += (targetVelocity.z - walkVelocity.z) * Math.min(1, .22 * frameStep);
+      walkPosition.x = Math.max(-1.18, Math.min(1.18, walkPosition.x + walkVelocity.x * frameStep));
+      walkPosition.z = Math.max(-1.18, Math.min(1.18, walkPosition.z + walkVelocity.z * frameStep));
+      walkMoveBlend = input.active || Math.hypot(walkVelocity.x, walkVelocity.z) > .001
+        ? Math.min(1, walkMoveBlend + .070 * frameStep)
+        : Math.max(0, walkMoveBlend - .050 * frameStep);
+      syncWalkDirectionConsole();
+    }
+
+    function syncAutoMovesToggle() {
+      const button = document.getElementById('autoMovesToggle');
+      if (!button) return;
+      button.classList.toggle('active', autoMovesActive);
+      const step = AUTO_MOVES[autoMoveIndex];
+      button.textContent = autoMovesActive && step
+        ? (autoMovePhase === 'buffer' ? 'Auto Buffer' : `Auto ${step.label}`)
+        : 'Auto Moves';
+    }
+
+    function resetAutoActuators() {
+      runMotion = false;
+      moonwalkMotion = false;
+      spinMotion = false;
+      document.getElementById('runToggle')?.classList.remove('active');
+      document.getElementById('moonwalkToggle')?.classList.remove('active');
+      document.getElementById('spinToggle')?.classList.remove('active');
+      clearWalkKeys();
+    }
+
+    function activateAutoMove(move) {
+      resetAutoActuators();
+      if (move.kind === 'run') {
+        runMotion = true;
+        if (runBlend <= .001) runTime = 0;
+        document.getElementById('runToggle')?.classList.add('active');
+      } else if (move.kind === 'moonwalk') {
+        moonwalkMotion = true;
+        if (moonwalkBlend <= .001) runTime = 0;
+        document.getElementById('moonwalkToggle')?.classList.add('active');
+      } else if (move.kind === 'spin') {
+        spinMotion = true;
+        if (spinBlend <= .001) {
+          runTime = 0;
+          spinAngle = 0;
+        }
+        document.getElementById('spinToggle')?.classList.add('active');
+      } else if (move.kind === 'jump') {
+        jumpActive = true;
+        jumpTime = 0;
+      } else if (move.kind === 'walk') {
+        setWalkKey(move.key, true);
+      }
+      syncAutoMovesToggle();
+    }
+
+    function setAutoMoves(active) {
+      autoMovesActive = active;
+      autoMoveIndex = 0;
+      autoMoveClock = 0;
+      autoMovePhase = active ? 'buffer' : 'buffer';
+      resetAutoActuators();
+      if (active) {
+        resetWalkPosition();
+        runTime = 0;
+      }
+      syncAutoMovesToggle();
+    }
+
+    function stopAutoMovesForManual() {
+      if (!autoMovesActive) return;
+      autoMovesActive = false;
+      autoMoveClock = 0;
+      autoMovePhase = 'buffer';
+      resetAutoActuators();
+      syncAutoMovesToggle();
+    }
+
+    function updateAutoMoves(frameStep) {
+      if (!autoMovesActive) return;
+      const move = AUTO_MOVES[autoMoveIndex];
+      autoMoveClock += frameStep;
+      if (autoMovePhase === 'buffer') {
+        resetAutoActuators();
+        if (autoMoveClock >= move.buffer && jumpTime >= 1) {
+          autoMovePhase = 'move';
+          autoMoveClock = 0;
+          activateAutoMove(move);
+        }
+      } else if (autoMoveClock >= move.duration) {
+        resetAutoActuators();
+        autoMoveIndex = (autoMoveIndex + 1) % AUTO_MOVES.length;
+        autoMovePhase = 'buffer';
+        autoMoveClock = 0;
+        syncAutoMovesToggle();
+      }
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+      const clean = hex.replace('#','');
+      const value = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+      return `rgba(${(value>>16)&255},${(value>>8)&255},${value&255},${alpha})`;
+    }
+
+    function meshControlKey(part) {
+      if (part === 'head') return 'head';
+      if (part === 'neck') return 'neck';
+      if (part === 'torso') return 'torso';
+      if (part === 'waist') return 'waist';
+      if (part === 'pelvis') return 'pelvis';
+      if (part === 'hipSurface') return 'hip';
+      if (part === 'shoulder') return 'shoulder';
+      if (part === 'arm') return 'arm';
+      if (part === 'elbow') return 'elbow';
+      if (part === 'wrist') return 'wrist';
+      if (part === 'palm') return 'palm';
+      if (['knuckle','finger','fingerJoint','fingerTip'].includes(part)) return 'finger';
+      if (part === 'leg') return 'thigh';
+      if (part === 'calfMesh') return 'calf';
+      if (part === 'knee') return 'knee';
+      if (part === 'ankle') return 'ankle';
+      if (part === 'heel') return 'heel';
+      if (part === 'foot' || part === 'forefoot') return 'foot';
+      if (['toe','toeJoint','toeTip'].includes(part)) return 'toe';
+      if (part === 'toeNail') return 'toeNails';
+      if (['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part)) return 'boot';
+      if (part === 'bone') return 'bone';
+      return '';
+    }
+    function meshDisplayColor(part) {
+      const key = meshControlKey(part);
+      if (key && meshControls[key].colorized) return meshControls[key].color;
+      if (key) return '#111111';
+      return '';
+    }
+
+    function isHiddenPart(part) { return part === 'coveredMesh'; }
+    function isBootPart(part) { return ['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part); }
+
+    function addPoint(x, y, z, part, weight = 1, meta = null) {
+      points.push({ x, y, z, part, weight, ...(meta || {}), jitter: ((points.length * 9301) % 997) / 997 });
+      return points.length - 1;
+    }
+    function addLink(a, b, strength = 1) { if (a >= 0 && b >= 0) links.push({ a, b, strength }); }
+    function addFace(ids, part, alpha = .16) { if (ids.every(id => id >= 0)) faces.push({ ids, part, alpha }); }
+    function normalize(v) { const len = Math.hypot(v.x,v.y,v.z) || 1; return { x:v.x/len, y:v.y/len, z:v.z/len }; }
+    function cross(a,b) { return { x:a.y*b.z-a.z*b.y, y:a.z*b.x-a.x*b.z, z:a.x*b.y-a.y*b.x }; }
+    function basisFromEndpoints(a,b) {
+      const axis = normalize({ x:b.x-a.x, y:b.y-a.y, z:b.z-a.z });
+      const helper = Math.abs(axis.y) < .95 ? {x:0,y:1,z:0} : {x:1,y:0,z:0};
+      const side = normalize(cross(axis, helper));
+      const forward = normalize(cross(side, axis));
+      return { axis, side, forward };
+    }
+
+    function buildEllipsoid(cx, cy, cz, rx, ry, rz, latSteps, lonSteps, part) {
+      const grid = [];
+      for (let i=0;i<=latSteps;i++) {
+        const v = -Math.PI/2 + Math.PI*i/latSteps, row=[];
+        const ringScale = Math.cos(v);
+        for (let j=0;j<lonSteps;j++) {
+          const u = Math.PI*2*j/lonSteps;
+          row.push(addPoint(cx + rx*ringScale*Math.sin(u), cy + ry*Math.sin(v), cz + rz*ringScale*Math.cos(u), part, 1));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=latSteps;i++) for (let j=0;j<lonSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%lonSteps], .78);
+        if (i < latSteps) addLink(grid[i][j], grid[i+1][j], .78);
+      }
+      return grid;
+    }
+
+    function buildTaperedTube(a,b,rA,rB,ringSteps,radialSteps,part) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps, radius=rA+(rB-rA)*t;
+        const center = { x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, z:a.z+(b.z-a.z)*t };
+        const row=[];
+        for (let j=0;j<radialSteps;j++) {
+          const angle=Math.PI*2*j/radialSteps;
+          row.push(addPoint(
+            center.x + Math.cos(angle)*basis.side.x*radius + Math.sin(angle)*basis.forward.x*radius,
+            center.y + Math.cos(angle)*basis.side.y*radius + Math.sin(angle)*basis.forward.y*radius,
+            center.z + Math.cos(angle)*basis.side.z*radius + Math.sin(angle)*basis.forward.z*radius,
+            part, .96));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=ringSteps;i++) for (let j=0;j<radialSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%radialSteps], .72);
+        if (i < ringSteps) addLink(grid[i][j], grid[i+1][j], .8);
+      }
+      return grid;
+    }
+
+    function buildEllipticalTube(a,b,ringSteps,radialSteps,part,profile) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps;
+        const shape=profile(t);
+        const center = {
+          x:a.x+(b.x-a.x)*t + basis.side.x*(shape.offsetSide||0) + basis.forward.x*(shape.offsetForward||0),
+          y:a.y+(b.y-a.y)*t + basis.side.y*(shape.offsetSide||0) + basis.forward.y*(shape.offsetForward||0),
+          z:a.z+(b.z-a.z)*t + basis.side.z*(shape.offsetSide||0) + basis.forward.z*(shape.offsetForward||0)
+        };
+        const row=[];
+        for (let j=0;j<radialSteps;j++) {
+          const angle=Math.PI*2*j/radialSteps;
+          row.push(addPoint(
+            center.x + Math.cos(angle)*basis.side.x*shape.side + Math.sin(angle)*basis.forward.x*shape.forward,
+            center.y + Math.cos(angle)*basis.side.y*shape.side + Math.sin(angle)*basis.forward.y*shape.forward,
+            center.z + Math.cos(angle)*basis.side.z*shape.side + Math.sin(angle)*basis.forward.z*shape.forward,
+            shape.part || part,
+            shape.weight || 1,
+            shape.meta || null));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=ringSteps;i++) for (let j=0;j<radialSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%radialSteps], .82);
+        if (i < ringSteps) {
+          addLink(grid[i][j], grid[i+1][j], .88);
+          addFace([grid[i][j], grid[i][(j+1)%radialSteps], grid[i+1][(j+1)%radialSteps], grid[i+1][j]], part, .15);
+        }
+      }
+      return grid;
+    }
+
+    function strengthenRing(row, strength = 1.45) {
+      for (let j=0;j<row.length;j++) addLink(row[j], row[(j+1)%row.length], strength);
+    }
+
+    function capRing(row, part, weight = 1.08, strength = 1.18, meta = null) {
+      const center = row.reduce((acc, id) => {
+        const p = points[id];
+        acc.x += p.x; acc.y += p.y; acc.z += p.z;
+        return acc;
+      }, { x: 0, y: 0, z: 0 });
+      center.x /= row.length; center.y /= row.length; center.z /= row.length;
+      const c = addPoint(center.x, center.y, center.z, part, weight, meta);
+      for (let j=0;j<row.length;j++) {
+        addLink(c, row[j], strength);
+        addLink(row[j], row[(j+Math.floor(row.length/2))%row.length], strength*.52);
+        addFace([c, row[j], row[(j+1)%row.length]], part, .22);
+      }
+      return c;
+    }
+
+    function buildSolePlate(side, ankleX, ankleY, footZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const stations = [
+        { z: footZ - .305, w: .116, y: ankleY + .214, x: 0, t: .060 },
+        { z: footZ - .135, w: .160, y: ankleY + .222, x: 0, t: .064 },
+        { z: footZ + .085, w: .182, y: ankleY + .226, x: sign*.006, t: .066 },
+        { z: footZ + .325, w: .174, y: ankleY + .226, x: sign*.018, t: .064 },
+        { z: footZ + .555, w: .124, y: ankleY + .218, x: sign*.026, t: .058 }
+      ];
+      const topAcross = [-1, -.5, 0, .5, 1];
+      const bottomAcross = [1, .5, 0, -.5, -1];
+      const grid=[];
+      for (const station of stations) {
+        const row=[];
+        for (const sideT of topAcross) {
+          row.push(addPoint(
+            ankleX + station.x + sideT * station.w,
+            station.y,
+            station.z,
+            'bootSole',
+            1.08,
+            { bootSide: side }));
+        }
+        for (const sideT of bottomAcross) {
+          row.push(addPoint(
+            ankleX + station.x + sideT * station.w,
+            station.y + station.t,
+            station.z,
+            'bootSole',
+            1.08,
+            { bootSide: side }));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<grid.length;i++) for (let j=0;j<grid[i].length;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%grid[i].length], 1.1);
+        if (i < grid.length-1) {
+          addLink(grid[i][j], grid[i+1][j], 1.12);
+          addFace([grid[i][j], grid[i+1][j], grid[i+1][(j+1)%grid[i].length], grid[i][(j+1)%grid[i].length]], 'bootSole', .22);
+        }
+      }
+      addFace(grid[0], 'bootSole', .24);
+      addFace(grid[grid.length-1], 'bootSole', .24);
+      return grid;
+    }
+
+    function buildBootFootShell(a,b,ringSteps,part,profile) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      const section = [
+        { s: -1, f: 1.00 },
+        { s: -.98, f: .42 },
+        { s: -.78, f: -.22 },
+        { s: -.38, f: -.78 },
+        { s: 0, f: -1.00 },
+        { s: .38, f: -.78 },
+        { s: .78, f: -.22 },
+        { s: .98, f: .42 },
+        { s: 1, f: 1.00 }
+      ];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps;
+        const shape=profile(t);
+        const center = {
+          x:a.x+(b.x-a.x)*t + basis.side.x*(shape.offsetSide||0) + basis.forward.x*(shape.offsetForward||0),
+          y:a.y+(b.y-a.y)*t + basis.side.y*(shape.offsetSide||0) + basis.forward.y*(shape.offsetForward||0),
+          z:a.z+(b.z-a.z)*t + basis.side.z*(shape.offsetSide||0) + basis.forward.z*(shape.offsetForward||0)
+        };
+        const row = section.map(p => addPoint(
+          center.x + p.s*basis.side.x*shape.side + p.f*basis.forward.x*shape.forward,
+          center.y + p.s*basis.side.y*shape.side + p.f*basis.forward.y*shape.forward,
+          center.z + p.s*basis.side.z*shape.side + p.f*basis.forward.z*shape.forward,
+          part,
+          shape.weight || 1,
+          shape.meta || null));
+        grid.push(row);
+      }
+      for (let i=0;i<grid.length;i++) for (let j=0;j<grid[i].length;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%grid[i].length], j === grid[i].length-1 ? 1.28 : .92);
+        if (i < grid.length-1) {
+          addLink(grid[i][j], grid[i+1][j], .96);
+          addFace([grid[i][j], grid[i][(j+1)%grid[i].length], grid[i+1][(j+1)%grid[i].length], grid[i+1][j]], part, .16);
+        }
+      }
+      return grid;
+    }
+
+    function buildHeelBlock(side, ankleX, ankleY, footZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const x0=ankleX-sign*.070, x1=ankleX+sign*.070;
+      const y0=ankleY+.252, y1=ankleY+.318;
+      const z0=footZ-.238, z1=footZ-.128;
+      const corners=[
+        [x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],
+        [x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]
+      ].map(([x,y,z])=>addPoint(x,y,z,'bootHeel',1.12,{ bootSide: side }));
+      [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b])=>addLink(corners[a],corners[b],1.08));
+      [[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]].forEach(ids=>addFace(ids.map(i=>corners[i]), 'bootHeel', .22));
+      const center=addPoint(ankleX, (y0+y1)/2, (z0+z1)/2, 'bootHeel', 1.02, { bootSide: side });
+      corners.forEach(c=>addLink(center,c,.42));
+      return corners;
+    }
+
+    function buildRidingBoot(side, kneeX, kneeY, kneeZ, ankleX, ankleY, ankleZ, shinBottomY, footZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const radial = 22;
+      const offset = bootState[side].offset;
+      const w = p => ({ x: p.x + offset.x, y: p.y + offset.y, z: p.z + offset.z });
+      const bootMeta = { bootSide: side };
+      const bootAnkleX = ankleX + offset.x;
+      const bootAnkleY = ankleY + offset.y;
+      const bootFootZ = footZ + offset.z;
+      const shaftTop=w({ x:kneeX+sign*.012, y:kneeY+.250, z:kneeZ+.020 });
+      const shaftBottom=w({ x:ankleX+sign*.006, y:shinBottomY+.060, z:ankleZ+.010 });
+      const shaft=buildEllipticalTube(shaftTop, shaftBottom, 13, radial, 'boot', t => {
+        const calf=Math.sin(Math.PI*t);
+        const taper=1-t;
+        return {
+          side: .115 + .042*taper + .020*calf,
+          forward: .105 + .028*taper + .014*calf,
+          weight: 1.08,
+          meta: bootMeta
+        };
+      });
+      strengthenRing(shaft[0], 2.1);
+      strengthenRing(shaft[1], 1.25);
+      strengthenRing(shaft[shaft.length-1], 1.45);
+
+      const ankleWrap=buildEllipticalTube(
+        w({ x:ankleX+sign*.006, y:shinBottomY-.020, z:ankleZ+.005 }),
+        w({ x:ankleX+sign*.018, y:ankleY+.075, z:footZ-.080 }),
+        5, radial, 'boot', t => ({
+          side: .126 - .010*t,
+          forward: .104 + .012*Math.sin(Math.PI*t),
+          weight: 1.10,
+          meta: bootMeta
+        })
+      );
+      connectGridToGrid(shaft, ankleWrap, 3, 2, .92);
+
+      const footShell=buildBootFootShell(
+        w({ x:ankleX+sign*.004, y:ankleY+.125, z:footZ-.270 }),
+        w({ x:ankleX+sign*.038, y:ankleY+.165, z:footZ+.555 }),
+        14, 'boot', t => {
+          const broad=Math.sin(Math.PI*Math.min(1,t*.94));
+          const toe=smoothstep(.68,1,t);
+          const instep=Math.exp(-Math.pow((t-.28)/.18,2));
+          return {
+            side: .092 + .066*broad - .026*toe,
+            forward: .052 + .034*instep + .008*broad - .010*toe,
+            offsetForward: -.012*toe,
+            weight: 1.08,
+            meta: bootMeta
+          };
+        }
+      );
+      strengthenRing(footShell[footShell.length-1], 1.65);
+      capRing(footShell[footShell.length-1], 'boot', 1.22, 1.34, bootMeta);
+      connectGridToGrid(ankleWrap, footShell, 1, 2, .88);
+
+      const sole=buildSolePlate(side, bootAnkleX, bootAnkleY, bootFootZ);
+      connectGridToGrid(footShell, sole, 3, 1, .80);
+      buildHeelBlock(side, bootAnkleX, bootAnkleY, bootFootZ);
+
+      const outsideIndex = side === 'left' ? Math.floor(radial * .78) : Math.floor(radial * .22);
+      for (let i=1;i<shaft.length-1;i++) addLink(shaft[i][outsideIndex], shaft[i+1][outsideIndex], 1.65);
+      for (let i=1;i<footShell.length-1;i++) addLink(footShell[i][Math.floor(radial*.25)], footShell[i+1][Math.floor(radial*.25)], 1.28);
+      return { shaft, ankleWrap, footShell, sole };
+    }
+
+    function connectGridToGrid(gridA, gridB, stepA = 2, stepB = 2, strength = .55) {
+      for (let i=0;i<Math.min(gridA.length, gridB.length);i+=stepA) {
+        const rowA=gridA[i], rowB=gridB[Math.min(gridB.length-1, Math.floor(i*gridB.length/gridA.length))];
+        for (let j=0;j<Math.min(rowA.length,rowB.length);j+=stepB) addLink(rowA[j], rowB[j%rowB.length], strength);
+      }
+    }
+    function bonePoint(x,y,z,weight=1.05) { return addPoint(x,y,z,'bone',weight); }
+
+    function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+    function lerp(a,b,t) { return a + (b - a) * t; }
+    function blendScalar(rest, active, t) { return lerp(rest, active, easeInOut(t)); }
+    function blendPoint(rest, active, t) {
+      return {
+        x: blendScalar(rest.x, active.x, t),
+        y: blendScalar(rest.y, active.y, t),
+        z: blendScalar(rest.z, active.z, t)
+      };
+    }
+    function easeInOut(t) { t = clamp01(t); return t*t*(3-2*t); }
+    function runPhase(offset = 0) {
+      const raw = runTime / (Math.PI * 2) + offset;
+      return raw - Math.floor(raw);
+    }
+    function sampleCycle(frames, phase) {
+      for (let i=0;i<frames.length-1;i++) {
+        const a=frames[i], b=frames[i+1];
+        if (phase >= a.t && phase <= b.t) {
+          const u=easeInOut((phase-a.t)/(b.t-a.t));
+          const out={};
+          Object.keys(a).forEach(key => {
+            if (key !== 't') out[key]=lerp(a[key], b[key], u);
+          });
+          return out;
+        }
+      }
+      return frames[frames.length-1];
+    }
+    function runningLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const p = runPhase(side === 'left' ? 0 : .5);
+      const frames = [
+        { t: 0,    kneeY: 1.54, kneeZ: .24, ankleY: 2.665, ankleZ: .30, footZ: .43, kneeSide: .018 },
+        { t: .12, kneeY: 1.68, kneeZ: .16, ankleY: 2.690, ankleZ: .17, footZ: .30, kneeSide: .010 },
+        { t: .28, kneeY: 1.52, kneeZ: -.06, ankleY: 2.650, ankleZ: -.12, footZ: .02, kneeSide: -.006 },
+        { t: .36, kneeY: 1.40, kneeZ: -.22, ankleY: 2.500, ankleZ: -.29, footZ: -.16, kneeSide: -.012 },
+        { t: .50, kneeY: 1.12, kneeZ: -.05, ankleY: 1.990, ankleZ: -.20, footZ: -.06, kneeSide: -.006 },
+        { t: .68, kneeY: 1.20, kneeZ: .34, ankleY: 2.160, ankleZ: .08, footZ: .23, kneeSide: .012 },
+        { t: .86, kneeY: 1.44, kneeZ: .42, ankleY: 2.470, ankleZ: .29, footZ: .45, kneeSide: .020 },
+        { t: 1,    kneeY: 1.54, kneeZ: .24, ankleY: 2.665, ankleZ: .30, footZ: .43, kneeSide: .018 }
+      ];
+      const pose = sampleCycle(frames, p);
+      const floatLift = p > .36 && p < .50 ? Math.sin((p - .36) / .14 * Math.PI) * .035 :
+        (p > .86 ? Math.sin((p - .86) / .14 * Math.PI) * .025 : 0);
+      return {
+        kneeX: sign * (.30 + pose.kneeSide),
+        ankleX: sign * (.30 + .020 * Math.sin(Math.PI * 2 * p)),
+        kneeY: pose.kneeY - floatLift,
+        shinBottomY: pose.ankleY - .145 - floatLift,
+        ankleY: pose.ankleY - floatLift,
+        kneeZ: pose.kneeZ,
+        ankleZ: pose.ankleZ,
+        footZ: pose.footZ
+      };
+    }
+    function moonwalkLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const p = runPhase(side === 'left' ? 0 : .5);
+      const frames = [
+        { t: 0,    kneeY: 1.55, kneeZ: .48, ankleY: 2.700, ankleZ: .54, footZ: .70, kneeSide: .014 },
+        { t: .24, kneeY: 1.64, kneeZ: .18, ankleY: 2.708, ankleZ: .20, footZ: .32, kneeSide: .008 },
+        { t: .48, kneeY: 1.70, kneeZ: -.22, ankleY: 2.708, ankleZ: -.26, footZ: -.20, kneeSide: -.010 },
+        { t: .62, kneeY: 1.50, kneeZ: -.31, ankleY: 2.520, ankleZ: -.34, footZ: -.30, kneeSide: -.014 },
+        { t: .78, kneeY: 1.34, kneeZ: .12, ankleY: 2.350, ankleZ: .10, footZ: .22, kneeSide: .004 },
+        { t: 1,    kneeY: 1.55, kneeZ: .48, ankleY: 2.700, ankleZ: .54, footZ: .70, kneeSide: .014 }
+      ];
+      const pose = sampleCycle(frames, p);
+      return {
+        kneeX: sign * (.30 + pose.kneeSide),
+        ankleX: sign * (.30 + .010 * Math.sin(Math.PI * 2 * p)),
+        kneeY: pose.kneeY,
+        shinBottomY: pose.ankleY - .145,
+        ankleY: pose.ankleY,
+        kneeZ: pose.kneeZ,
+        ankleZ: pose.ankleZ,
+        footZ: pose.footZ
+      };
+    }
+    function restingLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      return {
+        kneeX: sign*.30,
+        ankleX: sign*.30,
+        kneeY: 1.58,
+        shinBottomY: 2.580,
+        ankleY: 2.725,
+        kneeZ: -.05,
+        ankleZ: -.020,
+        footZ: .10
+      };
+    }
+    function spinningLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const p = runPhase(side === 'left' ? 0 : .5);
+      const twist = Math.sin(Math.PI * 2 * p);
+      const lift = Math.max(0, Math.sin(Math.PI * 2 * p)) * .125;
+      return {
+        kneeX: sign * (.292 + .018 * twist),
+        ankleX: sign * (.282 + .012 * twist),
+        kneeY: 1.58 - lift * .42,
+        shinBottomY: 2.580 - lift,
+        ankleY: 2.725 - lift,
+        kneeZ: -.05 + .075 * twist,
+        ankleZ: -.020 + .090 * twist,
+        footZ: .10 + .115 * twist
+      };
+    }
+    function blendedLegPose(side) {
+      const rest = restingLegPose(side);
+      if (jumpTime < 1) return jumpingLegPose(side);
+      if (moonwalkBlend > .001) {
+        const active = moonwalkLegPose(side);
+        const pose = {};
+        Object.keys(rest).forEach(key => { pose[key] = blendScalar(rest[key], active[key], moonwalkBlend); });
+        return pose;
+      }
+      if (spinBlend > .001) {
+        const active = spinningLegPose(side);
+        const pose = {};
+        Object.keys(rest).forEach(key => { pose[key] = blendScalar(rest[key], active[key], spinBlend); });
+        return pose;
+      }
+      const forwardBlend = Math.max(runBlend, walkMoveBlend);
+      if (forwardBlend <= .001) return rest;
+      const active = runningLegPose(side);
+      const pose = {};
+      Object.keys(rest).forEach(key => { pose[key] = blendScalar(rest[key], active[key], forwardBlend); });
+      return pose;
+    }
+    function jumpLift() {
+      return -jumpProfile().bodyY;
+    }
+    function jumpCrouch() {
+      return jumpProfile().crouch;
+    }
+    function jumpProfile() {
+      if (jumpTime >= 1) {
+        return { bodyY: 0, crouch: 0, lean: 0, armLift: 0, armReach: 0, armBack: 0, kneeY: 1.58, ankleY: 2.725, shinBottomY: 2.580, kneeZ: -.05, ankleZ: -.020, footZ: .10, kneeSide: 0 };
+      }
+      return sampleCycle([
+        { t: 0,    bodyY: 0,     crouch: 0,    lean: 0,     armLift: 0,   armReach: 0,   armBack: 0,     kneeY: 1.58, ankleY: 2.725, shinBottomY: 2.580, kneeZ: -.05, ankleZ: -.020, footZ: .10, kneeSide: 0 },
+        { t: .13,  bodyY: .090,  crouch: .34,  lean: -.075, armLift: -.10, armReach: .02, armBack: -.10,  kneeY: 1.74, ankleY: 2.725, shinBottomY: 2.580, kneeZ: .080, ankleZ: .000, footZ: .13, kneeSide: .005 },
+        { t: .34,  bodyY: .310,  crouch: 1,    lean: -.280, armLift: -.26, armReach: .05, armBack: -.26,  kneeY: 1.88, ankleY: 2.725, shinBottomY: 2.580, kneeZ: .430, ankleZ: .020, footZ: .15, kneeSide: .018 },
+        { t: .48,  bodyY: -.260, crouch: .10,  lean: -.075, armLift: .72,  armReach: .08, armBack: .18,   kneeY: 1.33, ankleY: 2.270, shinBottomY: 2.125, kneeZ: .150, ankleZ: .055, footZ: .17, kneeSide: .008 },
+        { t: .64,  bodyY: -.930, crouch: 0,    lean: .020,  armLift: .92,  armReach: .12, armBack: .10,   kneeY: 1.06, ankleY: 2.010, shinBottomY: 1.865, kneeZ: .040, ankleZ: .015, footZ: .12, kneeSide: .000 },
+        { t: .78,  bodyY: -.390, crouch: .12,  lean: -.045, armLift: .28,  armReach: .06, armBack: -.03,  kneeY: 1.32, ankleY: 2.260, shinBottomY: 2.115, kneeZ: .095, ankleZ: .020, footZ: .12, kneeSide: .004 },
+        { t: .90,  bodyY: .060,  crouch: .78,  lean: -.145, armLift: -.04, armReach: .04, armBack: -.15,  kneeY: 1.78, ankleY: 2.725, shinBottomY: 2.580, kneeZ: .310, ankleZ: .020, footZ: .13, kneeSide: .014 },
+        { t: 1,    bodyY: 0,     crouch: 0,    lean: 0,     armLift: 0,   armReach: 0,   armBack: 0,     kneeY: 1.58, ankleY: 2.725, shinBottomY: 2.580, kneeZ: -.05, ankleZ: -.020, footZ: .10, kneeSide: 0 }
+      ], jumpTime);
+    }
+    function jumpingLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const j = jumpProfile();
+      return {
+        kneeX: sign * (.30 + j.kneeSide),
+        ankleX: sign * .30,
+        kneeY: j.kneeY - j.bodyY,
+        shinBottomY: j.shinBottomY - j.bodyY,
+        ankleY: j.ankleY - j.bodyY,
+        kneeZ: j.kneeZ,
+        ankleZ: j.ankleZ,
+        footZ: j.footZ
+      };
+    }
+    function applyRunBodyPosture() {
+      const j = jumpProfile();
+      const forwardBlend = Math.max(runBlend, walkMoveBlend);
+      const lean = (-0.115 * easeInOut(forwardBlend)) + (0.070 * easeInOut(moonwalkBlend)) + j.lean;
+      const cy = .36, cz = -.045;
+      const c = Math.cos(lean), s = Math.sin(lean);
+      const upperParts = new Set([
+        'head','neck','torso','waist','pelvis','shoulder','arm','elbow',
+        'wrist','palm','knuckle','finger','fingerJoint','fingerTip','hipSurface'
+      ]);
+      if (Math.abs(lean) > .001) {
+        for (const p of points) {
+          if (!upperParts.has(p.part)) continue;
+          const dy = p.y - cy, dz = p.z - cz;
+          p.y = cy + dy*c - dz*s;
+          p.z = cz + dy*s + dz*c;
+        }
+      }
+      const vertical = j.bodyY;
+      if (Math.abs(vertical) > .001) {
+        for (const p of points) p.y += vertical;
+      }
+    }
+
+    function buildFoot(side, ankleX, ankleY, ankleZ, covered = false) {
+      const sign = side === 'left' ? -1 : 1, footScale=.72, talusZ=ankleZ-.125, footZ=ankleZ-.145;
+      const hiddenPart = covered ? 'coveredMesh' : '';
+      const footBonePoint = (x,y,z,weight=1.05) => hiddenPart ? addPoint(x,y,z,hiddenPart,weight) : bonePoint(x,y,z,weight);
+      const ankle = buildEllipsoid(ankleX, ankleY-.085, talusZ, .092,.082,.092,7,14,hiddenPart || 'ankle');
+      const heel = buildEllipsoid(ankleX, ankleY+.105, footZ-.095*footScale, .158*footScale,.100*footScale,.145*footScale,7,16,hiddenPart || 'heel');
+      const arch = buildTaperedTube({x:ankleX,y:ankleY+.075,z:footZ+.075}, {x:ankleX+sign*.012,y:ankleY+.135,z:footZ+.335*footScale}, .122*footScale,.102*footScale,8,14,hiddenPart || 'foot');
+      const forefoot = buildEllipsoid(ankleX+sign*.014, ankleY+.170, footZ+.488*footScale, .202*footScale,.074*footScale,.158*footScale,6,18,hiddenPart || 'forefoot');
+      connectGridToGrid(ankle, heel,1,2,.72); connectGridToGrid(ankle, arch,1,2,.72); connectGridToGrid(heel, arch,1,2,.66); connectGridToGrid(arch, forefoot,1,2,.72);
+      const navicularMidfoot=footBonePoint(ankleX+sign*.012, ankleY+.115, footZ+.260*footScale,.72);
+      const toeOffsets=[-.145,-.065,.012,.085,.150].map(v=>v*sign*footScale);
+      const toeLengths=[.235,.214,.192,.168,.145].map(v=>v*footScale);
+      const toeWidths=[.064,.052,.048,.041,.036].map(v=>v*footScale);
+      const toeBaseBones=[];
+      for(let i=0;i<5;i++){
+        const baseX=ankleX+toeOffsets[i], baseY=ankleY+.176+Math.abs(i-2)*.004, baseZ=footZ+.575*footScale-i*.004, tipZ=baseZ+toeLengths[i];
+        const toe=buildTaperedTube({x:baseX,y:baseY,z:baseZ},{x:baseX+sign*(i-2)*.008,y:baseY+.014,z:tipZ},toeWidths[i],toeWidths[i]*.60,4,10,hiddenPart || 'toe');
+        const joint=buildEllipsoid(baseX,baseY,baseZ+.024,toeWidths[i]*.86,toeWidths[i]*.58,toeWidths[i]*.82,4,10,hiddenPart || 'toeJoint');
+        const tip=buildEllipsoid(baseX+sign*(i-2)*.008,baseY+.014,tipZ+.016,toeWidths[i]*.54,toeWidths[i]*.40,toeWidths[i]*.52,4,10,hiddenPart || 'toeTip');
+        connectGridToGrid(forefoot,joint,2,2,.46); connectGridToGrid(joint,toe,1,2,.64); connectGridToGrid(toe,tip,1,2,.60);
+        const toeBaseBone=footBonePoint(baseX,baseY+.015,baseZ+.008,.60), toeTipBone=footBonePoint(baseX+sign*(i-2)*.008,baseY+.018,tipZ+.010,.56);
+        const nail=addPoint(baseX+sign*(i-2)*.008,baseY-.010,tipZ+.042,hiddenPart || 'toeNail',.92);
+        addLink(toeTipBone,nail,.34); toeBaseBones.push(toeBaseBone); addLink(navicularMidfoot,toeBaseBone,.62); addLink(toeBaseBone,toeTipBone,.64);
+      }
+      for(let i=0;i<toeBaseBones.length-1;i++) addLink(toeBaseBones[i],toeBaseBones[i+1],.52);
+      return { ankle, heel, arch, forefoot };
+    }
+
+    function buildHand(side, wristX, wristY, wristZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const palmX = wristX - sign * .038;
+      const palmZ = wristZ + .025;
+      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const palm = buildEllipsoid(palmX, wristY + .150, palmZ, .078, .180, .135, 7, 16, 'palm');
+
+      connectGridToGrid(wrist, palm, 1, 2, .68);
+
+      const wristBone = bonePoint(wristX, wristY, wristZ + .020, .70);
+      const palmCenter = bonePoint(palmX, wristY + .140, palmZ + .015, .72);
+      const palmTop = bonePoint(palmX, wristY + .270, palmZ + .016, .66);
+      addLink(wristBone, palmCenter, .76);
+      addLink(palmCenter, palmTop, .72);
+
+      const fingerOffsets = [-.078, -.026, .026, .078];
+      const fingerLengths = [.245, .285, .265, .215];
+      const fingerWidths = [.034, .038, .036, .031];
+      const fingerBaseBones = [];
+
+      for (let i = 0; i < 4; i++) {
+        const baseX = palmX - sign * .010;
+        const baseY = wristY + .292;
+        const baseZ = palmZ + fingerOffsets[i];
+        const midY = baseY + fingerLengths[i] * .48;
+        const tipY = baseY + fingerLengths[i];
+        const curlX = -sign * .010;
+        const curlZ = (i - 1.5) * .010;
+
+        const baseKnuckle = buildEllipsoid(baseX, baseY, baseZ, fingerWidths[i] * 1.18, fingerWidths[i] * .96, fingerWidths[i] * 1.05, 4, 10, 'knuckle');
+        const fingerA = buildTaperedTube({ x: baseX, y: baseY + .012, z: baseZ }, { x: baseX + curlX, y: midY, z: baseZ + curlZ }, fingerWidths[i], fingerWidths[i] * .82, 4, 9, 'finger');
+        const middleJoint = buildEllipsoid(baseX + curlX, midY, baseZ + curlZ, fingerWidths[i] * .86, fingerWidths[i] * .80, fingerWidths[i] * .80, 4, 9, 'fingerJoint');
+        const fingerB = buildTaperedTube({ x: baseX + curlX, y: midY + .010, z: baseZ + curlZ }, { x: baseX + curlX * 1.4, y: tipY, z: baseZ + curlZ * 1.5 }, fingerWidths[i] * .78, fingerWidths[i] * .50, 4, 9, 'finger');
+        const tip = buildEllipsoid(baseX + curlX * 1.4, tipY + .010, baseZ + curlZ * 1.5, fingerWidths[i] * .54, fingerWidths[i] * .64, fingerWidths[i] * .54, 4, 9, 'fingerTip');
+
+        connectGridToGrid(palm, baseKnuckle, 2, 2, .46);
+        connectGridToGrid(baseKnuckle, fingerA, 1, 2, .66);
+        connectGridToGrid(fingerA, middleJoint, 1, 2, .62);
+        connectGridToGrid(middleJoint, fingerB, 1, 2, .62);
+        connectGridToGrid(fingerB, tip, 1, 2, .58);
+
+        const baseBone = bonePoint(baseX, baseY, baseZ, .52);
+        const midBone = bonePoint(baseX + curlX, midY, baseZ + curlZ, .48);
+        const tipBone = bonePoint(baseX + curlX * 1.4, tipY, baseZ + curlZ * 1.5, .44);
+        fingerBaseBones.push(baseBone);
+        addLink(palmCenter, baseBone, .58);
+        addLink(baseBone, midBone, .62);
+        addLink(midBone, tipBone, .58);
+      }
+
+      for (let i = 0; i < fingerBaseBones.length - 1; i++) addLink(fingerBaseBones[i], fingerBaseBones[i + 1], .48);
+
+      const thumbBaseX = palmX + sign * .012;
+      const thumbBaseY = wristY + .145;
+      const thumbBaseZ = palmZ + .132;
+      const thumbMidX = palmX + sign * .038;
+      const thumbMidY = wristY + .220;
+      const thumbMidZ = palmZ + .178;
+      const thumbTipX = palmX + sign * .052;
+      const thumbTipY = wristY + .305;
+      const thumbTipZ = palmZ + .206;
+      const thumbBase = buildEllipsoid(thumbBaseX, thumbBaseY, thumbBaseZ, .048, .052, .045, 4, 10, 'knuckle');
+      const thumbA = buildTaperedTube({ x: thumbBaseX, y: thumbBaseY, z: thumbBaseZ }, { x: thumbMidX, y: thumbMidY, z: thumbMidZ }, .044, .037, 4, 9, 'finger');
+      const thumbJoint = buildEllipsoid(thumbMidX, thumbMidY, thumbMidZ, .036, .038, .034, 4, 9, 'fingerJoint');
+      const thumbB = buildTaperedTube({ x: thumbMidX, y: thumbMidY, z: thumbMidZ }, { x: thumbTipX, y: thumbTipY, z: thumbTipZ }, .034, .024, 4, 9, 'finger');
+      const thumbTip = buildEllipsoid(thumbTipX, thumbTipY, thumbTipZ, .030, .034, .028, 4, 9, 'fingerTip');
+
+      connectGridToGrid(palm, thumbBase, 2, 2, .52);
+      connectGridToGrid(thumbBase, thumbA, 1, 2, .66);
+      connectGridToGrid(thumbA, thumbJoint, 1, 2, .62);
+      connectGridToGrid(thumbJoint, thumbB, 1, 2, .62);
+      connectGridToGrid(thumbB, thumbTip, 1, 2, .58);
+
+      const thumbBaseBone = bonePoint(thumbBaseX, thumbBaseY, thumbBaseZ, .50);
+      const thumbMidBone = bonePoint(thumbMidX, thumbMidY, thumbMidZ, .46);
+      const thumbTipBone = bonePoint(thumbTipX, thumbTipY, thumbTipZ, .42);
+      addLink(wristBone, thumbBaseBone, .58);
+      addLink(thumbBaseBone, thumbMidBone, .60);
+      addLink(thumbMidBone, thumbTipBone, .56);
+
+      return { wrist, palm };
+    }
+
+    function buildHuman() {
+      points=[]; links=[]; faces=[];
+      const pelvisCenter=buildEllipsoid(0,.26,-.045,.42,.135,.18,7,22,'pelvis');
+      const hipBar=buildTaperedTube({x:-.34,y:.34,z:-.045},{x:.34,y:.34,z:-.045},.145,.145,4,18,'pelvis');
+      connectGridToGrid(pelvisCenter,hipBar,1,2,.72);
+      const waist=buildEllipsoid(0,.02,-.030,.34,.18,.22,8,22,'waist');
+      const abdomen=buildEllipsoid(0,-.38,-.010,.39,.42,.26,12,24,'torso');
+      const chest=buildEllipsoid(0,-.92,-.035,.56,.48,.34,13,28,'torso');
+      const neck=buildTaperedTube({x:0,y:-1.36,z:-.018},{x:0,y:-1.58,z:-.010},.150,.118,4,14,'neck');
+      const head=buildEllipsoid(0,-1.92,.045,.30,.36,.29,11,20,'head');
+      connectGridToGrid(pelvisCenter,waist,1,2,.66); connectGridToGrid(waist,abdomen,1,2,.66); connectGridToGrid(abdomen,chest,1,3,.66); connectGridToGrid(chest,neck,2,2,.62); connectGridToGrid(neck,head,1,3,.48);
+      const lShoulder=buildEllipsoid(-.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
+      const rShoulder=buildEllipsoid(.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
+      connectGridToGrid(chest,lShoulder,2,3,.58); connectGridToGrid(chest,rShoulder,2,3,.58);
+      function armPose(side) {
+        const sign = side === 'left' ? -1 : 1;
+        const zBase = side === 'left' ? .055 : -.055;
+        const rest = {
+          upperA: { x: sign*.58, y: -1.05, z: zBase },
+          elbow: { x: sign*.72, y: -.37, z: zBase + sign*.020 },
+          forearmA: { x: sign*.72, y: -.30, z: zBase + sign*.020 },
+          wrist: { x: sign*.62, y: .43, z: zBase + sign*.060 }
+        };
+        let pose = rest;
+        if (moonwalkBlend > .001) {
+          const p = runPhase(side === 'left' ? 0 : .5);
+          const swing = -Math.cos(Math.PI * 2 * p);
+          const active = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.69, y: -.40, z: zBase + swing*.075 },
+            forearmA: { x: sign*.69, y: -.34, z: zBase + swing*.075 },
+            wrist: { x: sign*.61, y: .360, z: zBase + swing*.180 }
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, moonwalkBlend),
+            elbow: blendPoint(rest.elbow, active.elbow, moonwalkBlend),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, moonwalkBlend),
+            wrist: blendPoint(rest.wrist, active.wrist, moonwalkBlend)
+          };
+        } else if (spinBlend > .001) {
+          const p = runPhase(side === 'left' ? 0 : .5);
+          const sway = Math.sin(Math.PI * 2 * p);
+          const active = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.82, y: -.52, z: zBase + sway*.105 },
+            forearmA: { x: sign*.82, y: -.46, z: zBase + sway*.105 },
+            wrist: { x: sign*.76, y: .220, z: zBase + sway*.175 }
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, spinBlend),
+            elbow: blendPoint(rest.elbow, active.elbow, spinBlend),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, spinBlend),
+            wrist: blendPoint(rest.wrist, active.wrist, spinBlend)
+          };
+        } else if (Math.max(runBlend, walkMoveBlend) > .001) {
+          const forwardBlend = Math.max(runBlend, walkMoveBlend);
+          const p = runPhase(side === 'left' ? 0 : .5);
+          const armSwing = -Math.cos(Math.PI * 2 * p);
+          const elbowBend = .018 + .014 * (1 - Math.abs(armSwing));
+          const active = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*(.66 + elbowBend), y: -.48, z: zBase + armSwing*.130 },
+            forearmA: { x: sign*(.66 + elbowBend), y: -.42, z: zBase + armSwing*.130 },
+            wrist: { x: sign*(.60 - elbowBend*.40), y: .260, z: zBase + armSwing*.280 }
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, forwardBlend),
+            elbow: blendPoint(rest.elbow, active.elbow, forwardBlend),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, forwardBlend),
+            wrist: blendPoint(rest.wrist, active.wrist, forwardBlend)
+          };
+        }
+        if (jumpTime < 1) {
+          const j = jumpProfile();
+          const jumpPose = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*(.72 + j.armReach*.34), y: -.37 - j.armLift*.70, z: zBase + j.armBack*.55 },
+            forearmA: { x: sign*(.72 + j.armReach*.34), y: -.30 - j.armLift*.66, z: zBase + j.armBack*.55 },
+            wrist: { x: sign*(.62 + j.armReach*.44), y: .43 - j.armLift*1.48, z: zBase + j.armBack*.72 }
+          };
+          pose = {
+            upperA: jumpPose.upperA,
+            elbow: blendPoint(pose.elbow, jumpPose.elbow, .86),
+            forearmA: blendPoint(pose.forearmA, jumpPose.forearmA, .86),
+            wrist: blendPoint(pose.wrist, jumpPose.wrist, .86)
+          };
+        }
+        return pose;
+      }
+      const lArm=armPose('left');
+      const rArm=armPose('right');
+      const lUpperArm=buildTaperedTube(lArm.upperA,lArm.elbow,.128,.108,10,14,'arm');
+      const lElbow=buildEllipsoid(lArm.elbow.x,lArm.elbow.y,lArm.elbow.z,.110,.110,.110,7,14,'elbow');
+      const lForearm=buildTaperedTube(lArm.forearmA,lArm.wrist,.100,.078,11,12,'arm');
+      const lHand=buildHand('left',lArm.wrist.x,lArm.wrist.y,lArm.wrist.z);
+      const rUpperArm=buildTaperedTube(rArm.upperA,rArm.elbow,.128,.108,10,14,'arm');
+      const rElbow=buildEllipsoid(rArm.elbow.x,rArm.elbow.y,rArm.elbow.z,.110,.110,.110,7,14,'elbow');
+      const rForearm=buildTaperedTube(rArm.forearmA,rArm.wrist,.100,.078,11,12,'arm');
+      const rHand=buildHand('right',rArm.wrist.x,rArm.wrist.y,rArm.wrist.z);
+      connectGridToGrid(lShoulder,lUpperArm,1,2,.74); connectGridToGrid(lUpperArm,lElbow,1,2,.76); connectGridToGrid(lElbow,lForearm,1,2,.76); connectGridToGrid(lForearm,lHand.wrist,1,2,.56);
+      connectGridToGrid(rShoulder,rUpperArm,1,2,.74); connectGridToGrid(rUpperArm,rElbow,1,2,.76); connectGridToGrid(rElbow,rForearm,1,2,.76); connectGridToGrid(rForearm,rHand.wrist,1,2,.56);
+
+      function buildCorrectedSide(side) {
+        const sign = side === 'left' ? -1 : 1;
+        const hipX=sign*.30, thighTopX=sign*.24;
+        const pose = blendedLegPose(side);
+        const { kneeX, ankleX, kneeY, shinBottomY, ankleY, kneeZ, ankleZ, footZ } = pose;
+        bootAnchors[side] = { x: ankleX, y: ankleY + .120, z: footZ + .115 };
+        const hipBall=buildEllipsoid(hipX,.38,-.055,.145,.130,.130,7,14,'hipSurface');
+        connectGridToGrid(hipBar,hipBall,1,2,.62); connectGridToGrid(pelvisCenter,hipBall,1,2,.52);
+        const thigh=buildTaperedTube({x:thighTopX,y:.42,z:-.045},{x:kneeX,y:kneeY,z:kneeZ},.18,.14,14,14,'leg');
+        const knee=buildEllipsoid(kneeX,kneeY+.08,kneeZ,.155,.155,.155,8,16,'knee');
+        const covered = bootState[side].attached;
+        const lowerLegPart = covered ? 'coveredMesh' : 'calfMesh';
+        const shin=buildTaperedTube({x:kneeX,y:kneeY+.040,z:kneeZ},{x:ankleX,y:shinBottomY,z:ankleZ},.155,.104,14,14,lowerLegPart);
+        const ankleCollar=buildTaperedTube({x:ankleX,y:shinBottomY-.050,z:ankleZ},{x:ankleX,y:shinBottomY+.020,z:ankleZ},.104,.096,3,14,lowerLegPart);
+        const foot=buildFoot(side,ankleX,ankleY,footZ,covered);
+        buildRidingBoot(side,kneeX,kneeY,kneeZ,ankleX,ankleY,ankleZ,shinBottomY,footZ);
+        connectGridToGrid(hipBall,thigh,1,3,.46); connectGridToGrid(thigh,knee,2,2,.76); connectGridToGrid(knee,shin,2,2,.76); connectGridToGrid(shin,ankleCollar,1,1,.78); connectGridToGrid(ankleCollar,foot.ankle,1,2,.30);
+      }
+      buildCorrectedSide('left'); buildCorrectedSide('right');
+      applyRunBodyPosture();
+    }
+
+    function resize() {
+      const rect=canvas.getBoundingClientRect(); width=rect.width; height=rect.height;
+      canvas.width=Math.floor(width*dpr); canvas.height=Math.floor(height*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      scale=Math.min(width*.225,height*.112)*zoomScale;
+      buildHuman();
+    }
+    function figureYaw() {
+      return normalizeAngle(walkHeading + spinAngle * easeInOut(spinBlend));
+    }
+    function rotatePoint(p) {
+      const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
+      let hx = p.x, hz = p.z;
+      if (p.part !== 'grid') {
+        const yaw = figureYaw();
+        const hc = Math.cos(yaw), hs = Math.sin(yaw);
+        hx = p.x * hc + p.z * hs + walkPosition.x;
+        hz = -p.x * hs + p.z * hc + walkPosition.z;
+      }
+      let x=hx*cy+hz*sy, z=-hx*sy+hz*cy, y=p.y;
+      return { x, y:y*cx-z*sx, z:y*sx+z*cx };
+    }
+    function screenVectorToWorld(dx, dy) {
+      const rx = dx / Math.max(1, scale);
+      const ry = dy / Math.max(1, scale);
+      const rz = 0;
+      const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
+      const y = ry*cx + rz*sx;
+      const z1 = -ry*sx + rz*cx;
+      const wx = rx*cy - z1*sy;
+      const wz = rx*sy + z1*cy;
+      const yaw = figureYaw();
+      const hc = Math.cos(yaw), hs = Math.sin(yaw);
+      return { x: wx*hc - wz*hs, y, z: wx*hs + wz*hc };
+    }
+    function smoothstep(e0,e1,x){ const v=Math.max(0,Math.min(1,(x-e0)/(e1-e0))); return v*v*(3-2*v); }
+    function projectPoint(p){ const r=rotatePoint(p), camera=5.2, perspective=camera/(camera-r.z); return {...p,rx:r.x,ry:r.y,rz:r.z,perspective,sx:r.x*scale*perspective,sy:r.y*scale*perspective,visible:camera-r.z>.5}; }
+    function partInk(part){
+      if (isHiddenPart(part)) return 'rgba(0,0,0,0)';
+      const key=meshControlKey(part); if(key) return meshDisplayColor(part);
+      if(part==='cap') return '#020202'; if(part==='bone') return '#8b6a2f'; if(part==='head') return '#111111'; if(part==='torso') return '#171511'; if(part==='pelvis') return '#26231d'; if(part==='knee'||part==='elbow') return '#15120d';
+      return '#37322b';
+    }
+    function strokeInkForLink(a,b){
+      if (isHiddenPart(a.part) || isHiddenPart(b.part)) return 'rgba(0,0,0,0)';
+      const aKey=meshControlKey(a.part), bKey=meshControlKey(b.part);
+      if(isBootPart(a.part)||isBootPart(b.part)) return hexToRgba(meshDisplayColor('boot'), .95);
+      if(a.part==='bone'||b.part==='bone') return 'rgba(139,106,47,.82)';
+      if(a.part==='cap'||b.part==='cap') return 'rgba(0,0,0,1)';
+      if(aKey&&aKey===bKey) return hexToRgba(meshDisplayColor(a.part),.90);
+      if(aKey&&!bKey) return hexToRgba(meshDisplayColor(a.part),.62);
+      if(bKey&&!aKey) return hexToRgba(meshDisplayColor(b.part),.62);
+      return 'rgba(23,21,17,.74)';
+    }
+    function updateCameraReadout() {
+      if (!cameraReadout) return;
+      const cx = Math.sin(rotationY) * Math.cos(rotationX);
+      const cy = Math.sin(rotationX);
+      const cz = Math.cos(rotationY) * Math.cos(rotationX);
+      cameraReadout.textContent = `Camera Angle
+X rot: ${rotationX.toFixed(3)} rad / ${(rotationX * 180 / Math.PI).toFixed(1)}°
+Y rot: ${rotationY.toFixed(3)} rad / ${(rotationY * 180 / Math.PI).toFixed(1)}°
+Zoom: ${zoomScale.toFixed(2)}
+
+Camera XYZ Direction
+X: ${cx.toFixed(3)}
+Y: ${cy.toFixed(3)}
+Z: ${cz.toFixed(3)}`;
+    }
+
+
+    function drawCoordinatePlane() {
+      const planeY = 2.94;
+      const gridSize = 1.25;
+      const step = 0.25;
+      const origin = projectPoint({ x: 0, y: planeY, z: 0, part: 'grid', weight: 1 });
+
+      function screenPoint(x, y, z) {
+        const p = projectPoint({ x, y, z, part: 'grid', weight: 1 });
+        return { x: p.sx, y: p.sy, visible: p.visible };
+      }
+      function line3D(a, b, color, width = 1, alpha = .34) {
+        const pa = screenPoint(a.x, a.y, a.z);
+        const pb = screenPoint(b.x, b.y, b.z);
+        if (!pa.visible || !pb.visible) return;
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.stroke();
+      }
+      function label3D(text, x, y, z, color) {
+        const p = screenPoint(x, y, z);
+        if (!p.visible) return;
+        ctx.globalAlpha = .78;
+        ctx.fillStyle = color;
+        ctx.font = `700 ${Math.max(11, scale / 9)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.fillText(text, p.x + 6, p.y - 6);
+      }
+
+      for (let v = -gridSize; v <= gridSize + .001; v += step) {
+        const major = Math.abs(v) < .001 || Math.abs((v / .5) - Math.round(v / .5)) < .001;
+        line3D({x:-gridSize,y:planeY,z:v},{x:gridSize,y:planeY,z:v},'rgba(23,21,17,.55)', major ? .9 : .55, major ? .22 : .12);
+        line3D({x:v,y:planeY,z:-gridSize},{x:v,y:planeY,z:gridSize},'rgba(23,21,17,.55)', major ? .9 : .55, major ? .22 : .12);
+      }
+
+      line3D({x:-gridSize,y:planeY,z:0},{x:gridSize*1.18,y:planeY,z:0},'rgba(120,40,40,.95)',2,.72);
+      line3D({x:0,y:planeY,z:-gridSize},{x:0,y:planeY,z:gridSize*1.18},'rgba(40,80,140,.95)',2,.72);
+      line3D({x:0,y:planeY,z:0},{x:0,y:.95,z:0},'rgba(40,120,70,.95)',2.2,.78);
+
+      label3D('X', gridSize*1.22, planeY, 0, 'rgba(120,40,40,.95)');
+      label3D('Y plane', 0, planeY, gridSize*1.22, 'rgba(40,80,140,.95)');
+      label3D('Z', 0, .88, 0, 'rgba(40,120,70,.95)');
+      if (origin.visible) {
+        ctx.globalAlpha = .85;
+        ctx.fillStyle = 'rgba(23,21,17,.80)';
+        ctx.beginPath();
+        ctx.arc(origin.sx, origin.sy, Math.max(2, scale / 42), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw(now = performance.now()){
+      const frameStep = lastFrameStamp ? Math.min(2.2, Math.max(.25, (now - lastFrameStamp) / 16.6667)) : 1;
+      lastFrameStamp = now;
+      updateCameraReadout();
+      const previousState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
+      updateAutoMoves(frameStep);
+      runBlend = runMotion ? Math.min(1, runBlend + .045 * frameStep) : Math.max(0, runBlend - .026 * frameStep);
+      moonwalkBlend = moonwalkMotion ? Math.min(1, moonwalkBlend + .045 * frameStep) : Math.max(0, moonwalkBlend - .026 * frameStep);
+      spinBlend = spinMotion ? Math.min(1, spinBlend + .052 * frameStep) : Math.max(0, spinBlend - .040 * frameStep);
+      if (spinMotion) {
+        spinAngle = normalizeAngle(spinAngle + .082 * frameStep);
+      } else if (Math.abs(spinAngle) > .0005) {
+        spinAngle = normalizeAngle(spinAngle - spinAngle * Math.min(1, .090 * frameStep));
+      }
+      updateWalkDisplacement(frameStep);
+      const gaitBlend = Math.max(runBlend, moonwalkBlend, walkMoveBlend);
+      if (gaitBlend > 0) runTime += .075 * (.30 + .70 * gaitBlend) * frameStep;
+      else if (spinBlend > 0) runTime += .062 * (.35 + .65 * spinBlend) * frameStep;
+      const headingDelta = normalizeAngle(walkHeadingTarget - walkHeading);
+      if (Math.abs(headingDelta) > .0005) walkHeading = normalizeAngle(walkHeading + headingDelta * Math.min(1, .14 * frameStep));
+      if (jumpActive || jumpTime < 1) {
+        jumpTime = Math.min(1, jumpTime + .020 * frameStep);
+        if (jumpTime >= 1) jumpActive = false;
+      }
+      const currentState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
+      if (runMotion || moonwalkMotion || spinMotion || jumpActive || gaitBlend > 0 || spinBlend > 0 || previousState !== currentState) buildHuman();
+      ctx.clearRect(0,0,width,height);
+      if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY*=.985; }
+      rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01*frameStep;
+      syncCameraViewButtons();
+      const projected=points.map(projectPoint); lastProjected=projected; ctx.save(); ctx.translate(width/2,height/2+scale*.06);
+      const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,'rgba(255,255,255,.42)'); aura.addColorStop(.55,'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
+      drawCoordinatePlane();
+      const orderedFaces=faces.map(face=>{
+        const pts=face.ids.map(id=>projected[id]);
+        if(pts.some(p=>!p?.visible||isHiddenPart(p.part))) return null;
+        return { ...face, pts, rz: pts.reduce((sum,p)=>sum+p.rz,0)/pts.length };
+      }).filter(Boolean).sort((a,b)=>a.rz-b.rz);
+      for(const face of orderedFaces){
+        const depth=smoothstep(-1.8,1.3,face.rz);
+        ctx.globalAlpha=face.alpha*(.55+.70*depth);
+        ctx.fillStyle=hexToRgba(meshDisplayColor('boot'), 1);
+        ctx.beginPath();
+        ctx.moveTo(face.pts[0].sx, face.pts[0].sy);
+        for(let i=1;i<face.pts.length;i++) ctx.lineTo(face.pts[i].sx, face.pts[i].sy);
+        ctx.closePath();
+        ctx.fill();
+      }
+      for(const link of links){
+        const a=projected[link.a], b=projected[link.b];
+        if(!a||!b||!a.visible||!b.visible||isHiddenPart(a.part)||isHiddenPart(b.part)) continue;
+        const depth=smoothstep(-1.8,1.3,(a.rz+b.rz)/2);
+        const pulse=.88+.12*Math.sin(tick*3+link.a*.13);
+        const isShadeLink = a.part === 'cap' || b.part === 'cap';
+        const isBootLink = isBootPart(a.part) || isBootPart(b.part);
+        ctx.globalAlpha=isShadeLink ? 1 : (isBootLink ? Math.min(.76,link.strength*(.34+.64*depth)*pulse) : Math.min(.48,link.strength*(.18+.62*depth)*pulse));
+        ctx.strokeStyle=strokeInkForLink(a,b);
+        ctx.lineWidth=Math.max(.35,scale/320)*(.5+link.strength*.55)*((a.perspective+b.perspective)/2)*(isShadeLink ? 1.35 : (isBootLink ? 1.18 : 1));
+        ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+      }
+      const ordered=projected.filter(p=>p.visible&&!isHiddenPart(p.part)).sort((a,b)=>a.rz-b.rz);
+      for(const p of ordered){
+        const depth=smoothstep(-1.75,1.35,p.rz);
+        const scan=.93+.07*Math.sin(tick*7+p.ry*14+p.jitter*8);
+        const isBootPoint=isBootPart(p.part);
+        const size=Math.max(.65,scale/138)*p.weight*p.perspective*(.82+.36*depth)*(p.part === 'cap' ? 1.28 : (isBootPoint ? 1.10 : 1));
+        ctx.globalAlpha=p.part === 'cap' ? 1 : (isBootPoint ? Math.max(.42,Math.min(.98,(.38+.74*depth)*scan)) : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)));
+        ctx.fillStyle=partInk(p.part); ctx.beginPath(); ctx.arc(p.sx,p.sy,size,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha=.16; ctx.strokeStyle='rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
+      ctx.restore(); requestAnimationFrame(draw);
+    }
+    function canvasPoint(e) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left - width/2, y: e.clientY - rect.top - height/2 - scale*.06 };
+    }
+    function pickBootAt(e) {
+      const pointer = canvasPoint(e);
+      let best = null;
+      for (const p of lastProjected) {
+        if (!p?.visible || !isBootPart(p.part) || !p.bootSide) continue;
+        const d = Math.hypot(pointer.x - p.sx, pointer.y - p.sy);
+        if (d < 52 && (!best || d < best.distance)) best = { side: p.bootSide, distance: d };
+      }
+      return best?.side || '';
+    }
+    function bootOffsetLength(side) {
+      const o = bootState[side].offset;
+      return Math.hypot(o.x, o.y, o.z);
+    }
+    function snapBootIfClose(side, e) {
+      const anchor = projectPoint(bootAnchors[side]);
+      const pointer = e ? canvasPoint(e) : null;
+      const droppedOnSocket = pointer && anchor.visible && Math.hypot(pointer.x - anchor.sx, pointer.y - anchor.sy) < 92;
+      if (bootOffsetLength(side) < .46 || droppedOnSocket) {
+        bootState[side].offset = { x: 0, y: 0, z: 0 };
+        bootState[side].attached = true;
+      } else {
+        bootState[side].attached = false;
+      }
+      buildHuman();
+    }
+    function pointerDown(e){
+      const bootSide = pickBootAt(e);
+      activeDrag = bootSide ? { type: 'boot', side: bootSide } : { type: 'camera' };
+      isDragging = activeDrag.type === 'camera';
+      if (activeDrag.type === 'boot') {
+        bootState[bootSide].attached = false;
+        buildHuman();
+      }
+      canvas.style.cursor='grabbing'; lastPointerX=e.clientX; lastPointerY=e.clientY; lastMoveTime=performance.now(); velocityX=0; velocityY=0; canvas.setPointerCapture(e.pointerId);
+    }
+    function pointerMove(e){
+      if(!activeDrag) return;
+      const now=performance.now(), dx=e.clientX-lastPointerX, dy=e.clientY-lastPointerY, dt=Math.max(16,now-lastMoveTime);
+      if (activeDrag.type === 'boot') {
+        const side = activeDrag.side;
+        const move = screenVectorToWorld(dx, dy);
+        const o = bootState[side].offset;
+        o.x += move.x; o.y += move.y; o.z += move.z;
+        bootState[side].attached = false;
+        buildHuman();
+      } else {
+        const sensitivity=.0065;
+        rotationY+=dx*sensitivity; rotationX+=dy*sensitivity; velocityY=dx*sensitivity*(16/dt); velocityX=dy*sensitivity*(16/dt);
+      }
+      lastPointerX=e.clientX; lastPointerY=e.clientY; lastMoveTime=now;
+    }
+    function pointerUp(e){
+      if (activeDrag?.type === 'boot') snapBootIfClose(activeDrag.side, e);
+      activeDrag=null; isDragging=false; canvas.style.cursor='grab'; try{ canvas.releasePointerCapture(e.pointerId); }catch(_){}
+    }
+    canvas.addEventListener('wheel', e=>{ e.preventDefault(); zoomScale=Math.max(.45,Math.min(2.4,zoomScale*(e.deltaY<0?1.08:1/1.08))); resize(); }, { passive:false });
+    canvas.addEventListener('pointerdown',pointerDown); canvas.addEventListener('pointermove',pointerMove); canvas.addEventListener('pointerup',pointerUp); canvas.addEventListener('pointercancel',pointerUp); canvas.addEventListener('pointerleave',e=>{ if(isDragging) pointerUp(e); });
+    window.addEventListener('keydown', e => {
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      const key = e.key.toLowerCase();
+      if (['w','a','s','d'].includes(key)) {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkKey(key, true);
+      }
+      else if (e.key === 'ArrowUp') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(0);
+      }
+      else if (e.key === 'ArrowDown') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(Math.PI);
+      }
+      else if (e.key === 'ArrowLeft') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget - Math.PI / 12);
+      }
+      else if (e.key === 'ArrowRight') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget + Math.PI / 12);
+      }
+      else return;
+      e.preventDefault();
+    });
+    window.addEventListener('keyup', e => {
+      const key = e.key.toLowerCase();
+      if (!['w','a','s','d'].includes(key)) return;
+      setWalkKey(key, false);
+      e.preventDefault();
+    });
+    window.addEventListener('resize',resize);
+    setupMeshControls(); resize(); draw();
+  </script>
+</body>
+</html>

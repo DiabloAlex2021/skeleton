@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legs and Feet Mesh Live Preview</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --ink: #171511;
+      --muted: #70695f;
+      --line: rgba(23, 21, 17, 0.14);
+      --gold: #b48b45;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at 50% 12%, #fffaf0 0%, var(--bg) 42%, #e8dfcf 100%);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(23,21,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,21,17,.026) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    .page {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 0;
+      padding: 18px clamp(12px, 3vw, 42px);
+    }
+
+    .copy { display: none; }
+
+    .seal {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(23,21,17,.3);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle, #fffdf7, #e9dfcc);
+      box-shadow: inset 0 0 0 4px rgba(255,255,255,.55), 0 8px 30px rgba(60,48,30,.12);
+      font-weight: 700;
+      margin-bottom: 28px;
+    }
+
+    .kicker {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(44px, 7vw, 92px);
+      line-height: .9;
+      letter-spacing: -.06em;
+      font-weight: 500;
+    }
+
+    .lead {
+      max-width: 610px;
+      margin: 30px 0 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: clamp(17px, 2vw, 22px);
+      line-height: 1.55;
+      color: #332f29;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: #403a32;
+    }
+
+    .chip {
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.28);
+      backdrop-filter: blur(10px);
+    }
+
+    .stage {
+      position: relative;
+      height: min(96vh, 920px);
+      display: grid;
+      place-items: center;
+      padding-top: 0;
+      overflow: visible;
+    }
+
+    canvas {
+      width: min(92vw, 820px);
+      height: min(96vh, 920px);
+      max-width: 100%;
+      max-height: 92vh;
+      cursor: grab;
+      touch-action: none;
+      filter: drop-shadow(0 38px 74px rgba(63, 47, 24, .18));
+    }
+
+    .hint {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.34);
+      backdrop-filter: blur(10px);
+    }
+
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      .page {
+        min-height: 100vh;
+        height: auto;
+        grid-template-columns: 1fr;
+      }
+      .copy { text-align: center; }
+      .seal { margin-left: auto; margin-right: auto; }
+      .chips { justify-content: center; }
+      canvas { width: min(94vw, 680px); height: min(112vw, 860px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="copy">
+      <div class="seal">HF</div>
+      <div class="kicker">Live Foot Mesh Build</div>
+      <h1>Legs and feet anatomical mesh.</h1>
+      <p class="lead">
+        The body now uses structured hand and foot models instead of simple ellipsoids: wrist, palm, thumb, four fingers, knuckle joints, integrated anatomical back, compact hip/glute surface, visible six-pack abdominal blocks, linea alba, oblique guides, ankle ball, smaller size-10 feet, talus-under-tibia ankle mapping, calcaneus heel, ligament bridges, plantar fascia, five toes, sole contour, and metatarsal guide lines.
+      </p>
+      <div class="chips">
+        <span class="chip">Drag rotate 360°</span>
+        <span class="chip">Heel mass</span>
+        <span class="chip">Foot arch</span>
+        <span class="chip">6'11" body ratio</span>
+        <span class="chip">Size-10 foot ratio</span>
+        <span class="chip">Talus moved backward</span>
+        <span class="chip">Calcaneus heel</span>
+        <span class="chip">Ligament bridges</span>
+        <span class="chip">Plantar fascia</span>
+        <span class="chip">Five toes</span>
+        <span class="chip">Metatarsal mesh</span>
+        <span class="chip">Toe knuckles</span>
+        <span class="chip">Anatomical back</span>
+        <span class="chip">Integrated hip</span>
+        <span class="chip">Glute surface</span>
+        <span class="chip">Visible six-pack</span>
+        <span class="chip">Linea alba</span>
+        <span class="chip">Oblique guides</span>
+        <span class="chip">Palm mesh</span>
+        <span class="chip">Five fingers</span>
+        <span class="chip">Finger joints</span>
+      </div>
+    </section>
+
+    <section class="stage" aria-label="interactive human mesh feet preview">
+      <canvas id="figure"></canvas>
+      <div class="hint">Drag to inspect legs and feet</div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('figure');
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    let width = 0;
+    let height = 0;
+    let scale = 1;
+    let points = [];
+    let links = [];
+    let tick = 0;
+
+    let rotationX = -0.08;
+    let rotationY = 0.48;
+    let velocityX = 0;
+    let velocityY = 0.003;
+    let isDragging = false;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+    let lastMoveTime = 0;
+
+    function addPoint(x, y, z, part, weight = 1) {
+      points.push({ x, y, z, part, weight, jitter: Math.random() });
+      return points.length - 1;
+    }
+
+    function addLink(a, b, strength = 1) {
+      if (a >= 0 && b >= 0) links.push({ a, b, strength });
+    }
+
+    function normalize(v) {
+      const len = Math.hypot(v.x, v.y, v.z) || 1;
+      return { x: v.x / len, y: v.y / len, z: v.z / len };
+    }
+
+    function cross(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+
+    function basisFromEndpoints(a, b) {
+      const axis = normalize({ x: b.x - a.x, y: b.y - a.y, z: b.z - a.z });
+      const helper = Math.abs(axis.y) < .95 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+      const side = normalize(cross(axis, helper));
+      const forward = normalize(cross(side, axis));
+      return { axis, side, forward };
+    }
+
+    function buildEllipsoid(cx, cy, cz, rx, ry, rz, latSteps, lonSteps, part) {
+      const grid = [];
+      for (let i = 0; i <= latSteps; i++) {
+        const v = -Math.PI / 2 + (Math.PI * i / latSteps);
+        const row = [];
+        const ringScale = Math.cos(v);
+        for (let j = 0; j < lonSteps; j++) {
+          const u = Math.PI * 2 * j / lonSteps;
+          const x = cx + rx * ringScale * Math.sin(u);
+          const y = cy + ry * Math.sin(v);
+          const z = cz + rz * ringScale * Math.cos(u);
+          row.push(addPoint(x, y, z, part, 1));
+        }
+        grid.push(row);
+      }
+      for (let i = 0; i <= latSteps; i++) {
+        for (let j = 0; j < lonSteps; j++) {
+          const here = grid[i][j];
+          const right = grid[i][(j + 1) % lonSteps];
+          const down = i < latSteps ? grid[i + 1][j] : -1;
+          addLink(here, right, .78);
+          if (down >= 0) addLink(here, down, .78);
+        }
+      }
+      return grid;
+    }
+
+    function buildTaperedTube(a, b, rA, rB, ringSteps, radialSteps, part) {
+      const basis = basisFromEndpoints(a, b);
+      const grid = [];
+      for (let i = 0; i <= ringSteps; i++) {
+        const t = i / ringSteps;
+        const radius = rA + (rB - rA) * t;
+        const center = {
+          x: a.x + (b.x - a.x) * t,
+          y: a.y + (b.y - a.y) * t,
+          z: a.z + (b.z - a.z) * t
+        };
+        const row = [];
+        for (let j = 0; j < radialSteps; j++) {
+          const angle = Math.PI * 2 * j / radialSteps;
+          const x = center.x + Math.cos(angle) * basis.side.x * radius + Math.sin(angle) * basis.forward.x * radius;
+          const y = center.y + Math.cos(angle) * basis.side.y * radius + Math.sin(angle) * basis.forward.y * radius;
+          const z = center.z + Math.cos(angle) * basis.side.z * radius + Math.sin(angle) * basis.forward.z * radius;
+          row.push(addPoint(x, y, z, part, .96));
+        }
+        grid.push(row);
+      }
+      for (let i = 0; i <= ringSteps; i++) {
+        for (let j = 0; j < radialSteps; j++) {
+          addLink(grid[i][j], grid[i][(j + 1) % radialSteps], .72);
+          if (i < ringSteps) addLink(grid[i][j], grid[i + 1][j], .8);
+        }
+      }
+      return grid;
+    }
+
+    function connectGridToGrid(gridA, gridB, stepA = 2, stepB = 2, strength = .55) {
+      for (let i = 0; i < Math.min(gridA.length, gridB.length); i += stepA) {
+        const rowA = gridA[i];
+        const rowB = gridB[Math.min(gridB.length - 1, Math.floor(i * gridB.length / gridA.length))];
+        for (let j = 0; j < Math.min(rowA.length, rowB.length); j += stepB) {
+          addLink(rowA[j], rowB[j % rowB.length], strength);
+        }
+      }
+    }
+
+    function bonePoint(x, y, z, weight = 1.05) {
+      return addPoint(x, y, z, 'bone', weight);
+    }
+
+    function buildFoot(side, ankleX, ankleY, ankleZ) {
+      const sign = side === 'left' ? -1 : 1;
+      // Anatomical ankle-foot map:
+      // tibia/fibula stay vertical above the talus; calcaneus is behind and below;
+      // plantar fascia follows the sole; metatarsals extend forward from the midfoot.
+      const footScale = 0.72;
+      const ankleBack = -0.125;
+      const footBack = -0.145;
+      const talusZ = ankleZ + ankleBack;
+      const footZ = ankleZ + footBack;
+
+      // 1. Main ankle joint: talus/socket sits under tibia/fibula, not in front of the shin.
+      // Compact ankle socket: sits between the blue shin collar and yellow foot, not mixed into the foot surface.
+      const ankle = buildEllipsoid(ankleX, ankleY - .085, talusZ, .092, .082, .092, 7, 14, 'ankle');
+
+      // 2. Heel bone / calcaneus: large block behind and below the talus.
+      const heel = buildEllipsoid(ankleX, ankleY + .105, footZ - .095 * footScale, .158 * footScale, .100 * footScale, .145 * footScale, 7, 16, 'heel');
+
+      // 3. Midfoot/arch and forefoot: connected forward from talus/calcaneus, not from the shin.
+      const arch = buildTaperedTube(
+        { x: ankleX, y: ankleY + .075, z: footZ + .075 },
+        { x: ankleX + sign * .012, y: ankleY + .135, z: footZ + .335 * footScale },
+        .122 * footScale, .102 * footScale, 8, 14, 'foot'
+      );
+      const forefoot = buildEllipsoid(ankleX + sign * .014, ankleY + .170, footZ + .488 * footScale, .202 * footScale, .074 * footScale, .158 * footScale, 6, 18, 'forefoot');
+
+      connectGridToGrid(ankle, heel, 1, 2, .72);
+      connectGridToGrid(ankle, arch, 1, 2, .72);
+      connectGridToGrid(heel, arch, 1, 2, .66);
+      connectGridToGrid(arch, forefoot, 1, 2, .72);
+
+      // Bone landmarks: tibia/fibula descend vertically into talus.
+      const tibiaLower = bonePoint(ankleX - sign * .030, ankleY - .245, talusZ + .022, .78);
+      const fibulaLower = bonePoint(ankleX + sign * .095, ankleY - .215, talusZ - .024, .70);
+      const talusBone = bonePoint(ankleX, ankleY - .035, talusZ + .012, .92);
+      const calcaneusBack = bonePoint(ankleX, ankleY + .105, footZ - .160 * footScale, .78);
+      const calcaneusBottom = bonePoint(ankleX, ankleY + .215, footZ - .038 * footScale, .66);
+      const navicularMidfoot = bonePoint(ankleX + sign * .012, ankleY + .115, footZ + .260 * footScale, .72);
+      const metatarsalHead = bonePoint(ankleX + sign * .014, ankleY + .170, footZ + .470 * footScale, .80);
+
+      addLink(tibiaLower, talusBone, .86);
+      addLink(fibulaLower, talusBone, .74);
+      addLink(talusBone, calcaneusBack, .78);
+      addLink(calcaneusBack, calcaneusBottom, .68);
+      addLink(talusBone, navicularMidfoot, .82);
+      addLink(calcaneusBottom, navicularMidfoot, .52);
+      addLink(navicularMidfoot, metatarsalHead, .84);
+
+      // Ligament-style guide bridges matching the reference image.
+      const anteriorInferiorTibFib = bonePoint(ankleX + sign * .055, ankleY - .112, talusZ + .068, .44);
+      const anteriorTalofibular = bonePoint(ankleX + sign * .082, ankleY + .010, talusZ + .110, .44);
+      const posteriorTalofibular = bonePoint(ankleX + sign * .075, ankleY - .005, talusZ - .066, .44);
+      const calcaneofibular = bonePoint(ankleX + sign * .060, ankleY + .105, footZ - .055, .44);
+
+      addLink(tibiaLower, anteriorInferiorTibFib, .42);
+      addLink(fibulaLower, anteriorInferiorTibFib, .42);
+      addLink(fibulaLower, anteriorTalofibular, .46);
+      addLink(anteriorTalofibular, talusBone, .46);
+      addLink(fibulaLower, posteriorTalofibular, .44);
+      addLink(posteriorTalofibular, talusBone, .44);
+      addLink(fibulaLower, calcaneofibular, .46);
+      addLink(calcaneofibular, calcaneusBack, .46);
+
+      // Plantar fascia / sole structure: heel pad to forefoot pad along the bottom.
+      const plantarHeel = bonePoint(ankleX, ankleY + .235, footZ - .020 * footScale, .52);
+      const plantarMid = bonePoint(ankleX + sign * .005, ankleY + .205, footZ + .250 * footScale, .46);
+      const plantarFore = bonePoint(ankleX + sign * .012, ankleY + .215, footZ + .555 * footScale, .52);
+      addLink(calcaneusBottom, plantarHeel, .50);
+      addLink(plantarHeel, plantarMid, .46);
+      addLink(plantarMid, plantarFore, .48);
+      addLink(plantarFore, metatarsalHead, .52);
+
+      const toeOffsets = [-.145, -.065, .012, .085, .150].map(v => v * sign * footScale);
+      const toeLengths = [.235, .214, .192, .168, .145].map(v => v * footScale);
+      const toeWidths = [.064, .052, .048, .041, .036].map(v => v * footScale);
+      const toeBaseBones = [];
+
+      for (let i = 0; i < 5; i++) {
+        const baseX = ankleX + toeOffsets[i];
+        const baseY = ankleY + .176 + Math.abs(i - 2) * .004;
+        const baseZ = footZ + .575 * footScale - i * .004;
+        const tipZ = baseZ + toeLengths[i];
+        const toe = buildTaperedTube(
+          { x: baseX, y: baseY, z: baseZ },
+          { x: baseX + sign * (i - 2) * .008, y: baseY + .014, z: tipZ },
+          toeWidths[i], toeWidths[i] * .60, 4, 10, 'toe'
+        );
+        const joint = buildEllipsoid(baseX, baseY, baseZ + .024, toeWidths[i] * .86, toeWidths[i] * .58, toeWidths[i] * .82, 4, 10, 'toeJoint');
+        const tip = buildEllipsoid(baseX + sign * (i - 2) * .008, baseY + .014, tipZ + .016, toeWidths[i] * .54, toeWidths[i] * .40, toeWidths[i] * .52, 4, 10, 'toeTip');
+
+        connectGridToGrid(forefoot, joint, 2, 2, .46);
+        connectGridToGrid(joint, toe, 1, 2, .64);
+        connectGridToGrid(toe, tip, 1, 2, .60);
+
+        const metatarsalBase = bonePoint(ankleX + toeOffsets[i] * .34, ankleY + .140, footZ + .395 * footScale, .46);
+        const toeBaseBone = bonePoint(baseX, baseY + .015, baseZ + .008, .60);
+        const toeTipBone = bonePoint(baseX + sign * (i - 2) * .008, baseY + .018, tipZ + .010, .56);
+        toeBaseBones.push(toeBaseBone);
+        addLink(navicularMidfoot, metatarsalBase, .48);
+        addLink(metatarsalBase, toeBaseBone, .62);
+        addLink(toeBaseBone, toeTipBone, .64);
+      }
+
+      for (let i = 0; i < toeBaseBones.length - 1; i++) {
+        addLink(toeBaseBones[i], toeBaseBones[i + 1], .52);
+      }
+
+      return { ankle, heel, arch, forefoot };
+    }
+
+    function buildHand(side, wristX, wristY, wristZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const palm = buildEllipsoid(wristX + sign * .028, wristY + .150, wristZ + .030, .145, .180, .095, 7, 16, 'palm');
+
+      connectGridToGrid(wrist, palm, 1, 2, .68);
+
+      const wristBone = bonePoint(wristX, wristY, wristZ + .030, .70);
+      const palmCenter = bonePoint(wristX + sign * .025, wristY + .140, wristZ + .070, .72);
+      const palmTop = bonePoint(wristX + sign * .025, wristY + .270, wristZ + .072, .66);
+      addLink(wristBone, palmCenter, .76);
+      addLink(palmCenter, palmTop, .72);
+
+      // Four fingers extend from the palm with visible base knuckles, middle joints, tips, and metacarpal guide lines.
+      const fingerOffsets = [-.085, -.030, .030, .085].map(v => v * sign);
+      const fingerLengths = [.245, .285, .265, .215];
+      const fingerWidths = [.034, .038, .036, .031];
+      const fingerBaseBones = [];
+
+      for (let i = 0; i < 4; i++) {
+        const baseX = wristX + sign * .025 + fingerOffsets[i];
+        const baseY = wristY + .292;
+        const baseZ = wristZ + .060 - Math.abs(i - 1.5) * .010;
+        const midY = baseY + fingerLengths[i] * .48;
+        const tipY = baseY + fingerLengths[i];
+        const curlX = sign * (i - 1.5) * .010;
+
+        const baseKnuckle = buildEllipsoid(baseX, baseY, baseZ, fingerWidths[i] * 1.18, fingerWidths[i] * .96, fingerWidths[i] * 1.05, 4, 10, 'knuckle');
+        const fingerA = buildTaperedTube(
+          { x: baseX, y: baseY + .012, z: baseZ },
+          { x: baseX + curlX, y: midY, z: baseZ + .010 },
+          fingerWidths[i], fingerWidths[i] * .82, 4, 9, 'finger'
+        );
+        const middleJoint = buildEllipsoid(baseX + curlX, midY, baseZ + .010, fingerWidths[i] * .86, fingerWidths[i] * .80, fingerWidths[i] * .80, 4, 9, 'fingerJoint');
+        const fingerB = buildTaperedTube(
+          { x: baseX + curlX, y: midY + .010, z: baseZ + .010 },
+          { x: baseX + curlX * 1.4, y: tipY, z: baseZ + .018 },
+          fingerWidths[i] * .78, fingerWidths[i] * .50, 4, 9, 'finger'
+        );
+        const tip = buildEllipsoid(baseX + curlX * 1.4, tipY + .010, baseZ + .018, fingerWidths[i] * .54, fingerWidths[i] * .64, fingerWidths[i] * .54, 4, 9, 'fingerTip');
+
+        connectGridToGrid(palm, baseKnuckle, 2, 2, .46);
+        connectGridToGrid(baseKnuckle, fingerA, 1, 2, .66);
+        connectGridToGrid(fingerA, middleJoint, 1, 2, .62);
+        connectGridToGrid(middleJoint, fingerB, 1, 2, .62);
+        connectGridToGrid(fingerB, tip, 1, 2, .58);
+
+        const baseBone = bonePoint(baseX, baseY, baseZ + .026, .52);
+        const midBone = bonePoint(baseX + curlX, midY, baseZ + .035, .48);
+        const tipBone = bonePoint(baseX + curlX * 1.4, tipY, baseZ + .040, .44);
+        fingerBaseBones.push(baseBone);
+        addLink(palmCenter, baseBone, .58);
+        addLink(baseBone, midBone, .62);
+        addLink(midBone, tipBone, .58);
+      }
+
+      for (let i = 0; i < fingerBaseBones.length - 1; i++) {
+        addLink(fingerBaseBones[i], fingerBaseBones[i + 1], .48);
+      }
+
+      // Thumb angled away from the palm for a natural hand silhouette.
+      const thumbBaseX = wristX - sign * .110;
+      const thumbBaseY = wristY + .145;
+      const thumbBaseZ = wristZ + .055;
+      const thumbMidX = wristX - sign * .185;
+      const thumbMidY = wristY + .220;
+      const thumbTipX = wristX - sign * .230;
+      const thumbTipY = wristY + .305;
+      const thumbBase = buildEllipsoid(thumbBaseX, thumbBaseY, thumbBaseZ, .048, .052, .045, 4, 10, 'knuckle');
+      const thumbA = buildTaperedTube(
+        { x: thumbBaseX, y: thumbBaseY, z: thumbBaseZ },
+        { x: thumbMidX, y: thumbMidY, z: thumbBaseZ + .012 },
+        .044, .037, 4, 9, 'finger'
+      );
+      const thumbJoint = buildEllipsoid(thumbMidX, thumbMidY, thumbBaseZ + .012, .036, .038, .034, 4, 9, 'fingerJoint');
+      const thumbB = buildTaperedTube(
+        { x: thumbMidX, y: thumbMidY, z: thumbBaseZ + .012 },
+        { x: thumbTipX, y: thumbTipY, z: thumbBaseZ + .020 },
+        .034, .024, 4, 9, 'finger'
+      );
+      const thumbTip = buildEllipsoid(thumbTipX, thumbTipY, thumbBaseZ + .020, .030, .034, .028, 4, 9, 'fingerTip');
+
+      connectGridToGrid(palm, thumbBase, 2, 2, .52);
+      connectGridToGrid(thumbBase, thumbA, 1, 2, .66);
+      connectGridToGrid(thumbA, thumbJoint, 1, 2, .62);
+      connectGridToGrid(thumbJoint, thumbB, 1, 2, .62);
+      connectGridToGrid(thumbB, thumbTip, 1, 2, .58);
+
+      const thumbBaseBone = bonePoint(thumbBaseX, thumbBaseY, thumbBaseZ + .025, .50);
+      const thumbMidBone = bonePoint(thumbMidX, thumbMidY, thumbBaseZ + .038, .46);
+      const thumbTipBone = bonePoint(thumbTipX, thumbTipY, thumbBaseZ + .044, .42);
+      addLink(wristBone, thumbBaseBone, .58);
+      addLink(thumbBaseBone, thumbMidBone, .60);
+      addLink(thumbMidBone, thumbTipBone, .56);
+
+      return { wrist, palm };
+    }
+
+    function buildHuman() {
+      points = [];
+      links = [];
+
+      // Full-body rebuild using the corrected endpoint-ring joint logic.
+      // Shared pelvis/hip base connects both legs and the upper body.
+      const pelvisCenter = buildEllipsoid(0, .26, -.045, .42, .135, .18, 7, 22, 'pelvis');
+      const hipBar = buildTaperedTube(
+        { x: -.34, y: .34, z: -.045 },
+        { x:  .34, y: .34, z: -.045 },
+        .145, .145, 4, 18, 'pelvis'
+      );
+      connectGridToGrid(pelvisCenter, hipBar, 1, 2, .72);
+
+      // Upper body: waist -> abdomen -> chest -> neck -> head.
+      const waist = buildEllipsoid(0, .02, -.030, .34, .18, .22, 8, 22, 'waist');
+      const abdomen = buildEllipsoid(0, -.38, -.010, .39, .42, .26, 12, 24, 'torso');
+      const chest = buildEllipsoid(0, -.92, -.035, .56, .48, .34, 13, 28, 'torso');
+      const neck = buildTaperedTube(
+        { x: 0, y: -1.36, z: -.018 },
+        { x: 0, y: -1.58, z: -.010 },
+        .150, .118, 4, 14, 'neck'
+      );
+      const head = buildEllipsoid(0, -1.96, 0, .30, .36, .29, 11, 20, 'head');
+
+      connectGridToGrid(pelvisCenter, waist, 1, 2, .66);
+      connectGridToGrid(waist, abdomen, 1, 2, .66);
+      connectGridToGrid(abdomen, chest, 1, 3, .66);
+      connectGridToGrid(chest, neck, 2, 2, .62);
+      connectGridToGrid(neck, head, 1, 3, .48);
+
+      // Shoulder sockets and arms use the same endpoint rule: shoulder ball -> upper arm -> elbow -> forearm -> hand.
+      const lShoulder = buildEllipsoid(-.56, -1.16, -.020, .17, .19, .17, 7, 16, 'shoulder');
+      const rShoulder = buildEllipsoid(.56, -1.16, -.020, .17, .19, .17, 7, 16, 'shoulder');
+      connectGridToGrid(chest, lShoulder, 2, 3, .58);
+      connectGridToGrid(chest, rShoulder, 2, 3, .58);
+
+      const lUpperArm = buildTaperedTube({ x: -.66, y: -1.06, z: .02 }, { x: -.74, y: -.50, z: .065 }, .128, .108, 10, 14, 'arm');
+      const lElbow = buildEllipsoid(-.74, -.43, .065, .110, .110, .110, 7, 14, 'elbow');
+      const lForearm = buildTaperedTube({ x: -.74, y: -.36, z: .065 }, { x: -.58, y: .34, z: .12 }, .100, .078, 11, 12, 'arm');
+      const lHand = buildHand('left', -.58, .34, .12);
+
+      const rUpperArm = buildTaperedTube({ x: .66, y: -1.06, z: -.04 }, { x: .74, y: -.50, z: -.075 }, .128, .108, 10, 14, 'arm');
+      const rElbow = buildEllipsoid(.74, -.43, -.075, .110, .110, .110, 7, 14, 'elbow');
+      const rForearm = buildTaperedTube({ x: .74, y: -.36, z: -.075 }, { x: .58, y: .34, z: -.12 }, .100, .078, 11, 12, 'arm');
+      const rHand = buildHand('right', .58, .34, -.12);
+
+      connectGridToGrid(lShoulder, lUpperArm, 1, 2, .74);
+      connectGridToGrid(lUpperArm, lElbow, 1, 2, .76);
+      connectGridToGrid(lElbow, lForearm, 1, 2, .76);
+      connectGridToGrid(lForearm, lHand.wrist, 1, 2, .56);
+      connectGridToGrid(rShoulder, rUpperArm, 1, 2, .74);
+      connectGridToGrid(rUpperArm, rElbow, 1, 2, .76);
+      connectGridToGrid(rElbow, rForearm, 1, 2, .76);
+      connectGridToGrid(rForearm, rHand.wrist, 1, 2, .56);
+
+      // Centerline spine / torso guide.
+      const spine = [];
+      for (let i = 0; i < 14; i++) {
+        const t = i / 13;
+        spine.push(addPoint(0, .18 - t * 1.52, -.33, 'spine', 1.05));
+        if (i > 0) addLink(spine[i - 1], spine[i], .88);
+      }
+
+      // Mirrored corrected leg sides.
+      function buildCorrectedSide(side) {
+        const sign = side === 'left' ? -1 : 1;
+        const hipX = sign * .30;
+        const thighTopX = sign * .24;
+        const kneeX = sign * .31;
+        const ankleX = sign * .28;
+
+        const hipBall = buildEllipsoid(hipX, .38, -.055, .145, .130, .130, 7, 14, 'hipSurface');
+        connectGridToGrid(hipBar, hipBall, 1, 2, .62);
+        connectGridToGrid(pelvisCenter, hipBall, 1, 2, .52);
+
+        const thigh = buildTaperedTube(
+          { x: thighTopX, y: .42, z: -.045 },
+          { x: kneeX, y: 1.34, z: -.05 },
+          .18, .14, 14, 14, 'leg'
+        );
+        const knee = buildEllipsoid(kneeX, 1.42, -.05, .155, .155, .155, 8, 16, 'knee');
+        const shin = buildTaperedTube(
+          { x: kneeX, y: 1.455, z: -.050 },
+          { x: ankleX, y: 2.295, z: -.020 },
+          .155, .104, 14, 14, 'calfMesh'
+        );
+        const ankleCollar = buildTaperedTube(
+          { x: ankleX, y: 2.245, z: -.020 },
+          { x: ankleX, y: 2.315, z: -.020 },
+          .104, .096, 3, 14, 'calfMesh'
+        );
+        const foot = buildFoot(side, ankleX, 2.44, .10);
+
+        connectGridToGrid(hipBall, thigh, 1, 3, .46);
+        connectGridToGrid(thigh, knee, 2, 2, .76);
+        connectGridToGrid(knee, shin, 2, 2, .76);
+        connectGridToGrid(shin, ankleCollar, 1, 1, .78);
+        connectGridToGrid(ankleCollar, foot.ankle, 1, 2, .30);
+        connectGridToGrid(foot.ankle, foot.heel, 2, 2, .30);
+        connectGridToGrid(foot.ankle, foot.arch, 2, 2, .38);
+
+        const hipBone = bonePoint(thighTopX, .42, .08, .82);
+        const kneeBone = bonePoint(kneeX, 1.42, .04, .82);
+        const ankleBone = bonePoint(ankleX, 2.365, .005, .78);
+        addLink(hipBone, kneeBone, .82);
+        addLink(kneeBone, ankleBone, .82);
+      }
+
+      buildCorrectedSide('left');
+      buildCorrectedSide('right');
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      scale = Math.min(width * .245, height * .128);
+      buildHuman();
+    }
+
+    function rotatePoint(p) {
+      const cx = Math.cos(rotationX), sx = Math.sin(rotationX);
+      const cy = Math.cos(rotationY), sy = Math.sin(rotationY);
+      let x = p.x * cy + p.z * sy;
+      let z = -p.x * sy + p.z * cy;
+      let y = p.y;
+      const y2 = y * cx - z * sx;
+      const z2 = y * sx + z * cx;
+      return { x, y: y2, z: z2 };
+    }
+
+    function smoothstep(edge0, edge1, x) {
+      const v = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+      return v * v * (3 - 2 * v);
+    }
+
+    function projectPoint(p) {
+      const r = rotatePoint(p);
+      const camera = 5.2;
+      const perspective = camera / (camera - r.z);
+      return {
+        ...p,
+        rx: r.x,
+        ry: r.y,
+        rz: r.z,
+        perspective,
+        sx: r.x * scale * perspective,
+        sy: r.y * scale * perspective,
+        visible: camera - r.z > .5
+      };
+    }
+
+    function partInk(part) {      if (part === 'bone') return '#8b6a2f';
+      if (part === 'abs') return '#111111';
+      if (part === 'head') return '#111111';
+      if (part === 'torso') return '#171511';
+      if (part === 'pelvis') return '#26231d';
+      if (part === 'backSurface' || part === 'hipSurface') return '#26231d';
+      if (part === 'calfMesh') return '#1f6fff';
+      if (part === 'knee' || part === 'elbow') return '#15120d';
+      if (part === 'ankle') return '#d31616';
+      if (part === 'heel' || part === 'forefoot' || part === 'toe' || part === 'toeJoint' || part === 'toeTip' || part === 'foot') return '#e7b900';
+      if (part === 'wrist' || part === 'palm' || part === 'knuckle' || part === 'finger' || part === 'fingerJoint' || part === 'fingerTip') return '#111111';
+      return '#37322b';
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+
+      if (!isDragging) {
+        rotationY += velocityY;
+        rotationX += velocityX;
+        velocityX *= 0.965;
+        velocityY = velocityY * 0.985 + 0.003 * 0.015;
+      }
+
+      rotationX = Math.max(-Math.PI / 2 + 0.08, Math.min(Math.PI / 2 - 0.08, rotationX));
+      tick += 0.01;
+
+      const centerX = width / 2;
+      const centerY = height / 2 - scale * .10;
+      const projected = points.map(projectPoint);
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+
+      const aura = ctx.createRadialGradient(0, -scale * .5, scale * .2, 0, 0, scale * 2.3);
+      aura.addColorStop(0, 'rgba(255,255,255,.42)');
+      aura.addColorStop(.55, 'rgba(255,255,255,.12)');
+      aura.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(0, 0, scale * 2.35, 0, Math.PI * 2);
+      ctx.fill();
+
+
+      for (const link of links) {
+        const a = projected[link.a];
+        const b = projected[link.b];
+        if (!a || !b || !a.visible || !b.visible) continue;
+        const avgZ = (a.rz + b.rz) / 2;
+        const depth = smoothstep(-1.8, 1.3, avgZ);
+        const pulse = .88 + .12 * Math.sin(tick * 3 + link.a * .13);
+        ctx.globalAlpha = Math.min(.40, link.strength * (0.18 + 0.62 * depth) * pulse);
+        ctx.strokeStyle = (a.part === 'bone' || b.part === 'bone') ? 'rgba(139,106,47,.82)' : (a.part === 'ankle' && b.part === 'ankle' ? 'rgba(211,22,22,.92)' : (a.part === 'heel' || a.part === 'forefoot' || a.part === 'toe' || a.part === 'toeJoint' || a.part === 'toeTip' || a.part === 'foot' || b.part === 'heel' || b.part === 'forefoot' || b.part === 'toe' || b.part === 'toeJoint' || b.part === 'toeTip' || b.part === 'foot' ? 'rgba(231,185,0,.90)' : (a.part === 'calfMesh' || b.part === 'calfMesh' ? 'rgba(31,111,255,.88)' : 'rgba(23,21,17,.74)')));
+        ctx.lineWidth = Math.max(.35, scale / 320) * (.5 + link.strength * .55) * ((a.perspective + b.perspective) / 2);
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.lineTo(b.sx, b.sy);
+        ctx.stroke();
+      }
+
+      const ordered = projected.filter(p => p.visible).sort((a, b) => a.rz - b.rz);
+      for (const p of ordered) {
+        const depth = smoothstep(-1.75, 1.35, p.rz);
+        const scan = .93 + .07 * Math.sin(tick * 7 + p.ry * 14 + p.jitter * 8);
+        const footParts = ['ankle','heel','forefoot','toe','toeJoint','toeTip','foot'];
+        const handParts = ['wrist','palm','knuckle','finger','fingerJoint','fingerTip'];
+        const footBoost = footParts.includes(p.part) ? 1.03 : (handParts.includes(p.part) ? 1.18 : 1);
+        const size = Math.max(.65, scale / 138) * p.weight * p.perspective * (.82 + .36 * depth) * footBoost;
+        ctx.globalAlpha = Math.max(.10, Math.min(.94, (.22 + .78 * depth) * scan));
+        ctx.fillStyle = partInk(p.part);
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, size, 0, Math.PI * 2);
+        ctx.fill();
+        if (depth > .62) {
+          ctx.globalAlpha = .16 * depth;
+          ctx.fillStyle = '#fffaf0';
+          ctx.beginPath();
+          ctx.arc(p.sx - size * .18, p.sy - size * .18, size * .34, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.globalAlpha = .16;
+      ctx.strokeStyle = 'rgba(23,21,17,.55)';
+      ctx.lineWidth = .9;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, scale * 1.36, scale * 3.08, Math.sin(rotationY) * .08, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+      requestAnimationFrame(draw);
+    }
+
+    function pointerDown(event) {
+      isDragging = true;
+      canvas.style.cursor = 'grabbing';
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      lastMoveTime = performance.now();
+      velocityX = 0;
+      velocityY = 0;
+      canvas.setPointerCapture(event.pointerId);
+    }
+
+    function pointerMove(event) {
+      if (!isDragging) return;
+      const now = performance.now();
+      const dx = event.clientX - lastPointerX;
+      const dy = event.clientY - lastPointerY;
+      const dt = Math.max(16, now - lastMoveTime);
+      const sensitivity = 0.0065;
+      rotationY += dx * sensitivity;
+      rotationX += dy * sensitivity;
+      velocityY = dx * sensitivity * (16 / dt);
+      velocityX = dy * sensitivity * (16 / dt);
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      lastMoveTime = now;
+    }
+
+    function pointerUp(event) {
+      isDragging = false;
+      canvas.style.cursor = 'grab';
+      try { canvas.releasePointerCapture(event.pointerId); } catch (_) {}
+    }
+
+    canvas.addEventListener('pointerdown', pointerDown);
+    canvas.addEventListener('pointermove', pointerMove);
+    canvas.addEventListener('pointerup', pointerUp);
+    canvas.addEventListener('pointercancel', pointerUp);
+    canvas.addEventListener('pointerleave', event => { if (isDragging) pointerUp(event); });
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+  </script>
+</body>
+</html>
