@@ -11,6 +11,21 @@
       --muted: #70695f;
       --line: rgba(23, 21, 17, 0.14);
       --gold: #b48b45;
+      --panel: rgba(255,255,255,.46);
+      --button: rgba(255,255,255,.76);
+      --button-active: #171511;
+      --button-active-ink: #fffaf0;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #1b1c1e;
+      --ink: #e2e5e6;
+      --muted: #aeb3b5;
+      --line: rgba(226, 229, 230, 0.18);
+      --panel: rgba(31,33,35,.82);
+      --button: rgba(226,229,230,.10);
+      --button-active: #d7dbdd;
+      --button-active-ink: #191a1c;
     }
 
     * { box-sizing: border-box; }
@@ -34,6 +49,16 @@
         linear-gradient(90deg, rgba(23,21,17,.026) 1px, transparent 1px);
       background-size: 34px 34px;
       mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    :root[data-theme="dark"] body {
+      background: radial-gradient(circle at 50% 12%, #303236 0%, var(--bg) 46%, #101113 100%);
+    }
+
+    :root[data-theme="dark"] body::before {
+      background-image:
+        linear-gradient(rgba(226,229,230,.042) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(226,229,230,.032) 1px, transparent 1px);
     }
 
     .page {
@@ -67,11 +92,50 @@
       filter: drop-shadow(0 38px 74px rgba(63, 47, 24, .18));
     }
 
+    :root[data-theme="dark"] canvas {
+      filter: drop-shadow(0 38px 74px rgba(0, 0, 0, .34));
+    }
+
+    .theme-switcher {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      z-index: 7;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 24px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .theme-mode-btn {
+      min-width: 62px;
+      height: 30px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .theme-mode-btn.active {
+      background: var(--button-active);
+      color: var(--button-active-ink);
+    }
+
     .camera-readout {
       position: absolute;
       right: 20px;
       top: 20px;
       z-index: 6;
+      display: none;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 12px;
       font-weight: 700;
@@ -90,6 +154,7 @@
       position: absolute;
       right: 20px;
       bottom: 20px;
+      display: none;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 12px;
       color: var(--muted);
@@ -112,7 +177,7 @@
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: rgba(255,255,255,.46);
+      background: var(--panel);
       backdrop-filter: blur(12px);
       box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -124,23 +189,23 @@
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
-      color: #171511;
+      color: var(--ink);
     }
 
     .view-btn {
       height: 30px;
       border: 1px solid rgba(23,21,17,.22);
       border-radius: 8px;
-      background: rgba(255,255,255,.76);
-      color: #171511;
+      background: var(--button);
+      color: var(--ink);
       cursor: pointer;
       font-size: 12px;
       font-weight: 800;
     }
 
     .view-btn.active {
-      background: #171511;
-      color: #fffaf0;
+      background: var(--button-active);
+      color: var(--button-active-ink);
     }
 
     .direction-console {
@@ -148,13 +213,13 @@
       right: 20px;
       bottom: 72px;
       z-index: 6;
-      display: grid;
+      display: none;
       grid-template-columns: repeat(3, 38px);
       gap: 7px;
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: rgba(255,255,255,.46);
+      background: var(--panel);
       backdrop-filter: blur(12px);
       box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -171,7 +236,7 @@
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
-      color: #171511;
+      color: var(--ink);
     }
 
     .direction-readout {
@@ -188,16 +253,16 @@
       height: 34px;
       border: 1px solid rgba(23,21,17,.22);
       border-radius: 8px;
-      background: rgba(255,255,255,.76);
-      color: #171511;
+      background: var(--button);
+      color: var(--ink);
       cursor: pointer;
       font-size: 13px;
       font-weight: 800;
     }
 
     .dir-btn.active {
-      background: #171511;
-      color: #fffaf0;
+      background: var(--button-active);
+      color: var(--button-active-ink);
     }
 
     .dir-forward,
@@ -220,8 +285,8 @@
       height: 30px;
       border: 1px solid rgba(23,21,17,.22);
       border-radius: 8px;
-      background: rgba(255,255,255,.76);
-      color: #171511;
+      background: var(--button);
+      color: var(--ink);
       cursor: pointer;
       font-size: 12px;
       font-weight: 800;
@@ -241,7 +306,7 @@
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 18px;
-      background: rgba(255,255,255,.46);
+      background: var(--panel);
       backdrop-filter: blur(12px);
       box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -253,7 +318,7 @@
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
-      color: #171511;
+      color: var(--ink);
       margin-bottom: 2px;
     }
 
@@ -262,8 +327,8 @@
       height: 30px;
       border: 1px solid rgba(23,21,17,.22);
       border-radius: 999px;
-      background: #171511;
-      color: #fffaf0;
+      background: var(--button-active);
+      color: var(--button-active-ink);
       cursor: pointer;
       font-size: 12px;
       font-weight: 700;
@@ -295,17 +360,28 @@
 
     .zoom-title { margin-top: 6px; }
 
-    .zoom-btn { background: rgba(255,255,255,.70); color: #171511; }
+    .zoom-btn { background: var(--button); color: var(--ink); }
     .zoom-btn:active { transform: scale(.97); }
     #runToggle.active,
     #autoMovesToggle.active,
     #spinToggle.active,
-    #moonwalkToggle.active { background: #171511; color: #fffaf0; }
+    #crouchToggle.active,
+    #squatToggle.active,
+    #moonwalkToggle.active { background: var(--button-active); color: var(--button-active-ink); }
+
+    :root[data-theme="dark"] .theme-switcher,
+    :root[data-theme="dark"] .view-console,
+    :root[data-theme="dark"] .direction-console,
+    :root[data-theme="dark"] .control-panel {
+      box-shadow: 0 12px 30px rgba(0,0,0,.30);
+    }
 
     @media (max-width: 900px) {
       html, body { overflow: auto; }
       .page { min-height: 100vh; height: auto; grid-template-columns: 1fr; }
       canvas { width: min(94vw, 680px); height: min(112vw, 860px); }
+      .theme-switcher { right: 0; top: 10px; }
+      .theme-mode-btn { min-width: 52px; }
       .view-console { right: 10px; bottom: 304px; }
       .direction-console { right: 10px; bottom: 64px; }
     }
@@ -315,6 +391,10 @@
   <main class="page">
     <section class="stage" aria-label="interactive human mesh feet preview">
       <canvas id="figure"></canvas>
+      <div class="theme-switcher" role="group" aria-label="display mode">
+        <button class="theme-mode-btn active" id="themeBright" type="button" aria-pressed="true">Bright</button>
+        <button class="theme-mode-btn" id="themeDark" type="button" aria-pressed="false">Dark</button>
+      </div>
       <div class="control-panel" aria-label="mesh color controls">
         <div class="panel-title">Mesh Color</div>
         <button class="toggle" id="toggleAllColors" type="button">All Off</button>
@@ -349,6 +429,8 @@
         <button class="toggle zoom-btn" id="jumpAction" type="button">Jump</button>
         <button class="toggle zoom-btn" id="moonwalkToggle" type="button">Moonwalk</button>
         <button class="toggle zoom-btn" id="spinToggle" type="button">Spin</button>
+        <button class="toggle zoom-btn" id="crouchToggle" type="button">Crouch</button>
+        <button class="toggle zoom-btn" id="squatToggle" type="button">Squat</button>
         <button class="toggle zoom-btn" id="autoMovesToggle" type="button">Auto Moves</button>
       </div>
       <div class="camera-readout" id="cameraReadout">Camera X: 0.58 | Y: -0.47 | Zoom: 1.00</div>
@@ -383,7 +465,11 @@
 
     let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     let width = 0, height = 0, scale = 1;
-    let points = [], links = [], faces = [], tick = 0;
+    let points = [], links = [], faces = [], faceSocketLoops = [], faceMouthPaths = [], tick = 0;
+    let displayTheme = 'bright';
+    const DARK_FIGURE_INK = '#71767a';
+    const DARK_FIGURE_HIGHLIGHT = '#7d8285';
+    const DARK_FIGURE_SHADOW = '#62676a';
     const INITIAL_ROTATION_X = 0.58;
     const INITIAL_ROTATION_Y = -0.47;
     const CAMERA_VIEWS = {
@@ -397,6 +483,8 @@
     let zoomScale = 1, runMotion = false, runTime = 0, runBlend = 0;
     let moonwalkMotion = false, moonwalkBlend = 0;
     let spinMotion = false, spinBlend = 0, spinAngle = 0;
+    let crouchMotion = false, crouchBlend = 0;
+    let squatMotion = false, squatBlend = 0;
     let jumpActive = false, jumpTime = 1;
     let walkHeading = 0, walkHeadingTarget = 0, walkMoveBlend = 0;
     let walkPosition = { x: 0, z: 0 }, walkVelocity = { x: 0, z: 0 };
@@ -408,6 +496,8 @@
       { label: 'Jump', kind: 'jump', duration: 72, buffer: 44 },
       { label: 'Walk D', kind: 'walk', key: 'd', duration: 105, buffer: 34 },
       { label: 'Spin', kind: 'spin', duration: 132, buffer: 42 },
+      { label: 'Crouch', kind: 'crouch', duration: 110, buffer: 38 },
+      { label: 'Squat', kind: 'squat', duration: 125, buffer: 42 },
       { label: 'Moonwalk', kind: 'moonwalk', duration: 145, buffer: 42 },
       { label: 'Walk S', kind: 'walk', key: 's', duration: 105, buffer: 34 },
       { label: 'Walk A', kind: 'walk', key: 'a', duration: 105, buffer: 34 }
@@ -445,6 +535,47 @@
       bone: { color: '#8b6a2f', colorized: false }
     };
 
+    function setDisplayTheme(theme) {
+      displayTheme = theme === 'dark' ? 'dark' : 'bright';
+      document.documentElement.dataset.theme = displayTheme === 'dark' ? 'dark' : 'light';
+      const brightButton = document.getElementById('themeBright');
+      const darkButton = document.getElementById('themeDark');
+      brightButton?.classList.toggle('active', displayTheme === 'bright');
+      darkButton?.classList.toggle('active', displayTheme === 'dark');
+      brightButton?.setAttribute('aria-pressed', String(displayTheme === 'bright'));
+      darkButton?.setAttribute('aria-pressed', String(displayTheme === 'dark'));
+    }
+
+    function deactivatePostureMotions() {
+      crouchMotion = false;
+      squatMotion = false;
+      document.getElementById('crouchToggle')?.classList.remove('active');
+      document.getElementById('squatToggle')?.classList.remove('active');
+    }
+
+    function setPostureMotion(kind) {
+      const activating = kind === 'crouch' ? !crouchMotion : !squatMotion;
+      stopAutoMovesForManual();
+      runMotion = false;
+      moonwalkMotion = false;
+      spinMotion = false;
+      jumpActive = false;
+      jumpTime = 1;
+      clearWalkKeys();
+      document.getElementById('runToggle')?.classList.remove('active');
+      document.getElementById('moonwalkToggle')?.classList.remove('active');
+      document.getElementById('spinToggle')?.classList.remove('active');
+      deactivatePostureMotions();
+      if (!activating) return;
+      if (kind === 'crouch') {
+        crouchMotion = true;
+        document.getElementById('crouchToggle')?.classList.add('active');
+      } else {
+        squatMotion = true;
+        document.getElementById('squatToggle')?.classList.add('active');
+      }
+    }
+
     function setupMeshControls() {
       const colorBindings = [
         ['head','toggleHead'], ['neck','toggleNeck'], ['torso','toggleTorso'], ['waist','toggleWaist'],
@@ -481,6 +612,8 @@
       });
 
       syncAllColorToggle();
+      document.getElementById('themeBright')?.addEventListener('click', () => setDisplayTheme('bright'));
+      document.getElementById('themeDark')?.addEventListener('click', () => setDisplayTheme('dark'));
       document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale = Math.min(2.4, zoomScale * 1.12); resize(); });
       document.getElementById('zoomOut')?.addEventListener('click', () => { zoomScale = Math.max(.45, zoomScale / 1.12); resize(); });
       document.getElementById('zoomReset')?.addEventListener('click', () => { zoomScale = 1; setCameraView('initial'); resize(); });
@@ -492,6 +625,7 @@
         stopAutoMovesForManual();
         runMotion = !runMotion;
         if (runMotion) {
+          deactivatePostureMotions();
           moonwalkMotion = false;
           document.getElementById('moonwalkToggle')?.classList.remove('active');
           spinMotion = false;
@@ -502,6 +636,7 @@
       });
       document.getElementById('jumpAction')?.addEventListener('click', () => {
         stopAutoMovesForManual();
+        deactivatePostureMotions();
         jumpActive = true;
         jumpTime = 0;
         runMotion = false;
@@ -515,6 +650,7 @@
         stopAutoMovesForManual();
         moonwalkMotion = !moonwalkMotion;
         if (moonwalkMotion) {
+          deactivatePostureMotions();
           runMotion = false;
           document.getElementById('runToggle')?.classList.remove('active');
           spinMotion = false;
@@ -527,6 +663,7 @@
         stopAutoMovesForManual();
         spinMotion = !spinMotion;
         if (spinMotion) {
+          deactivatePostureMotions();
           runMotion = false;
           moonwalkMotion = false;
           clearWalkKeys();
@@ -539,6 +676,8 @@
         }
         e.currentTarget.classList.toggle('active', spinMotion);
       });
+      document.getElementById('crouchToggle')?.addEventListener('click', () => setPostureMotion('crouch'));
+      document.getElementById('squatToggle')?.addEventListener('click', () => setPostureMotion('squat'));
       document.getElementById('autoMovesToggle')?.addEventListener('click', () => setAutoMoves(!autoMovesActive));
       bindWalkButton('walkDirForward', 'w');
       bindWalkButton('walkDirLeft', 'a');
@@ -572,6 +711,7 @@
       const start = e => {
         e.preventDefault();
         stopAutoMovesForManual();
+        deactivatePostureMotions();
         spinMotion = false;
         document.getElementById('spinToggle')?.classList.remove('active');
         setWalkKey(key, true);
@@ -701,6 +841,7 @@
       runMotion = false;
       moonwalkMotion = false;
       spinMotion = false;
+      deactivatePostureMotions();
       document.getElementById('runToggle')?.classList.remove('active');
       document.getElementById('moonwalkToggle')?.classList.remove('active');
       document.getElementById('spinToggle')?.classList.remove('active');
@@ -724,6 +865,12 @@
           spinAngle = 0;
         }
         document.getElementById('spinToggle')?.classList.add('active');
+      } else if (move.kind === 'crouch') {
+        crouchMotion = true;
+        document.getElementById('crouchToggle')?.classList.add('active');
+      } else if (move.kind === 'squat') {
+        squatMotion = true;
+        document.getElementById('squatToggle')?.classList.add('active');
       } else if (move.kind === 'jump') {
         jumpActive = true;
         jumpTime = 0;
@@ -809,11 +956,11 @@
     function meshDisplayColor(part) {
       const key = meshControlKey(part);
       if (key && meshControls[key].colorized) return meshControls[key].color;
-      if (key) return '#111111';
+      if (key) return displayTheme === 'dark' ? DARK_FIGURE_INK : '#111111';
       return '';
     }
 
-    function isHiddenPart(part) { return part === 'coveredMesh'; }
+    function isHiddenPart(part) { return part === 'coveredMesh' || part === 'faceVoid'; }
     function isBootPart(part) { return ['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part); }
 
     function addPoint(x, y, z, part, weight = 1, meta = null) {
@@ -1211,9 +1358,47 @@
         footZ: .10 + .115 * twist
       };
     }
+    function staticPostureProfile() {
+      const crouch = easeInOut(crouchBlend);
+      const squat = easeInOut(squatBlend);
+      const total = crouch + squat;
+      if (total <= .0001) {
+        return { amount: 0, crouchShare: 0, squatShare: 0, bodyY: 0, lean: 0 };
+      }
+      const crouchShare = crouch / total;
+      const squatShare = squat / total;
+      const amount = clamp01(total);
+      return {
+        amount,
+        crouchShare,
+        squatShare,
+        bodyY: amount * (.43 * crouchShare + .78 * squatShare),
+        lean: amount * (-.18 * crouchShare - .09 * squatShare)
+      };
+    }
+    function staticPostureLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const rest = restingLegPose(side);
+      const posture = staticPostureProfile();
+      const targetKneeY = 1.84 * posture.crouchShare + 2.02 * posture.squatShare;
+      const targetKneeZ = .28 * posture.crouchShare + .46 * posture.squatShare;
+      const targetKneeX = sign * (.32 * posture.crouchShare + .36 * posture.squatShare);
+      const targetAnkleX = sign * (.30 * posture.crouchShare + .34 * posture.squatShare);
+      return {
+        kneeX: lerp(rest.kneeX, targetKneeX, posture.amount),
+        ankleX: lerp(rest.ankleX, targetAnkleX, posture.amount),
+        kneeY: lerp(rest.kneeY, targetKneeY, posture.amount) - posture.bodyY,
+        shinBottomY: rest.shinBottomY - posture.bodyY,
+        ankleY: rest.ankleY - posture.bodyY,
+        kneeZ: lerp(rest.kneeZ, targetKneeZ, posture.amount),
+        ankleZ: lerp(rest.ankleZ, .015, posture.amount),
+        footZ: lerp(rest.footZ, .14, posture.amount)
+      };
+    }
     function blendedLegPose(side) {
       const rest = restingLegPose(side);
       if (jumpTime < 1) return jumpingLegPose(side);
+      if (crouchBlend > .001 || squatBlend > .001) return staticPostureLegPose(side);
       if (moonwalkBlend > .001) {
         const active = moonwalkLegPose(side);
         const pose = {};
@@ -1270,8 +1455,9 @@
     }
     function applyRunBodyPosture() {
       const j = jumpProfile();
+      const posture = staticPostureProfile();
       const forwardBlend = Math.max(runBlend, walkMoveBlend);
-      const lean = (-0.115 * easeInOut(forwardBlend)) + (0.070 * easeInOut(moonwalkBlend)) + j.lean;
+      const lean = (-0.115 * easeInOut(forwardBlend)) + (0.070 * easeInOut(moonwalkBlend)) + j.lean + posture.lean;
       const cy = .36, cz = -.045;
       const c = Math.cos(lean), s = Math.sin(lean);
       const upperParts = new Set([
@@ -1286,7 +1472,7 @@
           p.z = cz + dy*s + dz*c;
         }
       }
-      const vertical = j.bodyY;
+      const vertical = j.bodyY + posture.bodyY;
       if (Math.abs(vertical) > .001) {
         for (const p of points) p.y += vertical;
       }
@@ -1320,7 +1506,8 @@
       return { ankle, heel, arch, forefoot };
     }
 
-    function buildHand(side, wristX, wristY, wristZ) {
+    function buildHand(side, wristX, wristY, wristZ, forearmPitch = 0) {
+      const handPointStart = points.length;
       const sign = side === 'left' ? -1 : 1;
       const palmX = wristX - sign * .038;
       const palmZ = wristZ + .025;
@@ -1400,11 +1587,192 @@
       addLink(thumbBaseBone, thumbMidBone, .60);
       addLink(thumbMidBone, thumbTipBone, .56);
 
+      if (Math.abs(forearmPitch) > .001) {
+        const c = Math.cos(forearmPitch);
+        const s = Math.sin(forearmPitch);
+        for (let i = handPointStart; i < points.length; i++) {
+          const p = points[i];
+          const dy = p.y - wristY;
+          const dz = p.z - wristZ;
+          p.y = wristY + dy * c - dz * s;
+          p.z = wristZ + dy * s + dz * c;
+        }
+      }
+
       return { wrist, palm };
     }
 
+    function buildAnatomicalHead() {
+      const rows = 20;
+      const columns = 32;
+      const centerZ = .040;
+      const grid = [];
+      const gaussian = (value, center, spread) => Math.exp(-Math.pow((value - center) / spread, 2));
+      const profileFrames = [
+        { t: 0,    width: .006, depth: .008 },
+        { t: .08,  width: .205, depth: .205 },
+        { t: .20,  width: .292, depth: .272 },
+        { t: .36,  width: .318, depth: .286 },
+        { t: .50,  width: .310, depth: .292 },
+        { t: .62,  width: .296, depth: .288 },
+        { t: .74,  width: .272, depth: .268 },
+        { t: .87,  width: .225, depth: .220 },
+        { t: 1,    width: .006, depth: .010 }
+      ];
+
+      for (let rowIndex = 0; rowIndex <= rows; rowIndex++) {
+        const t = 1 - rowIndex / rows;
+        const y = -2.315 + .775 * t;
+        const profile = sampleCycle(profileFrames, t);
+        const row = [];
+        for (let column = 0; column < columns; column++) {
+          const theta = Math.PI * 2 * column / columns;
+          const angle = Math.atan2(Math.sin(theta), Math.cos(theta));
+          const front = Math.max(0, Math.cos(angle));
+          const x = profile.width * Math.sin(theta);
+
+          const brow = .026 * gaussian(t, .405, .070) * gaussian(angle, 0, .62);
+          const eyeSocket = .045 * gaussian(t, .485, .065) *
+            (gaussian(angle, -.39, .18) + gaussian(angle, .39, .18));
+          const noseBridge = .035 * gaussian(t, .525, .150) * gaussian(angle, 0, .20);
+          const noseTip = .120 * gaussian(t, .625, .075) * gaussian(angle, 0, .125);
+          const cheek = .026 * gaussian(t, .590, .095) *
+            (gaussian(angle, -.61, .20) + gaussian(angle, .61, .20));
+          const muzzle = .030 * gaussian(t, .735, .070) * gaussian(angle, 0, .34);
+          const chin = .038 * gaussian(t, .905, .080) * gaussian(angle, 0, .42);
+          const temple = .018 * gaussian(t, .475, .115) *
+            (gaussian(angle, -1.02, .26) + gaussian(angle, 1.02, .26));
+          const z = centerZ + profile.depth * Math.cos(theta) +
+            front * (brow - eyeSocket + noseBridge + noseTip + cheek + muzzle + chin - temple);
+
+          const inEyeOpening = front > .72 &&
+            Math.pow((Math.abs(x) - .112) / .072, 2) + Math.pow((y + 1.940) / .042, 2) < 1;
+          const hiddenBaseRing = rowIndex <= 1;
+          row.push(addPoint(x, y, z, hiddenBaseRing || inEyeOpening ? 'faceVoid' : 'head', 1.02));
+        }
+        grid.push(row);
+      }
+
+      for (let rowIndex = 0; rowIndex <= rows; rowIndex++) {
+        for (let column = 0; column < columns; column++) {
+          const nextColumn = (column + 1) % columns;
+          addLink(grid[rowIndex][column], grid[rowIndex][nextColumn], .64);
+          if (rowIndex >= rows) continue;
+          addLink(grid[rowIndex][column], grid[rowIndex + 1][column], .70);
+          const diagonal = (rowIndex + column) % 2 === 0 ? nextColumn : (column - 1 + columns) % columns;
+          addLink(grid[rowIndex][column], grid[rowIndex + 1][diagonal], .52);
+        }
+      }
+
+      function featurePath(coords, closed = false, strength = 1.32, weight = 1.12) {
+        const ids = coords.map(p => addPoint(p.x, p.y, p.z, 'head', weight));
+        for (let i = 0; i < ids.length - 1; i++) addLink(ids[i], ids[i + 1], strength);
+        if (closed && ids.length > 2) addLink(ids[ids.length - 1], ids[0], strength);
+        return ids;
+      }
+
+      for (const side of [-1, 1]) {
+        const eyeCenterX = side * .112;
+        const eye = [];
+        for (let i = 0; i < 16; i++) {
+          const q = Math.PI * 2 * i / 16;
+          eye.push({
+            x: eyeCenterX + .076 * Math.cos(q),
+            y: -1.940 + .038 * Math.sin(q) * (.76 + .24 * Math.abs(Math.cos(q))),
+            z: .344 - .012 * Math.abs(Math.sin(q))
+          });
+        }
+        faceSocketLoops.push(featurePath(eye, true, 1.62, 1.18));
+
+        const brow = [];
+        for (let i = 0; i < 7; i++) {
+          const u = i / 6;
+          const x = eyeCenterX + (u - .5) * .168;
+          brow.push({ x, y: -2.005 - .018 * Math.sin(Math.PI * u), z: .342 + .008 * Math.sin(Math.PI * u) });
+        }
+        featurePath(brow, false, 1.48, 1.15);
+
+        featurePath([
+          { x: side*.047, y: -1.988, z: .346 },
+          { x: side*.044, y: -1.918, z: .374 },
+          { x: side*.052, y: -1.850, z: .411 },
+          { x: side*.072, y: -1.812, z: .398 },
+          { x: side*.050, y: -1.794, z: .405 }
+        ], false, 1.38, 1.14);
+
+        const ear = [];
+        const innerEar = [];
+        for (let i = 0; i < 16; i++) {
+          const q = Math.PI * 2 * i / 16;
+          ear.push({
+            x: side * (.320 + .018 * Math.cos(q)),
+            y: -1.910 + .112 * Math.sin(q),
+            z: .040 + .064 * Math.cos(q)
+          });
+          innerEar.push({
+            x: side * (.323 + .009 * Math.cos(q)),
+            y: -1.910 + .070 * Math.sin(q),
+            z: .040 + .037 * Math.cos(q)
+          });
+        }
+        featurePath(ear, true, 1.30, 1.08);
+        featurePath(innerEar, true, 1.08, 1.05);
+      }
+
+      featurePath([
+        { x: 0, y: -2.010, z: .350 },
+        { x: 0, y: -1.948, z: .375 },
+        { x: 0, y: -1.884, z: .414 },
+        { x: 0, y: -1.826, z: .455 },
+        { x: 0, y: -1.798, z: .438 },
+        { x: 0, y: -1.773, z: .402 },
+        { x: 0, y: -1.744, z: .383 },
+        { x: 0, y: -1.718, z: .387 },
+        { x: 0, y: -1.686, z: .357 },
+        { x: 0, y: -1.620, z: .326 },
+        { x: 0, y: -1.558, z: .300 }
+      ], false, 1.62, 1.18);
+
+      featurePath([
+        { x: -.080, y: -1.797, z: .407 },
+        { x: -.048, y: -1.808, z: .425 },
+        { x: 0, y: -1.800, z: .436 },
+        { x: .048, y: -1.808, z: .425 },
+        { x: .080, y: -1.797, z: .407 }
+      ], false, 1.44, 1.14);
+
+      featurePath([
+        { x: -.040, y: -1.777, z: .397 },
+        { x: -.024, y: -1.746, z: .378 },
+        { x: 0, y: -1.734, z: .382 },
+        { x: .024, y: -1.746, z: .378 },
+        { x: .040, y: -1.777, z: .397 }
+      ], false, 1.08, 1.08);
+
+      const outerLip = [];
+      for (let i = 0; i < 20; i++) {
+        const q = Math.PI * 2 * i / 20;
+        const cornerTaper = .72 + .28 * Math.abs(Math.cos(q));
+        outerLip.push({
+          x: .152 * Math.cos(q),
+          y: -1.720 + .029 * Math.sin(q) * cornerTaper,
+          z: .371 + .009 * Math.cos(q * 2)
+        });
+      }
+      faceMouthPaths.push(featurePath(outerLip, true, 1.48, 1.16));
+      faceMouthPaths.push(featurePath([
+        { x: -.145, y: -1.718, z: .375 },
+        { x: -.075, y: -1.714, z: .382 },
+        { x: 0, y: -1.718, z: .387 },
+        { x: .075, y: -1.714, z: .382 },
+        { x: .145, y: -1.718, z: .375 }
+      ], false, 1.58, 1.18));
+
+      return grid;
+    }
+
     function buildHuman() {
-      points=[]; links=[]; faces=[];
+      points=[]; links=[]; faces=[]; faceSocketLoops=[]; faceMouthPaths=[];
       const pelvisCenter=buildEllipsoid(0,.26,-.045,.42,.135,.18,7,22,'pelvis');
       const hipBar=buildTaperedTube({x:-.34,y:.34,z:-.045},{x:.34,y:.34,z:-.045},.145,.145,4,18,'pelvis');
       connectGridToGrid(pelvisCenter,hipBar,1,2,.72);
@@ -1412,8 +1780,17 @@
       const abdomen=buildEllipsoid(0,-.38,-.010,.39,.42,.26,12,24,'torso');
       const chest=buildEllipsoid(0,-.92,-.035,.56,.48,.34,13,28,'torso');
       const neck=buildTaperedTube({x:0,y:-1.36,z:-.018},{x:0,y:-1.58,z:-.010},.150,.118,4,14,'neck');
-      const head=buildEllipsoid(0,-1.92,.045,.30,.36,.29,11,20,'head');
-      connectGridToGrid(pelvisCenter,waist,1,2,.66); connectGridToGrid(waist,abdomen,1,2,.66); connectGridToGrid(abdomen,chest,1,3,.66); connectGridToGrid(chest,neck,2,2,.62); connectGridToGrid(neck,head,1,3,.48);
+      const neckTopRing = neck[neck.length - 1];
+      const neckTopIds = new Set(neckTopRing);
+      for (const id of neckTopRing) points[id].part = 'faceVoid';
+      links = links.filter(link => !(neckTopIds.has(link.a) && neckTopIds.has(link.b)));
+      const head=buildAnatomicalHead();
+      connectGridToGrid(pelvisCenter,waist,1,2,.66); connectGridToGrid(waist,abdomen,1,2,.66); connectGridToGrid(abdomen,chest,1,3,.66); connectGridToGrid(chest,neck,2,2,.62);
+      const neckTop = neck[neck.length - 2];
+      const headBase = head[2];
+      for (let i=0;i<neckTop.length;i++) {
+        addLink(neckTop[i], headBase[Math.round(i * headBase.length / neckTop.length) % headBase.length], .72);
+      }
       const lShoulder=buildEllipsoid(-.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
       const rShoulder=buildEllipsoid(.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
       connectGridToGrid(chest,lShoulder,2,3,.58); connectGridToGrid(chest,rShoulder,2,3,.58);
@@ -1427,7 +1804,33 @@
           wrist: { x: sign*.62, y: .43, z: zBase + sign*.060 }
         };
         let pose = rest;
-        if (moonwalkBlend > .001) {
+        const posture = staticPostureProfile();
+        if (posture.amount > .001) {
+          const crouchPose = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.68, y: -.30, z: zBase + .18 },
+            forearmA: { x: sign*.66, y: -.24, z: zBase + .20 },
+            wrist: { x: sign*.54, y: .31, z: zBase + .38 }
+          };
+          const squatPose = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.64, y: -.72, z: zBase + .43 },
+            forearmA: { x: sign*.62, y: -.69, z: zBase + .49 },
+            wrist: { x: sign*.54, y: -.62, z: zBase + .91 }
+          };
+          const active = {
+            upperA: blendPoint(crouchPose.upperA, squatPose.upperA, posture.squatShare),
+            elbow: blendPoint(crouchPose.elbow, squatPose.elbow, posture.squatShare),
+            forearmA: blendPoint(crouchPose.forearmA, squatPose.forearmA, posture.squatShare),
+            wrist: blendPoint(crouchPose.wrist, squatPose.wrist, posture.squatShare)
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, posture.amount),
+            elbow: blendPoint(rest.elbow, active.elbow, posture.amount),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, posture.amount),
+            wrist: blendPoint(rest.wrist, active.wrist, posture.amount)
+          };
+        } else if (moonwalkBlend > .001) {
           const p = runPhase(side === 'left' ? 0 : .5);
           const swing = -Math.cos(Math.PI * 2 * p);
           const active = {
@@ -1497,11 +1900,13 @@
       const lUpperArm=buildTaperedTube(lArm.upperA,lArm.elbow,.128,.108,10,14,'arm');
       const lElbow=buildEllipsoid(lArm.elbow.x,lArm.elbow.y,lArm.elbow.z,.110,.110,.110,7,14,'elbow');
       const lForearm=buildTaperedTube(lArm.forearmA,lArm.wrist,.100,.078,11,12,'arm');
-      const lHand=buildHand('left',lArm.wrist.x,lArm.wrist.y,lArm.wrist.z);
+      const lHandPitch=Math.atan2(lArm.wrist.z-lArm.forearmA.z,lArm.wrist.y-lArm.forearmA.y);
+      const lHand=buildHand('left',lArm.wrist.x,lArm.wrist.y,lArm.wrist.z,lHandPitch);
       const rUpperArm=buildTaperedTube(rArm.upperA,rArm.elbow,.128,.108,10,14,'arm');
       const rElbow=buildEllipsoid(rArm.elbow.x,rArm.elbow.y,rArm.elbow.z,.110,.110,.110,7,14,'elbow');
       const rForearm=buildTaperedTube(rArm.forearmA,rArm.wrist,.100,.078,11,12,'arm');
-      const rHand=buildHand('right',rArm.wrist.x,rArm.wrist.y,rArm.wrist.z);
+      const rHandPitch=Math.atan2(rArm.wrist.z-rArm.forearmA.z,rArm.wrist.y-rArm.forearmA.y);
+      const rHand=buildHand('right',rArm.wrist.x,rArm.wrist.y,rArm.wrist.z,rHandPitch);
       connectGridToGrid(lShoulder,lUpperArm,1,2,.74); connectGridToGrid(lUpperArm,lElbow,1,2,.76); connectGridToGrid(lElbow,lForearm,1,2,.76); connectGridToGrid(lForearm,lHand.wrist,1,2,.56);
       connectGridToGrid(rShoulder,rUpperArm,1,2,.74); connectGridToGrid(rUpperArm,rElbow,1,2,.76); connectGridToGrid(rElbow,rForearm,1,2,.76); connectGridToGrid(rForearm,rHand.wrist,1,2,.56);
 
@@ -1567,6 +1972,12 @@
     function partInk(part){
       if (isHiddenPart(part)) return 'rgba(0,0,0,0)';
       const key=meshControlKey(part); if(key) return meshDisplayColor(part);
+      if(displayTheme==='dark'){
+        if(part==='cap') return DARK_FIGURE_HIGHLIGHT;
+        if(part==='head'||part==='torso'||part==='knee'||part==='elbow') return DARK_FIGURE_HIGHLIGHT;
+        if(part==='pelvis') return DARK_FIGURE_SHADOW;
+        return DARK_FIGURE_INK;
+      }
       if(part==='cap') return '#020202'; if(part==='bone') return '#8b6a2f'; if(part==='head') return '#111111'; if(part==='torso') return '#171511'; if(part==='pelvis') return '#26231d'; if(part==='knee'||part==='elbow') return '#15120d';
       return '#37322b';
     }
@@ -1574,12 +1985,12 @@
       if (isHiddenPart(a.part) || isHiddenPart(b.part)) return 'rgba(0,0,0,0)';
       const aKey=meshControlKey(a.part), bKey=meshControlKey(b.part);
       if(isBootPart(a.part)||isBootPart(b.part)) return hexToRgba(meshDisplayColor('boot'), .95);
-      if(a.part==='bone'||b.part==='bone') return 'rgba(139,106,47,.82)';
-      if(a.part==='cap'||b.part==='cap') return 'rgba(0,0,0,1)';
+      if(a.part==='bone'||b.part==='bone') return hexToRgba(meshDisplayColor('bone'), .82);
+      if(a.part==='cap'||b.part==='cap') return displayTheme==='dark' ? hexToRgba(DARK_FIGURE_HIGHLIGHT,1) : 'rgba(0,0,0,1)';
       if(aKey&&aKey===bKey) return hexToRgba(meshDisplayColor(a.part),.90);
       if(aKey&&!bKey) return hexToRgba(meshDisplayColor(a.part),.62);
       if(bKey&&!aKey) return hexToRgba(meshDisplayColor(b.part),.62);
-      return 'rgba(23,21,17,.74)';
+      return displayTheme==='dark' ? hexToRgba(DARK_FIGURE_INK,.92) : 'rgba(23,21,17,.74)';
     }
     function updateCameraReadout() {
       if (!cameraReadout) return;
@@ -1602,6 +2013,8 @@ Z: ${cz.toFixed(3)}`;
       const planeY = 2.94;
       const gridSize = 1.25;
       const step = 0.25;
+      const gridInk = displayTheme === 'dark' ? 'rgba(205,210,212,.62)' : 'rgba(23,21,17,.55)';
+      const originInk = displayTheme === 'dark' ? 'rgba(226,229,230,.88)' : 'rgba(23,21,17,.80)';
       const origin = projectPoint({ x: 0, y: planeY, z: 0, part: 'grid', weight: 1 });
 
       function screenPoint(x, y, z) {
@@ -1631,8 +2044,8 @@ Z: ${cz.toFixed(3)}`;
 
       for (let v = -gridSize; v <= gridSize + .001; v += step) {
         const major = Math.abs(v) < .001 || Math.abs((v / .5) - Math.round(v / .5)) < .001;
-        line3D({x:-gridSize,y:planeY,z:v},{x:gridSize,y:planeY,z:v},'rgba(23,21,17,.55)', major ? .9 : .55, major ? .22 : .12);
-        line3D({x:v,y:planeY,z:-gridSize},{x:v,y:planeY,z:gridSize},'rgba(23,21,17,.55)', major ? .9 : .55, major ? .22 : .12);
+        line3D({x:-gridSize,y:planeY,z:v},{x:gridSize,y:planeY,z:v},gridInk, major ? .9 : .55, major ? .22 : .12);
+        line3D({x:v,y:planeY,z:-gridSize},{x:v,y:planeY,z:gridSize},gridInk, major ? .9 : .55, major ? .22 : .12);
       }
 
       line3D({x:-gridSize,y:planeY,z:0},{x:gridSize*1.18,y:planeY,z:0},'rgba(120,40,40,.95)',2,.72);
@@ -1644,7 +2057,7 @@ Z: ${cz.toFixed(3)}`;
       label3D('Z', 0, .88, 0, 'rgba(40,120,70,.95)');
       if (origin.visible) {
         ctx.globalAlpha = .85;
-        ctx.fillStyle = 'rgba(23,21,17,.80)';
+        ctx.fillStyle = originInk;
         ctx.beginPath();
         ctx.arc(origin.sx, origin.sy, Math.max(2, scale / 42), 0, Math.PI * 2);
         ctx.fill();
@@ -1656,11 +2069,13 @@ Z: ${cz.toFixed(3)}`;
       const frameStep = lastFrameStamp ? Math.min(2.2, Math.max(.25, (now - lastFrameStamp) / 16.6667)) : 1;
       lastFrameStamp = now;
       updateCameraReadout();
-      const previousState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
+      const previousState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${crouchBlend.toFixed(4)}:${squatBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
       updateAutoMoves(frameStep);
       runBlend = runMotion ? Math.min(1, runBlend + .045 * frameStep) : Math.max(0, runBlend - .026 * frameStep);
       moonwalkBlend = moonwalkMotion ? Math.min(1, moonwalkBlend + .045 * frameStep) : Math.max(0, moonwalkBlend - .026 * frameStep);
       spinBlend = spinMotion ? Math.min(1, spinBlend + .052 * frameStep) : Math.max(0, spinBlend - .040 * frameStep);
+      crouchBlend = crouchMotion ? Math.min(1, crouchBlend + .050 * frameStep) : Math.max(0, crouchBlend - .034 * frameStep);
+      squatBlend = squatMotion ? Math.min(1, squatBlend + .043 * frameStep) : Math.max(0, squatBlend - .030 * frameStep);
       if (spinMotion) {
         spinAngle = normalizeAngle(spinAngle + .082 * frameStep);
       } else if (Math.abs(spinAngle) > .0005) {
@@ -1676,14 +2091,14 @@ Z: ${cz.toFixed(3)}`;
         jumpTime = Math.min(1, jumpTime + .020 * frameStep);
         if (jumpTime >= 1) jumpActive = false;
       }
-      const currentState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
-      if (runMotion || moonwalkMotion || spinMotion || jumpActive || gaitBlend > 0 || spinBlend > 0 || previousState !== currentState) buildHuman();
+      const currentState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${crouchBlend.toFixed(4)}:${squatBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
+      if (runMotion || moonwalkMotion || spinMotion || crouchMotion || squatMotion || jumpActive || gaitBlend > 0 || spinBlend > 0 || crouchBlend > 0 || squatBlend > 0 || previousState !== currentState) buildHuman();
       ctx.clearRect(0,0,width,height);
       if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY*=.985; }
       rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01*frameStep;
       syncCameraViewButtons();
       const projected=points.map(projectPoint); lastProjected=projected; ctx.save(); ctx.translate(width/2,height/2+scale*.06);
-      const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,'rgba(255,255,255,.42)'); aura.addColorStop(.55,'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
+      const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,displayTheme==='dark'?'rgba(226,229,230,.10)':'rgba(255,255,255,.42)'); aura.addColorStop(.55,displayTheme==='dark'?'rgba(226,229,230,.035)':'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
       drawCoordinatePlane();
       const orderedFaces=faces.map(face=>{
         const pts=face.ids.map(id=>projected[id]);
@@ -1721,7 +2136,44 @@ Z: ${cz.toFixed(3)}`;
         ctx.globalAlpha=p.part === 'cap' ? 1 : (isBootPoint ? Math.max(.42,Math.min(.98,(.38+.74*depth)*scan)) : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)));
         ctx.fillStyle=partInk(p.part); ctx.beginPath(); ctx.arc(p.sx,p.sy,size,0,Math.PI*2); ctx.fill();
       }
-      ctx.globalAlpha=.16; ctx.strokeStyle='rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
+      const faceFacingCamera = Math.cos(figureYaw() + rotationY) * Math.cos(rotationX) > .12;
+      if (faceFacingCamera) {
+        for (const loop of faceSocketLoops) {
+          const rim = loop.map(id => projected[id]).filter(p => p?.visible);
+          if (rim.length < 3) continue;
+          ctx.globalAlpha = .98;
+          ctx.fillStyle = displayTheme === 'dark' ? 'rgb(39,41,44)' : 'rgb(249,246,239)';
+          ctx.beginPath();
+          ctx.moveTo(rim[0].sx, rim[0].sy);
+          for (let i=1;i<rim.length;i++) ctx.lineTo(rim[i].sx, rim[i].sy);
+          ctx.closePath();
+          ctx.fill();
+          ctx.globalAlpha = .94;
+          ctx.strokeStyle = meshDisplayColor('head');
+          ctx.lineWidth = Math.max(1.05, scale / 120);
+          ctx.stroke();
+          ctx.fillStyle = meshDisplayColor('head');
+          const rimPointSize = Math.max(.72, scale / 165);
+          for (const p of rim) {
+            ctx.beginPath();
+            ctx.arc(p.sx, p.sy, rimPointSize, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        for (const path of faceMouthPaths) {
+          const lip = path.map(id => projected[id]).filter(p => p?.visible);
+          if (lip.length < 2) continue;
+          ctx.globalAlpha = .94;
+          ctx.strokeStyle = meshDisplayColor('head');
+          ctx.lineWidth = Math.max(1, scale / 135);
+          ctx.beginPath();
+          ctx.moveTo(lip[0].sx, lip[0].sy);
+          for (let i=1;i<lip.length;i++) ctx.lineTo(lip[i].sx, lip[i].sy);
+          if (path === faceMouthPaths[0]) ctx.closePath();
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha=.16; ctx.strokeStyle=displayTheme==='dark'?hexToRgba(DARK_FIGURE_INK,.72):'rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
       ctx.restore(); requestAnimationFrame(draw);
     }
     function canvasPoint(e) {
@@ -1789,6 +2241,9 @@ Z: ${cz.toFixed(3)}`;
     window.addEventListener('keydown', e => {
       if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
       const key = e.key.toLowerCase();
+      if (['w','a','s','d'].includes(key) || ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+        deactivatePostureMotions();
+      }
       if (['w','a','s','d'].includes(key)) {
         stopAutoMovesForManual();
         spinMotion = false;
@@ -1829,6 +2284,24 @@ Z: ${cz.toFixed(3)}`;
       e.preventDefault();
     });
     window.addEventListener('resize',resize);
+    window.render_game_to_text = () => JSON.stringify({
+      coordinateSystem: 'Figure-local X is left/right, Y increases downward, Z is depth; walk X/Z are ground displacement.',
+      theme: displayTheme,
+      camera: { rotationX, rotationY, zoom: zoomScale },
+      motion: {
+        run: runMotion,
+        jump: jumpActive,
+        moonwalk: moonwalkMotion,
+        spin: spinMotion,
+        crouch: crouchMotion,
+        squat: squatMotion,
+        crouchBlend,
+        squatBlend,
+        autoMoves: autoMovesActive
+      },
+      boots: { leftAttached: bootState.left.attached, rightAttached: bootState.right.attached }
+    });
+    setDisplayTheme('bright');
     setupMeshControls(); resize(); draw();
   </script>
 </body>
