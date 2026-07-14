@@ -38,11 +38,9 @@ Dark figure color update (2026-07-14):
 TODO:
 - None for the Dark figure color after normal/close zoom checks, Bright-mode comparison, and console verification.
 
-Anatomical face mesh update (2026-07-14):
-- Replaced the spherical head with a closed 20x32 triangulated skull/face mesh.
-- Sculpted brow, eye-socket, nose, cheek, mouth, jaw, chin, and ear geometry.
-- Added topology openings for the eyes and explicit facial landmark loops.
-- Reconnected the new chin/base ring directly to the neck.
+Face rollback (2026-07-14):
+- Removed the experimental anatomical facial mesh and its eye/mouth overlays.
+- Restored the original closed ellipsoid head and standard neck connection.
 
 TODO:
-- None for the anatomical face mesh after front, side, initial, Bright/Dark, run, and jump verification.
+- None for the face rollback after Bright/Dark and Run Motion verification.

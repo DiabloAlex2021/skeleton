@@ -960,7 +960,7 @@
       return '';
     }
 
-    function isHiddenPart(part) { return part === 'coveredMesh' || part === 'faceVoid'; }
+    function isHiddenPart(part) { return part === 'coveredMesh'; }
     function isBootPart(part) { return ['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part); }
 
     function addPoint(x, y, z, part, weight = 1, meta = null) {
@@ -1780,17 +1780,9 @@
       const abdomen=buildEllipsoid(0,-.38,-.010,.39,.42,.26,12,24,'torso');
       const chest=buildEllipsoid(0,-.92,-.035,.56,.48,.34,13,28,'torso');
       const neck=buildTaperedTube({x:0,y:-1.36,z:-.018},{x:0,y:-1.58,z:-.010},.150,.118,4,14,'neck');
-      const neckTopRing = neck[neck.length - 1];
-      const neckTopIds = new Set(neckTopRing);
-      for (const id of neckTopRing) points[id].part = 'faceVoid';
-      links = links.filter(link => !(neckTopIds.has(link.a) && neckTopIds.has(link.b)));
-      const head=buildAnatomicalHead();
+      const head=buildEllipsoid(0,-1.92,.045,.30,.36,.29,11,20,'head');
       connectGridToGrid(pelvisCenter,waist,1,2,.66); connectGridToGrid(waist,abdomen,1,2,.66); connectGridToGrid(abdomen,chest,1,3,.66); connectGridToGrid(chest,neck,2,2,.62);
-      const neckTop = neck[neck.length - 2];
-      const headBase = head[2];
-      for (let i=0;i<neckTop.length;i++) {
-        addLink(neckTop[i], headBase[Math.round(i * headBase.length / neckTop.length) % headBase.length], .72);
-      }
+      connectGridToGrid(neck,head,1,3,.58);
       const lShoulder=buildEllipsoid(-.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
       const rShoulder=buildEllipsoid(.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
       connectGridToGrid(chest,lShoulder,2,3,.58); connectGridToGrid(chest,rShoulder,2,3,.58);
@@ -2135,43 +2127,6 @@ Z: ${cz.toFixed(3)}`;
         const size=Math.max(.65,scale/138)*p.weight*p.perspective*(.82+.36*depth)*(p.part === 'cap' ? 1.28 : (isBootPoint ? 1.10 : 1));
         ctx.globalAlpha=p.part === 'cap' ? 1 : (isBootPoint ? Math.max(.42,Math.min(.98,(.38+.74*depth)*scan)) : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)));
         ctx.fillStyle=partInk(p.part); ctx.beginPath(); ctx.arc(p.sx,p.sy,size,0,Math.PI*2); ctx.fill();
-      }
-      const faceFacingCamera = Math.cos(figureYaw() + rotationY) * Math.cos(rotationX) > .12;
-      if (faceFacingCamera) {
-        for (const loop of faceSocketLoops) {
-          const rim = loop.map(id => projected[id]).filter(p => p?.visible);
-          if (rim.length < 3) continue;
-          ctx.globalAlpha = .98;
-          ctx.fillStyle = displayTheme === 'dark' ? 'rgb(39,41,44)' : 'rgb(249,246,239)';
-          ctx.beginPath();
-          ctx.moveTo(rim[0].sx, rim[0].sy);
-          for (let i=1;i<rim.length;i++) ctx.lineTo(rim[i].sx, rim[i].sy);
-          ctx.closePath();
-          ctx.fill();
-          ctx.globalAlpha = .94;
-          ctx.strokeStyle = meshDisplayColor('head');
-          ctx.lineWidth = Math.max(1.05, scale / 120);
-          ctx.stroke();
-          ctx.fillStyle = meshDisplayColor('head');
-          const rimPointSize = Math.max(.72, scale / 165);
-          for (const p of rim) {
-            ctx.beginPath();
-            ctx.arc(p.sx, p.sy, rimPointSize, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-        for (const path of faceMouthPaths) {
-          const lip = path.map(id => projected[id]).filter(p => p?.visible);
-          if (lip.length < 2) continue;
-          ctx.globalAlpha = .94;
-          ctx.strokeStyle = meshDisplayColor('head');
-          ctx.lineWidth = Math.max(1, scale / 135);
-          ctx.beginPath();
-          ctx.moveTo(lip[0].sx, lip[0].sy);
-          for (let i=1;i<lip.length;i++) ctx.lineTo(lip[i].sx, lip[i].sy);
-          if (path === faceMouthPaths[0]) ctx.closePath();
-          ctx.stroke();
-        }
       }
       ctx.globalAlpha=.16; ctx.strokeStyle=displayTheme==='dark'?hexToRgba(DARK_FIGURE_INK,.72):'rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
       ctx.restore(); requestAnimationFrame(draw);
