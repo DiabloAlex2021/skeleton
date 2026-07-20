@@ -51,3 +51,10 @@ Initial view framing update (2026-07-19):
 
 TODO:
 - None for the Initial preset after portrait framing and Front-to-Initial reset verification.
+
+Initial view angle update (2026-07-19):
+- Changed the Initial camera angle to the supplied near-level three-quarter view (X 0.005, Y -0.686 radians).
+- Matched the reference framing with a 0.84 zoom and a small downward offset.
+
+TODO:
+- None after matching the desktop render to the reference and verifying the Front-to-Initial reset with no console errors.

@@ -470,10 +470,10 @@
     const DARK_FIGURE_INK = '#71767a';
     const DARK_FIGURE_HIGHLIGHT = '#7d8285';
     const DARK_FIGURE_SHADOW = '#62676a';
-    const INITIAL_ROTATION_X = 0.58;
-    const INITIAL_ROTATION_Y = -0.47;
-    const INITIAL_ZOOM = 1.4;
-    const INITIAL_VERTICAL_OFFSET = -.121;
+    const INITIAL_ROTATION_X = 0.005;
+    const INITIAL_ROTATION_Y = -0.686;
+    const INITIAL_ZOOM = 0.84;
+    const INITIAL_VERTICAL_OFFSET = .05;
     const CAMERA_VIEWS = {
       initial: { x: INITIAL_ROTATION_X, y: INITIAL_ROTATION_Y, zoom: INITIAL_ZOOM, verticalOffset: INITIAL_VERTICAL_OFFSET, id: 'viewInitial' },
       front: { x: 0, y: 0, zoom: 1, verticalOffset: 0, id: 'viewFront' },
@@ -2247,7 +2247,7 @@ Z: ${cz.toFixed(3)}`;
     window.render_game_to_text = () => JSON.stringify({
       coordinateSystem: 'Figure-local X is left/right, Y increases downward, Z is depth; walk X/Z are ground displacement.',
       theme: displayTheme,
-      camera: { rotationX, rotationY, zoom: zoomScale },
+      camera: { rotationX, rotationY, zoom: zoomScale, verticalOffset: cameraVerticalOffset },
       motion: {
         run: runMotion,
         jump: jumpActive,
