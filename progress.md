@@ -44,3 +44,10 @@ Face rollback (2026-07-14):
 
 TODO:
 - None for the face rollback after Bright/Dark and Run Motion verification.
+
+Initial view framing update (2026-07-19):
+- Increased Initial view zoom and shifted the camera framing upward to match the supplied full-body reference.
+- Kept the existing three-quarter Initial rotation and left Front, Side, and Top presets unchanged.
+
+TODO:
+- None for the Initial preset after portrait framing and Front-to-Initial reset verification.

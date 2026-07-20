@@ -472,15 +472,17 @@
     const DARK_FIGURE_SHADOW = '#62676a';
     const INITIAL_ROTATION_X = 0.58;
     const INITIAL_ROTATION_Y = -0.47;
+    const INITIAL_ZOOM = 1.4;
+    const INITIAL_VERTICAL_OFFSET = -.121;
     const CAMERA_VIEWS = {
-      initial: { x: INITIAL_ROTATION_X, y: INITIAL_ROTATION_Y, id: 'viewInitial' },
-      front: { x: 0, y: 0, id: 'viewFront' },
-      side: { x: 0, y: Math.PI / 2, id: 'viewSide' },
-      top: { x: -Math.PI / 2 + .08, y: 0, id: 'viewTop' }
+      initial: { x: INITIAL_ROTATION_X, y: INITIAL_ROTATION_Y, zoom: INITIAL_ZOOM, verticalOffset: INITIAL_VERTICAL_OFFSET, id: 'viewInitial' },
+      front: { x: 0, y: 0, zoom: 1, verticalOffset: 0, id: 'viewFront' },
+      side: { x: 0, y: Math.PI / 2, zoom: 1, verticalOffset: 0, id: 'viewSide' },
+      top: { x: -Math.PI / 2 + .08, y: 0, zoom: 1, verticalOffset: 0, id: 'viewTop' }
     };
     let rotationX = INITIAL_ROTATION_X, rotationY = INITIAL_ROTATION_Y, velocityX = 0, velocityY = 0;
     let isDragging = false, lastPointerX = 0, lastPointerY = 0, lastMoveTime = 0;
-    let zoomScale = 1, runMotion = false, runTime = 0, runBlend = 0;
+    let zoomScale = INITIAL_ZOOM, cameraVerticalOffset = INITIAL_VERTICAL_OFFSET, runMotion = false, runTime = 0, runBlend = 0;
     let moonwalkMotion = false, moonwalkBlend = 0;
     let spinMotion = false, spinBlend = 0, spinAngle = 0;
     let crouchMotion = false, crouchBlend = 0;
@@ -744,6 +746,9 @@
       if (!view) return;
       rotationX = view.x;
       rotationY = view.y;
+      zoomScale = view.zoom;
+      cameraVerticalOffset = view.verticalOffset;
+      resize();
       velocityX = 0;
       velocityY = 0;
       syncCameraViewButtons();
@@ -2089,7 +2094,7 @@ Z: ${cz.toFixed(3)}`;
       if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY*=.985; }
       rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01*frameStep;
       syncCameraViewButtons();
-      const projected=points.map(projectPoint); lastProjected=projected; ctx.save(); ctx.translate(width/2,height/2+scale*.06);
+      const projected=points.map(projectPoint); lastProjected=projected; ctx.save(); ctx.translate(width/2,height/2+scale*.06+height*cameraVerticalOffset);
       const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,displayTheme==='dark'?'rgba(226,229,230,.10)':'rgba(255,255,255,.42)'); aura.addColorStop(.55,displayTheme==='dark'?'rgba(226,229,230,.035)':'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
       drawCoordinatePlane();
       const orderedFaces=faces.map(face=>{
@@ -2133,7 +2138,7 @@ Z: ${cz.toFixed(3)}`;
     }
     function canvasPoint(e) {
       const rect = canvas.getBoundingClientRect();
-      return { x: e.clientX - rect.left - width/2, y: e.clientY - rect.top - height/2 - scale*.06 };
+      return { x: e.clientX - rect.left - width/2, y: e.clientY - rect.top - height/2 - scale*.06 - height*cameraVerticalOffset };
     }
     function pickBootAt(e) {
       const pointer = canvasPoint(e);
