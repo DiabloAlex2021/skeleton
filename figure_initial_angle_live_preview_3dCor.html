@@ -92,6 +92,14 @@
       filter: drop-shadow(0 38px 74px rgba(63, 47, 24, .18));
     }
 
+    #faceTrackingVideo {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
     :root[data-theme="dark"] canvas {
       filter: drop-shadow(0 38px 74px rgba(0, 0, 0, .34));
     }
@@ -322,6 +330,37 @@
       margin-bottom: 2px;
     }
 
+    .mesh-color-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mesh-color-menu-toggle {
+      height: 26px;
+      padding: 0 10px;
+      border: 1px solid rgba(23,21,17,.20);
+      border-radius: 999px;
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .mesh-color-menu-toggle:active { transform: scale(.97); }
+
+    .mesh-color-list {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(86px, 1fr));
+      gap: 8px;
+    }
+
+    .mesh-color-list[hidden] { display: none; }
+
     .toggle {
       width: 100%; min-width: 86px;
       height: 30px;
@@ -369,10 +408,146 @@
     #squatToggle.active,
     #moonwalkToggle.active { background: var(--button-active); color: var(--button-active-ink); }
 
+    #faceTrackingToggle.active { background: #087f70; color: #ffffff; }
+
+    #faceTrackingToggle.camera-mode-btn {
+      grid-column: 1 / -1;
+      width: 100%;
+      border: 1px solid rgba(23,21,17,.18);
+      background: var(--button);
+      color: var(--ink);
+    }
+
+    #faceTrackingToggle.camera-mode-btn:active { transform: scale(.98); }
+    #faceTrackingToggle.camera-mode-btn:disabled { opacity: .68; cursor: wait; }
+
+    #faceTrackingToggle.camera-mode-btn.active {
+      background: #087f70;
+      color: #ffffff;
+    }
+
+    #faceTrackingToggle[data-state="error"] {
+      border-color: rgba(170, 45, 45, .45);
+      color: #a52f2f;
+    }
+
+    .learning-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 7;
+      width: min(270px, calc(100vw - 40px));
+      max-height: 280px;
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .learning-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .learning-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .learning-toggle,
+    .learning-stop,
+    .session-action {
+      border: 1px solid rgba(23,21,17,.22);
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .learning-toggle,
+    .learning-stop {
+      min-height: 30px;
+      border-radius: 8px;
+      font-size: 11px;
+    }
+
+    .learning-toggle.active {
+      background: #a52f2f;
+      color: #ffffff;
+    }
+
+    .learning-stop.active {
+      background: var(--button-active);
+      color: var(--button-active-ink);
+    }
+
+    .learning-stop:disabled,
+    .session-action:disabled { opacity: .45; cursor: default; }
+
+    .learning-status {
+      min-height: 16px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .learning-sessions-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .learning-session-list {
+      display: grid;
+      gap: 6px;
+      max-height: 126px;
+      overflow-y: auto;
+    }
+
+    .learning-empty {
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 0;
+    }
+
+    .learning-session {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 5px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: color-mix(in srgb, var(--button) 72%, transparent);
+    }
+
+    .session-meta { min-width: 0; }
+    .session-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .session-detail { color: var(--muted); font-size: 9px; margin-top: 2px; }
+    .session-action { height: 26px; padding: 0 7px; border-radius: 7px; font-size: 9px; }
+
     :root[data-theme="dark"] .theme-switcher,
     :root[data-theme="dark"] .view-console,
     :root[data-theme="dark"] .direction-console,
-    :root[data-theme="dark"] .control-panel {
+    :root[data-theme="dark"] .control-panel,
+    :root[data-theme="dark"] .learning-panel {
       box-shadow: 0 12px 30px rgba(0,0,0,.30);
     }
 
@@ -384,6 +559,7 @@
       .theme-mode-btn { min-width: 52px; }
       .view-console { right: 10px; bottom: 304px; }
       .direction-console { right: 10px; bottom: 64px; }
+      .learning-panel { right: 10px; bottom: 10px; width: min(240px, calc(100vw - 20px)); }
     }
   </style>
 </head>
@@ -391,35 +567,42 @@
   <main class="page">
     <section class="stage" aria-label="interactive human mesh feet preview">
       <canvas id="figure"></canvas>
-      <div class="theme-switcher" role="group" aria-label="display mode">
+      <video id="faceTrackingVideo" autoplay playsinline muted aria-hidden="true"></video>
+      <div class="theme-switcher" role="group" aria-label="display and camera controls">
         <button class="theme-mode-btn active" id="themeBright" type="button" aria-pressed="true">Bright</button>
         <button class="theme-mode-btn" id="themeDark" type="button" aria-pressed="false">Dark</button>
+        <button class="theme-mode-btn camera-mode-btn" id="faceTrackingToggle" type="button" aria-pressed="false">Track Camera</button>
       </div>
       <div class="control-panel" aria-label="mesh color controls">
-        <div class="panel-title">Mesh Color</div>
-        <button class="toggle" id="toggleAllColors" type="button">All Off</button>
-        <button class="toggle" id="toggleHead" type="button">Head</button>
-        <button class="toggle" id="toggleNeck" type="button">Neck</button>
-        <button class="toggle" id="toggleTorso" type="button">Torso</button>
-        <button class="toggle" id="toggleWaist" type="button">Waist</button>
-        <button class="toggle" id="togglePelvis" type="button">Pelvis</button>
-        <button class="toggle" id="toggleHip" type="button">Hip</button>
-        <button class="toggle" id="toggleShoulder" type="button">Shoulder</button>
-        <button class="toggle" id="toggleArm" type="button">Arm</button>
-        <button class="toggle" id="toggleElbow" type="button">Elbow</button>
-        <button class="toggle" id="toggleWrist" type="button">Wrist</button>
-        <button class="toggle" id="togglePalm" type="button">Palm</button>
-        <button class="toggle" id="toggleFinger" type="button">Finger</button>
-        <button class="toggle" id="toggleThigh" type="button">Thigh</button>
-        <button class="toggle" id="toggleCalf" type="button">Calf</button>
-        <button class="toggle" id="toggleKnee" type="button">Knee</button>
-        <button class="toggle" id="toggleAnkle" type="button">Ankle</button>
-        <button class="toggle" id="toggleHeel" type="button">Heel</button>
-        <button class="toggle" id="toggleFoot" type="button">Foot</button>
-        <button class="toggle" id="toggleToe" type="button">Toe</button>
-        <button class="toggle" id="toggleToeNails" type="button">Toenails</button>
-        <button class="toggle" id="toggleBoot" type="button">Boot</button>
-        <button class="toggle" id="toggleBone" type="button">Bone</button>
+        <div class="panel-title mesh-color-header">
+          <span>Mesh Color</span>
+          <button class="mesh-color-menu-toggle" id="meshColorMenuToggle" type="button" aria-expanded="false" aria-controls="meshColorList">Expand</button>
+        </div>
+        <div class="mesh-color-list" id="meshColorList" hidden>
+          <button class="toggle" id="toggleAllColors" type="button">All Off</button>
+          <button class="toggle" id="toggleHead" type="button">Head</button>
+          <button class="toggle" id="toggleNeck" type="button">Neck</button>
+          <button class="toggle" id="toggleTorso" type="button">Torso</button>
+          <button class="toggle" id="toggleWaist" type="button">Waist</button>
+          <button class="toggle" id="togglePelvis" type="button">Pelvis</button>
+          <button class="toggle" id="toggleHip" type="button">Hip</button>
+          <button class="toggle" id="toggleShoulder" type="button">Shoulder</button>
+          <button class="toggle" id="toggleArm" type="button">Arm</button>
+          <button class="toggle" id="toggleElbow" type="button">Elbow</button>
+          <button class="toggle" id="toggleWrist" type="button">Wrist</button>
+          <button class="toggle" id="togglePalm" type="button">Palm</button>
+          <button class="toggle" id="toggleFinger" type="button">Finger</button>
+          <button class="toggle" id="toggleThigh" type="button">Thigh</button>
+          <button class="toggle" id="toggleCalf" type="button">Calf</button>
+          <button class="toggle" id="toggleKnee" type="button">Knee</button>
+          <button class="toggle" id="toggleAnkle" type="button">Ankle</button>
+          <button class="toggle" id="toggleHeel" type="button">Heel</button>
+          <button class="toggle" id="toggleFoot" type="button">Foot</button>
+          <button class="toggle" id="toggleToe" type="button">Toe</button>
+          <button class="toggle" id="toggleToeNails" type="button">Toenails</button>
+          <button class="toggle" id="toggleBoot" type="button">Boot</button>
+          <button class="toggle" id="toggleBone" type="button">Bone</button>
+        </div>
         <div class="panel-title zoom-title">Zoom</div>
         <button class="toggle zoom-btn" id="zoomIn" type="button">Zoom In</button>
         <button class="toggle zoom-btn" id="zoomOut" type="button">Zoom Out</button>
@@ -454,6 +637,18 @@
           <button class="turn-btn" id="walkTurnRight" type="button">+15</button>
         </div>
       </div>
+      <section class="learning-panel" aria-label="learning mode sessions">
+        <div class="learning-header">
+          <div class="learning-title">Learning Mode</div>
+          <button class="learning-toggle" id="learningModeToggle" type="button" aria-pressed="false">Start</button>
+        </div>
+        <button class="learning-stop" id="learningPlaybackStop" type="button" aria-pressed="false" disabled>Stop Playing</button>
+        <div class="learning-status" id="learningModeStatus" aria-live="polite">Ready to record face and upper-body gestures.</div>
+        <div class="learning-sessions-label">Saved JSON Sessions</div>
+        <div class="learning-session-list" id="learningSessionList">
+          <div class="learning-empty">No saved sessions yet.</div>
+        </div>
+      </section>
       <div class="hint">Drag figure to inspect; drag boots on/off</div>
     </section>
   </main>
@@ -462,14 +657,20 @@
     const canvas = document.getElementById('figure');
     const ctx = canvas.getContext('2d', { alpha: true });
     const cameraReadout = document.getElementById('cameraReadout');
+    const faceTrackingVideo = document.getElementById('faceTrackingVideo');
+    const faceTrackingToggle = document.getElementById('faceTrackingToggle');
+    const learningModeToggle = document.getElementById('learningModeToggle');
+    const learningPlaybackStop = document.getElementById('learningPlaybackStop');
+    const learningModeStatus = document.getElementById('learningModeStatus');
+    const learningSessionList = document.getElementById('learningSessionList');
 
     let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     let width = 0, height = 0, scale = 1;
     let points = [], links = [], faces = [], faceSocketLoops = [], faceMouthPaths = [], tick = 0;
     let displayTheme = 'bright';
-    const DARK_FIGURE_INK = '#71767a';
-    const DARK_FIGURE_HIGHLIGHT = '#7d8285';
-    const DARK_FIGURE_SHADOW = '#62676a';
+    const DARK_FIGURE_INK = '#6F86A6';
+    const DARK_FIGURE_HIGHLIGHT = '#8299B8';
+    const DARK_FIGURE_SHADOW = '#5A6D89';
     const INITIAL_ROTATION_X = 0.005;
     const INITIAL_ROTATION_Y = -0.686;
     const INITIAL_ZOOM = 0.84;
@@ -511,6 +712,80 @@
     };
     const bootAnchors = { left: { x: 0, y: 0, z: 0 }, right: { x: 0, y: 0, z: 0 } };
     let activeDrag = null, lastProjected = [];
+    let meshColorMenuExpanded = false;
+
+    const FACE_MESH_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh';
+    const POSE_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/pose';
+    const HANDS_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands';
+    const faceTrackingScripts = new Map();
+    const faceTracking = {
+      enabled: false,
+      starting: false,
+      status: 'off',
+      hasFace: false,
+      landmarks: [],
+      stream: null,
+      mesh: null,
+      frameId: 0,
+      sessionId: 0,
+      lastSeenAt: 0,
+      inputRoll: 0,
+      targetHeadRoll: 0,
+      headRoll: 0,
+      meshConnectionCount: 0,
+      neckBufferConnectionCount: 0,
+      error: ''
+    };
+    const upperBodyTracking = {
+      poseModel: null,
+      handsModel: null,
+      hasPose: false,
+      poseLandmarks: [],
+      armTargets: { left: null, right: null },
+      armLastSeen: { left: 0, right: 0 },
+      handLandmarks: { left: [], right: [] },
+      handLastSeen: { left: 0, right: 0 },
+      lastPoseSeenAt: 0,
+      frameSequence: 0,
+      sendFailures: { face: 0, pose: 0, hands: 0 },
+      lastPipelineError: '',
+      dirty: false
+    };
+    const LEARNING_SAMPLE_INTERVAL_MS = 125;
+    const LEARNING_DB_NAME = 'figure-learning-sessions';
+    const LEARNING_DB_STORE = 'sessions';
+    const learningMode = {
+      recording: false,
+      playing: false,
+      preparingPlayback: false,
+      startedAt: 0,
+      firstFrameAt: 0,
+      lastCaptureAt: 0,
+      frames: [],
+      sessions: [],
+      databasePromise: null,
+      playbackFrameId: 0,
+      playbackStartedAt: 0,
+      playbackSessionId: '',
+      playbackFrameIndex: -1,
+      playbackRequestId: 0,
+      status: 'ready'
+    };
+    const SHOW_TRACKED_FACE_OUTER_CONTOUR = false;
+    const TRACKED_FACE_CHIN_DROP = .055;
+    const TRACKED_FACE_NECK_BUFFER_ROWS = 3;
+    const TRACKED_FACE_LOWER_JAW = [172,136,150,149,176,148,152,377,400,378,379,365,397];
+    const TRACKED_FACE_PATHS = [
+      { kind: 'outer', closed: true, width: 1.15, indices: [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109] },
+      { closed: true, width: 1.10, indices: [33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246] },
+      { closed: true, width: 1.10, indices: [263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466] },
+      { closed: false, width: 1.18, indices: [70,63,105,66,107] },
+      { closed: false, width: 1.18, indices: [336,296,334,293,300] },
+      { closed: true, width: 1.25, indices: [61,146,91,181,84,17,314,405,321,375,291,308,324,318,402,317,14,87,178,88,95,78,191,80,81,82,13,312,311,310,415] },
+      { closed: false, width: .82, indices: [33,133,168,362,263] },
+      { closed: true, width: 1.10, indices: [468,469,470,471,472] },
+      { closed: true, width: 1.10, indices: [473,474,475,476,477] }
+    ];
 
     const meshControls = {
       head: { color: '#111111', colorized: false },
@@ -546,6 +821,823 @@
       darkButton?.classList.toggle('active', displayTheme === 'dark');
       brightButton?.setAttribute('aria-pressed', String(displayTheme === 'bright'));
       darkButton?.setAttribute('aria-pressed', String(displayTheme === 'dark'));
+    }
+
+    function syncFaceTrackingButton() {
+      if (!faceTrackingToggle) return;
+      const state = faceTracking.status;
+      const hasTrackedHand = upperBodyTracking.handLandmarks.left.length >= 21 || upperBodyTracking.handLandmarks.right.length >= 21;
+      faceTrackingToggle.dataset.state = state;
+      faceTrackingToggle.disabled = faceTracking.starting;
+      faceTrackingToggle.classList.toggle('active', faceTracking.enabled);
+      faceTrackingToggle.setAttribute('aria-pressed', String(faceTracking.enabled));
+      faceTrackingToggle.textContent = faceTracking.starting
+        ? 'Opening Camera...'
+        : faceTracking.enabled
+          ? (faceTracking.hasFace || upperBodyTracking.hasPose || hasTrackedHand ? 'Stop Camera' : 'Finding Body...')
+          : state === 'error' ? 'Retry Camera' : 'Track Camera';
+      faceTrackingToggle.title = faceTracking.error || upperBodyTracking.lastPipelineError || 'Map webcam face, arm, hand, and finger landmarks onto the figure';
+    }
+
+    function loadFaceTrackingScript(url) {
+      if (faceTrackingScripts.has(url)) return faceTrackingScripts.get(url);
+      const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => reject(new Error(`Unable to load ${url}`));
+        document.head.appendChild(script);
+      }).catch(error => {
+        faceTrackingScripts.delete(url);
+        throw error;
+      });
+      faceTrackingScripts.set(url, promise);
+      return promise;
+    }
+
+    function updateTrackedFaceRoll(landmarks) {
+      const eyeA = landmarks?.[33];
+      const eyeB = landmarks?.[263];
+      if (!eyeA || !eyeB) {
+        faceTracking.inputRoll = 0;
+        faceTracking.targetHeadRoll = 0;
+        return;
+      }
+      const left = eyeA.x <= eyeB.x ? eyeA : eyeB;
+      const right = eyeA.x <= eyeB.x ? eyeB : eyeA;
+      const roll = Math.atan2(right.y - left.y, right.x - left.x);
+      faceTracking.inputRoll = Math.atan2(Math.sin(roll), Math.cos(roll));
+      // Canvas Y grows downward, so a positive image-space roll is clockwise on the figure too.
+      faceTracking.targetHeadRoll = faceClamp(faceTracking.inputRoll, -.72, .72);
+    }
+
+    function handleFaceTrackingResults(results) {
+      if (!faceTracking.enabled) return;
+      const raw = results?.multiFaceLandmarks?.[0];
+      if (!raw?.length) {
+        if (performance.now() - faceTracking.lastSeenAt > 280) {
+          const changed = faceTracking.hasFace || faceTracking.status !== 'searching';
+          faceTracking.hasFace = false;
+          faceTracking.landmarks = [];
+          faceTracking.inputRoll = 0;
+          faceTracking.targetHeadRoll = 0;
+          faceTracking.meshConnectionCount = 0;
+          faceTracking.neckBufferConnectionCount = 0;
+          faceTracking.status = 'searching';
+          if (changed) syncFaceTrackingButton();
+        }
+        return;
+      }
+
+      const previous = faceTracking.landmarks;
+      const blend = .42;
+      faceTracking.landmarks = raw.map((point, index) => {
+        const old = previous[index];
+        if (!old) return { x: point.x, y: point.y, z: point.z || 0 };
+        return {
+          x: old.x + (point.x - old.x) * blend,
+          y: old.y + (point.y - old.y) * blend,
+          z: old.z + ((point.z || 0) - old.z) * blend
+        };
+      });
+      const changed = !faceTracking.hasFace || faceTracking.status !== 'tracking';
+      faceTracking.hasFace = true;
+      faceTracking.status = 'tracking';
+      faceTracking.lastSeenAt = performance.now();
+      updateTrackedFaceRoll(faceTracking.landmarks);
+      if (changed) syncFaceTrackingButton();
+    }
+
+    function landmarkIsVisible(point, threshold = .42) {
+      return Boolean(point) && (point.visibility == null || point.visibility >= threshold) &&
+        (point.presence == null || point.presence >= threshold);
+    }
+
+    function normalizedBoneDirection(from, to) {
+      const vector = { x: -(to.x - from.x), y: to.y - from.y, z: -(to.z - from.z) * .72 };
+      const length = Math.hypot(vector.x, vector.y, vector.z) || 1;
+      return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+    }
+
+    function mappedArmTarget(side, landmarks) {
+      const indices = side === 'left' ? [11, 13, 15] : [12, 14, 16];
+      const [shoulder, elbow, wrist] = indices.map(index => landmarks[index]);
+      if (![shoulder, elbow, wrist].every(point => landmarkIsVisible(point))) return null;
+      const anchor = { x: side === 'left' ? -.58 : .58, y: -1.05, z: side === 'left' ? .055 : -.055 };
+      const upperDirection = normalizedBoneDirection(shoulder, elbow);
+      const lowerDirection = normalizedBoneDirection(elbow, wrist);
+      const mappedElbow = {
+        x: anchor.x + upperDirection.x * .70,
+        y: anchor.y + upperDirection.y * .70,
+        z: anchor.z + upperDirection.z * .70
+      };
+      const mappedWrist = {
+        x: mappedElbow.x + lowerDirection.x * .76,
+        y: mappedElbow.y + lowerDirection.y * .76,
+        z: mappedElbow.z + lowerDirection.z * .76
+      };
+      return {
+        upperA: blendPoint(anchor, mappedElbow, .055),
+        elbow: mappedElbow,
+        forearmA: blendPoint(mappedElbow, mappedWrist, .070),
+        wrist: mappedWrist
+      };
+    }
+
+    function smoothArmTarget(previous, next, amount = .34) {
+      if (!previous) return next;
+      return {
+        upperA: blendPoint(previous.upperA, next.upperA, amount),
+        elbow: blendPoint(previous.elbow, next.elbow, amount),
+        forearmA: blendPoint(previous.forearmA, next.forearmA, amount),
+        wrist: blendPoint(previous.wrist, next.wrist, amount)
+      };
+    }
+
+    function handlePoseTrackingResults(results) {
+      if (!faceTracking.enabled) return;
+      const landmarks = results?.poseLandmarks;
+      if (!landmarks?.length) {
+        if (performance.now() - upperBodyTracking.lastPoseSeenAt > 360 && upperBodyTracking.hasPose) {
+          upperBodyTracking.hasPose = false;
+          upperBodyTracking.poseLandmarks = [];
+          upperBodyTracking.armTargets.left = null;
+          upperBodyTracking.armTargets.right = null;
+          upperBodyTracking.dirty = true;
+          syncFaceTrackingButton();
+        }
+        return;
+      }
+      const nextTargets = {
+        left: mappedArmTarget('left', landmarks),
+        right: mappedArmTarget('right', landmarks)
+      };
+      const now = performance.now();
+      upperBodyTracking.poseLandmarks = landmarks.map(point => ({ ...point }));
+      for (const side of ['left', 'right']) {
+        const next = nextTargets[side];
+        if (next) {
+          upperBodyTracking.armTargets[side] = smoothArmTarget(upperBodyTracking.armTargets[side], next);
+          upperBodyTracking.armLastSeen[side] = now;
+          upperBodyTracking.dirty = true;
+        } else if (upperBodyTracking.armTargets[side] && now - upperBodyTracking.armLastSeen[side] > 360) {
+          upperBodyTracking.armTargets[side] = null;
+          upperBodyTracking.dirty = true;
+        }
+      }
+      upperBodyTracking.hasPose = Boolean(upperBodyTracking.armTargets.left || upperBodyTracking.armTargets.right);
+      if (upperBodyTracking.hasPose) upperBodyTracking.lastPoseSeenAt = now;
+      syncFaceTrackingButton();
+    }
+
+    function landmarkDistance2D(a, b) {
+      return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : Infinity;
+    }
+
+    function smoothHandLandmarks(previous, next, amount = .40) {
+      return next.map((point, index) => {
+        const old = previous[index];
+        if (!old) return { x: point.x, y: point.y, z: point.z || 0 };
+        return {
+          x: old.x + (point.x - old.x) * amount,
+          y: old.y + (point.y - old.y) * amount,
+          z: old.z + ((point.z || 0) - old.z) * amount
+        };
+      });
+    }
+
+    function handednessLabel(item) {
+      return String(item?.label || item?.classification?.[0]?.label || '').toLowerCase();
+    }
+
+    function handleHandTrackingResults(results) {
+      if (!faceTracking.enabled) return;
+      const detected = results?.multiHandLandmarks || [];
+      const handedness = results?.multiHandedness || [];
+      const pose = upperBodyTracking.poseLandmarks;
+      const poseWrists = { left: pose[15], right: pose[16] };
+      const assignments = {};
+      const available = ['left', 'right'];
+
+      detected.forEach((landmarks, index) => {
+        if (!landmarks?.length) return;
+        let side = '';
+        if (poseWrists.left && poseWrists.right && available.length) {
+          side = available.reduce((best, candidate) =>
+            landmarkDistance2D(landmarks[0], poseWrists[candidate]) < landmarkDistance2D(landmarks[0], poseWrists[best]) ? candidate : best,
+          available[0]);
+        } else {
+          const label = handednessLabel(handedness[index]);
+          side = label === 'left' || label === 'right' ? label : (landmarks[0].x > .5 ? 'left' : 'right');
+          if (!available.includes(side)) side = available[0] || side;
+        }
+        assignments[side] = landmarks;
+        const availableIndex = available.indexOf(side);
+        if (availableIndex >= 0) available.splice(availableIndex, 1);
+      });
+
+      const now = performance.now();
+      for (const side of ['left', 'right']) {
+        const next = assignments[side];
+        if (next) {
+          upperBodyTracking.handLandmarks[side] = smoothHandLandmarks(upperBodyTracking.handLandmarks[side], next);
+          upperBodyTracking.handLastSeen[side] = now;
+          upperBodyTracking.dirty = true;
+        } else if (upperBodyTracking.handLandmarks[side].length && now - upperBodyTracking.handLastSeen[side] > 320) {
+          upperBodyTracking.handLandmarks[side] = [];
+          upperBodyTracking.dirty = true;
+        }
+      }
+    }
+
+    function resetUpperBodyTracking() {
+      upperBodyTracking.hasPose = false;
+      upperBodyTracking.poseLandmarks = [];
+      upperBodyTracking.armTargets.left = null;
+      upperBodyTracking.armTargets.right = null;
+      upperBodyTracking.armLastSeen.left = 0;
+      upperBodyTracking.armLastSeen.right = 0;
+      upperBodyTracking.handLandmarks.left = [];
+      upperBodyTracking.handLandmarks.right = [];
+      upperBodyTracking.handLastSeen.left = 0;
+      upperBodyTracking.handLastSeen.right = 0;
+      upperBodyTracking.lastPoseSeenAt = 0;
+      upperBodyTracking.frameSequence = 0;
+      upperBodyTracking.sendFailures.face = 0;
+      upperBodyTracking.sendFailures.pose = 0;
+      upperBodyTracking.sendFailures.hands = 0;
+      upperBodyTracking.lastPipelineError = '';
+      upperBodyTracking.dirty = true;
+    }
+
+    async function processNextTrackingPipeline(pipelines, image) {
+      const pipeline = pipelines[upperBodyTracking.frameSequence % pipelines.length];
+      upperBodyTracking.frameSequence++;
+      try {
+        await pipeline.model.send({ image });
+        upperBodyTracking.sendFailures[pipeline.name] = 0;
+        if (upperBodyTracking.lastPipelineError) {
+          upperBodyTracking.lastPipelineError = '';
+          syncFaceTrackingButton();
+        }
+        return { ok: true, name: pipeline.name, fatal: false };
+      } catch (error) {
+        upperBodyTracking.sendFailures[pipeline.name]++;
+        const detail = error?.message || String(error) || 'Unknown model error';
+        upperBodyTracking.lastPipelineError = `${pipeline.name} tracking error: ${detail}`;
+        syncFaceTrackingButton();
+        return {
+          ok: false,
+          name: pipeline.name,
+          fatal: upperBodyTracking.sendFailures[pipeline.name] >= 4,
+          error: detail
+        };
+      }
+    }
+
+    function stopFaceTracking(error = '') {
+      faceTracking.sessionId++;
+      faceTracking.enabled = false;
+      faceTracking.starting = false;
+      faceTracking.hasFace = false;
+      faceTracking.landmarks = [];
+      faceTracking.lastSeenAt = 0;
+      faceTracking.inputRoll = 0;
+      faceTracking.targetHeadRoll = 0;
+      faceTracking.meshConnectionCount = 0;
+      faceTracking.neckBufferConnectionCount = 0;
+      if (faceTracking.frameId) cancelAnimationFrame(faceTracking.frameId);
+      faceTracking.frameId = 0;
+
+      const mesh = faceTracking.mesh;
+      faceTracking.mesh = null;
+      try {
+        const closing = mesh?.close?.();
+        if (closing?.catch) closing.catch(() => {});
+      } catch (_) {}
+
+      for (const key of ['poseModel', 'handsModel']) {
+        const model = upperBodyTracking[key];
+        upperBodyTracking[key] = null;
+        try {
+          const closing = model?.close?.();
+          if (closing?.catch) closing.catch(() => {});
+        } catch (_) {}
+      }
+      resetUpperBodyTracking();
+
+      const stream = faceTracking.stream;
+      faceTracking.stream = null;
+      try { stream?.getTracks?.().forEach(track => track.stop()); } catch (_) {}
+      try { faceTrackingVideo?.pause(); } catch (_) {}
+      if (faceTrackingVideo) faceTrackingVideo.srcObject = null;
+
+      faceTracking.error = error;
+      faceTracking.status = error ? 'error' : 'off';
+      syncFaceTrackingButton();
+    }
+
+    async function startFaceTracking() {
+      if (faceTracking.starting || faceTracking.enabled) return;
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback('Playback stopped for live camera.');
+      faceTracking.starting = true;
+      faceTracking.status = 'starting';
+      faceTracking.error = '';
+      syncFaceTrackingButton();
+      const sessionId = ++faceTracking.sessionId;
+
+      try {
+        if (!faceTrackingVideo || !navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Webcam access requires HTTPS or localhost in a supported browser.');
+        }
+
+        // These classic MediaPipe bundles share lazy WebAssembly setup. Load them in order
+        // and never initialize/send multiple graphs at the same time.
+        await loadFaceTrackingScript(`${FACE_MESH_CDN}/face_mesh.js`);
+        await loadFaceTrackingScript(`${POSE_CDN}/pose.js`);
+        await loadFaceTrackingScript(`${HANDS_CDN}/hands.js`);
+        if (sessionId !== faceTracking.sessionId) return;
+        if (typeof window.FaceMesh !== 'function') throw new Error('MediaPipe FaceMesh did not initialize.');
+        if (typeof window.Pose !== 'function') throw new Error('MediaPipe Pose did not initialize.');
+        if (typeof window.Hands !== 'function') throw new Error('MediaPipe Hands did not initialize.');
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        if (sessionId !== faceTracking.sessionId) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        faceTracking.stream = stream;
+        faceTrackingVideo.srcObject = stream;
+        await faceTrackingVideo.play();
+
+        const mesh = new window.FaceMesh({
+          locateFile: file => `${FACE_MESH_CDN}/${file}`
+        });
+        mesh.setOptions({
+          maxNumFaces: 1,
+          refineLandmarks: true,
+          minDetectionConfidence: .5,
+          minTrackingConfidence: .5
+        });
+        mesh.onResults(handleFaceTrackingResults);
+        faceTracking.mesh = mesh;
+
+        const poseModel = new window.Pose({
+          locateFile: file => `${POSE_CDN}/${file}`
+        });
+        poseModel.setOptions({
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          minDetectionConfidence: .55,
+          minTrackingConfidence: .55
+        });
+        poseModel.onResults(handlePoseTrackingResults);
+        upperBodyTracking.poseModel = poseModel;
+
+        const handsModel = new window.Hands({
+          locateFile: file => `${HANDS_CDN}/${file}`
+        });
+        handsModel.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: .55,
+          minTrackingConfidence: .55
+        });
+        handsModel.onResults(handleHandTrackingResults);
+        upperBodyTracking.handsModel = handsModel;
+        faceTracking.enabled = true;
+        faceTracking.starting = false;
+        faceTracking.status = 'searching';
+        syncFaceTrackingButton();
+
+        const pipelines = [
+          { name: 'face', model: mesh },
+          { name: 'pose', model: poseModel },
+          { name: 'hands', model: handsModel }
+        ];
+
+        const pump = async () => {
+          if (!faceTracking.enabled || faceTracking.mesh !== mesh || sessionId !== faceTracking.sessionId) return;
+          if (faceTrackingVideo.readyState >= 2) {
+            const result = await processNextTrackingPipeline(pipelines, faceTrackingVideo);
+            if (result.fatal) {
+              stopFaceTracking(`Unable to run ${result.name} tracking. Stop and retry the camera.`);
+              return;
+            }
+          }
+          if (faceTracking.enabled && faceTracking.mesh === mesh && sessionId === faceTracking.sessionId) {
+            faceTracking.frameId = requestAnimationFrame(pump);
+          }
+        };
+        faceTracking.frameId = requestAnimationFrame(pump);
+      } catch (error) {
+        const message = error?.name === 'NotAllowedError'
+          ? 'Camera permission was denied. Allow webcam access and retry.'
+          : error?.message || 'Unable to start face tracking.';
+        stopFaceTracking(message);
+      } finally {
+        if (sessionId === faceTracking.sessionId && !faceTracking.enabled) {
+          faceTracking.starting = false;
+          syncFaceTrackingButton();
+        }
+      }
+    }
+
+    function setFaceTrackingTestFrame(landmarks) {
+      stopFaceTracking();
+      faceTracking.enabled = true;
+      faceTracking.status = 'tracking';
+      faceTracking.hasFace = Array.isArray(landmarks) && landmarks.length > 0;
+      faceTracking.landmarks = faceTracking.hasFace ? landmarks : [];
+      faceTracking.lastSeenAt = performance.now();
+      updateTrackedFaceRoll(faceTracking.landmarks);
+      syncFaceTrackingButton();
+    }
+
+    function setUpperBodyTrackingTestFrame(frame = {}) {
+      if (!faceTracking.enabled) {
+        stopFaceTracking();
+        faceTracking.enabled = true;
+        faceTracking.status = 'tracking';
+      }
+      handlePoseTrackingResults({ poseLandmarks: frame.poseLandmarks || [] });
+      handleHandTrackingResults({
+        multiHandLandmarks: frame.hands || [],
+        multiHandedness: frame.handedness || []
+      });
+      syncFaceTrackingButton();
+    }
+
+    if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+      window.__setFaceTrackingTestFrame = setFaceTrackingTestFrame;
+      window.__setUpperBodyTrackingTestFrame = setUpperBodyTrackingTestFrame;
+      window.__processNextTrackingPipelineTest = processNextTrackingPipeline;
+      window.__clearFaceTrackingTestFrame = () => stopFaceTracking();
+      window.__clearUpperBodyTrackingTestFrame = () => {
+        resetUpperBodyTracking();
+        syncFaceTrackingButton();
+      };
+    }
+
+    function setLearningStatus(message, status = 'ready') {
+      learningMode.status = status;
+      if (learningModeStatus) learningModeStatus.textContent = message;
+    }
+
+    function syncLearningModeControls() {
+      learningModeToggle?.classList.toggle('active', learningMode.recording);
+      learningModeToggle?.setAttribute('aria-pressed', String(learningMode.recording));
+      if (learningModeToggle) learningModeToggle.textContent = learningMode.recording ? 'Stop & Save' : 'Start';
+      const playbackActive = learningMode.playing || learningMode.preparingPlayback;
+      learningPlaybackStop?.classList.toggle('active', playbackActive);
+      learningPlaybackStop?.setAttribute('aria-pressed', String(playbackActive));
+      if (learningPlaybackStop) {
+        learningPlaybackStop.disabled = !playbackActive;
+        learningPlaybackStop.textContent = learningMode.preparingPlayback ? 'Cancel Playback' : 'Stop Playing';
+      }
+    }
+
+    function openLearningDatabase() {
+      if (learningMode.databasePromise) return learningMode.databasePromise;
+      learningMode.databasePromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error('This browser does not support saved learning sessions.'));
+          return;
+        }
+        const request = indexedDB.open(LEARNING_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains(LEARNING_DB_STORE)) {
+            database.createObjectStore(LEARNING_DB_STORE, { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Unable to open learning-session storage.'));
+      });
+      return learningMode.databasePromise;
+    }
+
+    async function readStoredLearningSessions() {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(LEARNING_DB_STORE, 'readonly').objectStore(LEARNING_DB_STORE).getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error || new Error('Unable to read learning sessions.'));
+      });
+    }
+
+    async function persistLearningSession(session) {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(LEARNING_DB_STORE, 'readwrite').objectStore(LEARNING_DB_STORE).put(session);
+        request.onsuccess = () => resolve(session);
+        request.onerror = () => reject(request.error || new Error('Unable to save this learning session.'));
+      });
+    }
+
+    function learningDurationLabel(durationMs) {
+      const seconds = Math.max(0, durationMs || 0) / 1000;
+      return seconds < 10 ? `${seconds.toFixed(1)}s` : `${Math.round(seconds)}s`;
+    }
+
+    function renderLearningSessions() {
+      if (!learningSessionList) return;
+      learningSessionList.textContent = '';
+      if (!learningMode.sessions.length) {
+        const empty = document.createElement('div');
+        empty.className = 'learning-empty';
+        empty.textContent = 'No saved sessions yet.';
+        learningSessionList.appendChild(empty);
+        return;
+      }
+      for (const session of learningMode.sessions) {
+        const item = document.createElement('div');
+        item.className = 'learning-session';
+        const meta = document.createElement('div');
+        meta.className = 'session-meta';
+        const name = document.createElement('div');
+        name.className = 'session-name';
+        name.textContent = session.name;
+        const detail = document.createElement('div');
+        detail.className = 'session-detail';
+        detail.textContent = `${learningDurationLabel(session.durationMs)} · ${session.frames.length} frames · lower body N/A`;
+        meta.append(name, detail);
+        const play = document.createElement('button');
+        play.className = 'session-action';
+        play.type = 'button';
+        const isCurrentSession = learningMode.playbackSessionId === session.id;
+        play.textContent = learningMode.preparingPlayback && isCurrentSession
+          ? 'Loading'
+          : learningMode.playing && isCurrentSession
+            ? 'Playing'
+            : 'Play';
+        play.disabled = learningMode.recording || learningMode.preparingPlayback || (learningMode.playing && isCurrentSession);
+        play.addEventListener('click', () => playLearningSession(session.id));
+        const download = document.createElement('button');
+        download.className = 'session-action';
+        download.type = 'button';
+        download.textContent = 'JSON';
+        download.disabled = learningMode.recording;
+        download.addEventListener('click', () => downloadLearningSession(session.id));
+        item.append(meta, play, download);
+        learningSessionList.appendChild(item);
+      }
+    }
+
+    function compactLandmark(point) {
+      if (!point) return null;
+      const round = value => Math.round((Number(value) || 0) * 10000) / 10000;
+      return [round(point.x), round(point.y), round(point.z)];
+    }
+
+    function compactLandmarks(landmarks, limit = landmarks?.length || 0) {
+      if (!landmarks?.length) return null;
+      return Array.from({ length: Math.min(limit, landmarks.length) }, (_, index) => compactLandmark(landmarks[index]));
+    }
+
+    function expandLandmarks(compact) {
+      if (!compact?.length) return [];
+      return compact.map(point => point ? { x: point[0], y: point[1], z: point[2] } : null);
+    }
+
+    function captureLearningFrame(now) {
+      if (!learningMode.recording || now - learningMode.lastCaptureAt < LEARNING_SAMPLE_INTERVAL_MS) return;
+      learningMode.lastCaptureAt = now;
+      const hasFace = faceTracking.hasFace && faceTracking.landmarks.length > 0;
+      const hasPose = upperBodyTracking.hasPose && upperBodyTracking.poseLandmarks.length > 0;
+      const hasLeftHand = upperBodyTracking.handLandmarks.left.length >= 21;
+      const hasRightHand = upperBodyTracking.handLandmarks.right.length >= 21;
+      if (!hasFace && !hasPose && !hasLeftHand && !hasRightHand) return;
+      if (!learningMode.firstFrameAt) learningMode.firstFrameAt = now;
+      learningMode.frames.push({
+        timeMs: Math.round(now - learningMode.firstFrameAt),
+        facialExpression: {
+          landmarks: hasFace ? compactLandmarks(faceTracking.landmarks) : null
+        },
+        bodyGesture: {
+          upperBody: {
+            poseLandmarks: hasPose ? compactLandmarks(upperBodyTracking.poseLandmarks, 17) : null,
+            leftHandLandmarks: hasLeftHand ? compactLandmarks(upperBodyTracking.handLandmarks.left, 21) : null,
+            rightHandLandmarks: hasRightHand ? compactLandmarks(upperBodyTracking.handLandmarks.right, 21) : null
+          },
+          lowerBody: 'N/A'
+        }
+      });
+      if (learningMode.frames.length % 8 === 0) {
+        setLearningStatus(`Recording · ${learningDurationLabel(now - learningMode.firstFrameAt)} · ${learningMode.frames.length} frames`, 'recording');
+      }
+    }
+
+    function clearPlaybackTracking() {
+      faceTracking.hasFace = false;
+      faceTracking.landmarks = [];
+      faceTracking.inputRoll = 0;
+      faceTracking.targetHeadRoll = 0;
+      faceTracking.status = faceTracking.enabled ? 'searching' : 'off';
+      resetUpperBodyTracking();
+    }
+
+    function applyLearningFrame(frame) {
+      const face = expandLandmarks(frame?.facialExpression?.landmarks);
+      faceTracking.hasFace = face.length > 0;
+      faceTracking.landmarks = face;
+      faceTracking.status = 'playback';
+      faceTracking.lastSeenAt = performance.now();
+      if (face.length) updateTrackedFaceRoll(face);
+      else {
+        faceTracking.inputRoll = 0;
+        faceTracking.targetHeadRoll = 0;
+      }
+
+      const upperBody = frame?.bodyGesture?.upperBody || {};
+      const pose = expandLandmarks(upperBody.poseLandmarks);
+      upperBodyTracking.poseLandmarks = pose;
+      upperBodyTracking.armTargets.left = pose.length ? mappedArmTarget('left', pose) : null;
+      upperBodyTracking.armTargets.right = pose.length ? mappedArmTarget('right', pose) : null;
+      upperBodyTracking.hasPose = Boolean(upperBodyTracking.armTargets.left || upperBodyTracking.armTargets.right);
+      upperBodyTracking.handLandmarks.left = expandLandmarks(upperBody.leftHandLandmarks);
+      upperBodyTracking.handLandmarks.right = expandLandmarks(upperBody.rightHandLandmarks);
+      upperBodyTracking.dirty = true;
+    }
+
+    function sessionHasFacialTracking(session) {
+      return session?.frames?.some(frame => frame?.facialExpression?.landmarks?.length >= 468);
+    }
+
+    async function prepareLearningPlayback(session) {
+      if (!sessionHasFacialTracking(session) || trackedFaceTessellation().length) return;
+      await loadFaceTrackingScript(`${FACE_MESH_CDN}/face_mesh.js`);
+      if (!trackedFaceTessellation().length) {
+        throw new Error('The saved facial mesh definition could not be initialized.');
+      }
+    }
+
+    function stopLearningPlayback(message = 'Playback stopped.') {
+      learningMode.playbackRequestId++;
+      if (learningMode.playbackFrameId) cancelAnimationFrame(learningMode.playbackFrameId);
+      learningMode.playbackFrameId = 0;
+      learningMode.playing = false;
+      learningMode.preparingPlayback = false;
+      learningMode.playbackSessionId = '';
+      learningMode.playbackFrameIndex = -1;
+      clearPlaybackTracking();
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus(message, 'ready');
+    }
+
+    async function playLearningSession(sessionId) {
+      if (learningMode.recording) return;
+      const session = learningMode.sessions.find(item => item.id === sessionId);
+      if (!session?.frames?.length) {
+        setLearningStatus('This session has no playable tracking frames.', 'error');
+        return;
+      }
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback();
+      if (faceTracking.enabled || faceTracking.starting) stopFaceTracking();
+      const playbackRequestId = ++learningMode.playbackRequestId;
+      learningMode.preparingPlayback = true;
+      learningMode.playbackSessionId = session.id;
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus(`Preparing ${session.name}…`, 'playing');
+      try {
+        await prepareLearningPlayback(session);
+      } catch (error) {
+        if (playbackRequestId !== learningMode.playbackRequestId) return;
+        learningMode.preparingPlayback = false;
+        learningMode.playbackSessionId = '';
+        clearPlaybackTracking();
+        syncLearningModeControls();
+        renderLearningSessions();
+        setLearningStatus(error?.message || 'Unable to prepare saved facial playback.', 'error');
+        return;
+      }
+      if (playbackRequestId !== learningMode.playbackRequestId) return;
+      learningMode.preparingPlayback = false;
+      learningMode.playing = true;
+      learningMode.playbackFrameIndex = -1;
+      learningMode.playbackStartedAt = performance.now();
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus(`Playing ${session.name}`, 'playing');
+      applyLearningFrame(session.frames[0]);
+      learningMode.playbackFrameIndex = 0;
+      const playbackTick = now => {
+        if (!learningMode.playing || learningMode.playbackSessionId !== session.id) return;
+        const elapsed = now - learningMode.playbackStartedAt;
+        while (learningMode.playbackFrameIndex + 1 < session.frames.length &&
+          session.frames[learningMode.playbackFrameIndex + 1].timeMs <= elapsed) {
+          learningMode.playbackFrameIndex++;
+          applyLearningFrame(session.frames[learningMode.playbackFrameIndex]);
+        }
+        if (learningMode.playbackFrameIndex >= session.frames.length - 1 && elapsed >= session.durationMs) {
+          stopLearningPlayback('Playback complete.');
+          return;
+        }
+        learningMode.playbackFrameId = requestAnimationFrame(playbackTick);
+      };
+      learningMode.playbackFrameId = requestAnimationFrame(playbackTick);
+    }
+
+    function downloadLearningSession(sessionId) {
+      const session = learningMode.sessions.find(item => item.id === sessionId);
+      if (!session) return;
+      const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${session.id}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setLearningStatus(`Exported ${session.name} as JSON.`, 'ready');
+    }
+
+    function startLearningRecording() {
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback('Playback stopped for recording.');
+      learningMode.recording = true;
+      learningMode.startedAt = performance.now();
+      learningMode.firstFrameAt = 0;
+      learningMode.lastCaptureAt = 0;
+      learningMode.frames = [];
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus('Learning is on · waiting for tracked face or upper body…', 'recording');
+      if (!faceTracking.enabled && !faceTracking.starting) startFaceTracking();
+    }
+
+    async function stopLearningRecording() {
+      if (!learningMode.recording) return;
+      learningMode.recording = false;
+      syncLearningModeControls();
+      if (!learningMode.frames.length) {
+        setLearningStatus('Learning stopped · no tracking data was captured.', 'ready');
+        renderLearningSessions();
+        return;
+      }
+      const createdAt = new Date();
+      const durationMs = learningMode.frames[learningMode.frames.length - 1].timeMs;
+      const session = {
+        schemaVersion: 1,
+        format: 'figure-learning-json',
+        id: `learning-session-${createdAt.getTime()}`,
+        name: `Session ${createdAt.toLocaleString()}`,
+        createdAt: createdAt.toISOString(),
+        durationMs,
+        sampleIntervalMs: LEARNING_SAMPLE_INTERVAL_MS,
+        trackedData: ['facialExpression', 'upperBodyPose', 'leftHand', 'rightHand'],
+        lowerBody: 'N/A',
+        frames: learningMode.frames
+      };
+      learningMode.frames = [];
+      try {
+        await persistLearningSession(session);
+        learningMode.sessions = [session, ...learningMode.sessions.filter(item => item.id !== session.id)];
+        renderLearningSessions();
+        setLearningStatus(`Saved ${session.name} · ${session.frames.length} frames.`, 'saved');
+      } catch (error) {
+        learningMode.sessions = [session, ...learningMode.sessions];
+        renderLearningSessions();
+        setLearningStatus(`Session kept for this page, but browser storage failed: ${error?.message || error}`, 'error');
+      }
+    }
+
+    async function initializeLearningMode() {
+      syncLearningModeControls();
+      try {
+        const sessions = await readStoredLearningSessions();
+        learningMode.sessions = sessions.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+        renderLearningSessions();
+      } catch (error) {
+        renderLearningSessions();
+        setLearningStatus(`Ready, but saved-session storage is unavailable: ${error?.message || error}`, 'error');
+      }
+    }
+
+    learningModeToggle?.addEventListener('click', () => {
+      if (learningMode.recording) stopLearningRecording();
+      else startLearningRecording();
+    });
+    learningPlaybackStop?.addEventListener('click', () => {
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback();
+    });
+
+    if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+      window.__getLearningModeTestState = () => ({
+        recording: learningMode.recording,
+        playing: learningMode.playing,
+        preparingPlayback: learningMode.preparingPlayback,
+        sessionCount: learningMode.sessions.length,
+        sessions: learningMode.sessions
+      });
     }
 
     function deactivatePostureMotions() {
@@ -598,6 +1690,16 @@
       });
 
       const allToggle = document.getElementById('toggleAllColors');
+      const meshColorList = document.getElementById('meshColorList');
+      const meshColorMenuToggle = document.getElementById('meshColorMenuToggle');
+      function setMeshColorMenuExpanded(expanded) {
+        meshColorMenuExpanded = Boolean(expanded);
+        if (meshColorList) meshColorList.hidden = !meshColorMenuExpanded;
+        if (meshColorMenuToggle) {
+          meshColorMenuToggle.textContent = meshColorMenuExpanded ? 'Collapse' : 'Expand';
+          meshColorMenuToggle.setAttribute('aria-expanded', String(meshColorMenuExpanded));
+        }
+      }
       function syncAllColorToggle() {
         const allActive = colorBindings.every(([key]) => meshControls[key]?.colorized);
         allToggle?.classList.toggle('active', allActive);
@@ -613,7 +1715,10 @@
         syncAllColorToggle();
       });
 
+      meshColorMenuToggle?.addEventListener('click', () => setMeshColorMenuExpanded(!meshColorMenuExpanded));
+
       syncAllColorToggle();
+      setMeshColorMenuExpanded(false);
       document.getElementById('themeBright')?.addEventListener('click', () => setDisplayTheme('bright'));
       document.getElementById('themeDark')?.addEventListener('click', () => setDisplayTheme('dark'));
       document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale = Math.min(2.4, zoomScale * 1.12); resize(); });
@@ -623,6 +1728,10 @@
       document.getElementById('viewFront')?.addEventListener('click', () => setCameraView('front'));
       document.getElementById('viewSide')?.addEventListener('click', () => setCameraView('side'));
       document.getElementById('viewTop')?.addEventListener('click', () => setCameraView('top'));
+      faceTrackingToggle?.addEventListener('click', () => {
+        if (faceTracking.enabled || faceTracking.starting) stopFaceTracking();
+        else startFaceTracking();
+      });
       document.getElementById('runToggle')?.addEventListener('click', e => {
         stopAutoMovesForManual();
         runMotion = !runMotion;
@@ -705,6 +1814,7 @@
       });
       syncCameraViewButtons();
       syncWalkDirectionConsole();
+      syncFaceTrackingButton();
     }
 
     function bindWalkButton(id, key) {
@@ -1511,7 +2621,69 @@
       return { ankle, heel, arch, forefoot };
     }
 
+    function buildTrackedHand(side, wristX, wristY, wristZ, landmarks) {
+      const sourceWrist = landmarks[0];
+      const middleBase = landmarks[9];
+      const palmSpan = Math.max(.055, landmarkDistance2D(sourceWrist, middleBase));
+      const handScale = faceClamp(.245 / palmSpan, 1.20, 4.20);
+      const mapped = landmarks.map(point => ({
+        x: wristX - (point.x - sourceWrist.x) * handScale,
+        y: wristY + (point.y - sourceWrist.y) * handScale,
+        z: wristZ - ((point.z || 0) - (sourceWrist.z || 0)) * handScale * .82
+      }));
+      mapped[0] = { x: wristX, y: wristY, z: wristZ };
+
+      const palmIndices = [0, 5, 9, 13, 17];
+      const palmCenter = palmIndices.reduce((sum, index) => ({
+        x: sum.x + mapped[index].x / palmIndices.length,
+        y: sum.y + mapped[index].y / palmIndices.length,
+        z: sum.z + mapped[index].z / palmIndices.length
+      }), { x: 0, y: 0, z: 0 });
+      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const palm = buildEllipsoid(palmCenter.x, palmCenter.y, palmCenter.z, .082, .135, .125, 7, 15, 'palm');
+      connectGridToGrid(wrist, palm, 1, 2, .70);
+
+      const jointGrids = new Map();
+      const jointGrid = (index, part = 'knuckle', radius = .038) => {
+        if (jointGrids.has(index)) return jointGrids.get(index);
+        const point = mapped[index];
+        const grid = buildEllipsoid(point.x, point.y, point.z, radius, radius, radius, 4, 9, part);
+        jointGrids.set(index, grid);
+        return grid;
+      };
+      const connectSegment = (fromIndex, toIndex, radiusA, radiusB, part = 'finger') => {
+        const from = mapped[fromIndex], to = mapped[toIndex];
+        const tube = buildTaperedTube(from, to, radiusA, radiusB, 4, 9, part);
+        connectGridToGrid(jointGrid(fromIndex, fromIndex === 0 ? 'wrist' : 'fingerJoint', radiusA * 1.03), tube, 1, 2, .68);
+        connectGridToGrid(tube, jointGrid(toIndex, toIndex % 4 === 0 ? 'fingerTip' : 'fingerJoint', radiusB * 1.05), 1, 2, .64);
+      };
+
+      const palmEdges = [[0,5],[0,17],[5,9],[9,13],[13,17],[5,17]];
+      for (const [a, b] of palmEdges) {
+        const tube = buildTaperedTube(mapped[a], mapped[b], .030, .027, 3, 8, 'palm');
+        connectGridToGrid(palm, tube, 2, 2, .42);
+      }
+      connectGridToGrid(wrist, jointGrid(0, 'wrist', .055), 1, 1, .72);
+      for (const index of [5,9,13,17]) connectGridToGrid(palm, jointGrid(index, 'knuckle', .043), 2, 2, .52);
+
+      const fingers = [
+        { path: [0,1,2,3,4], radii: [.041,.038,.033,.027,.021] },
+        { path: [5,6,7,8], radii: [.039,.034,.029,.021] },
+        { path: [9,10,11,12], radii: [.041,.035,.030,.022] },
+        { path: [13,14,15,16], radii: [.038,.033,.028,.020] },
+        { path: [17,18,19,20], radii: [.034,.030,.025,.018] }
+      ];
+      for (const finger of fingers) {
+        for (let index = 0; index < finger.path.length - 1; index++) {
+          connectSegment(finger.path[index], finger.path[index + 1], finger.radii[index], finger.radii[index + 1]);
+        }
+      }
+      return { wrist, palm };
+    }
+
     function buildHand(side, wristX, wristY, wristZ, forearmPitch = 0) {
+      const trackedLandmarks = upperBodyTracking.handLandmarks[side];
+      if (trackedLandmarks?.length >= 21) return buildTrackedHand(side, wristX, wristY, wristZ, trackedLandmarks);
       const handPointStart = points.length;
       const sign = side === 'left' ? -1 : 1;
       const palmX = wristX - sign * .038;
@@ -1890,6 +3062,8 @@
             wrist: blendPoint(pose.wrist, jumpPose.wrist, .86)
           };
         }
+        const trackedPose = upperBodyTracking.hasPose && upperBodyTracking.armTargets[side];
+        if (trackedPose) pose = trackedPose;
         return pose;
       }
       const lArm=armPose('left');
@@ -1941,14 +3115,22 @@
     }
     function rotatePoint(p) {
       const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
-      let hx = p.x, hz = p.z;
+      let px = p.x, py = p.y, pz = p.z;
+      if ((p.part === 'head' || p.part === 'trackedFace') && Math.abs(faceTracking.headRoll) > .0001) {
+        const hc = Math.cos(faceTracking.headRoll), hs = Math.sin(faceTracking.headRoll);
+        const dx = px;
+        const dy = py + 1.92;
+        px = dx * hc - dy * hs;
+        py = -1.92 + dx * hs + dy * hc;
+      }
+      let hx = px, hz = pz;
       if (p.part !== 'grid') {
         const yaw = figureYaw();
         const hc = Math.cos(yaw), hs = Math.sin(yaw);
-        hx = p.x * hc + p.z * hs + walkPosition.x;
-        hz = -p.x * hs + p.z * hc + walkPosition.z;
+        hx = px * hc + pz * hs + walkPosition.x;
+        hz = -px * hs + pz * hc + walkPosition.z;
       }
-      let x=hx*cy+hz*sy, z=-hx*sy+hz*cy, y=p.y;
+      let x=hx*cy+hz*sy, z=-hx*sy+hz*cy, y=py;
       return { x, y:y*cx-z*sx, z:y*sx+z*cx };
     }
     function screenVectorToWorld(dx, dy) {
@@ -1966,6 +3148,179 @@
     }
     function smoothstep(e0,e1,x){ const v=Math.max(0,Math.min(1,(x-e0)/(e1-e0))); return v*v*(3-2*v); }
     function projectPoint(p){ const r=rotatePoint(p), camera=5.2, perspective=camera/(camera-r.z); return {...p,rx:r.x,ry:r.y,rz:r.z,perspective,sx:r.x*scale*perspective,sy:r.y*scale*perspective,visible:camera-r.z>.5}; }
+    function faceClamp(value, min, max){ return Math.max(min, Math.min(max, value)); }
+    function trackedFaceFacingAmount(){
+      return Math.max(0, Math.cos(normalizeAngle(figureYaw() + rotationY)) * Math.cos(rotationX));
+    }
+    function trackedFaceOverlayVisible(){
+      return (faceTracking.enabled || learningMode.playing) && faceTracking.hasFace && faceTracking.landmarks.length > 0 && trackedFaceFacingAmount() > .08;
+    }
+    function trackedFaceMappingFrame(){
+      if (!trackedFaceOverlayVisible()) return null;
+      const lm = faceTracking.landmarks;
+      const left = lm[234], right = lm[454], top = lm[10], bottom = lm[152];
+      if (!left || !right || !top || !bottom) return null;
+      const rawCenterX = (top.x + bottom.x) * .5;
+      const rawCenterY = (top.y + bottom.y) * .5;
+      const rollCos = Math.cos(faceTracking.inputRoll);
+      const rollSin = Math.sin(faceTracking.inputRoll);
+      const unroll = point => {
+        const dx = point.x - rawCenterX;
+        const dy = point.y - rawCenterY;
+        return {
+          x: rawCenterX + dx * rollCos + dy * rollSin,
+          y: rawCenterY - dx * rollSin + dy * rollCos,
+          z: point.z || 0
+        };
+      };
+      const unrolledLeft = unroll(left);
+      const unrolledRight = unroll(right);
+      const unrolledTop = unroll(top);
+      const unrolledBottom = unroll(bottom);
+      const width = Math.max(.08, Math.abs(unrolledRight.x - unrolledLeft.x));
+      const topY = Math.min(unrolledTop.y, unrolledBottom.y);
+      const bottomY = Math.max(unrolledTop.y, unrolledBottom.y);
+      return {
+        lm,
+        unroll,
+        centerX: (unrolledLeft.x + unrolledRight.x) * .5,
+        width,
+        topY,
+        height: Math.max(.10, bottomY - topY),
+        opacity: smoothstep(.08, .44, trackedFaceFacingAmount())
+      };
+    }
+    function mapTrackedFacePoint(point, frame){
+      if (!point || !frame) return null;
+      const neutral = frame.unroll(point);
+      const nx = faceClamp((neutral.x - frame.centerX) / frame.width, -.54, .54);
+      const ny = faceClamp((neutral.y - frame.topY) / frame.height, 0, 1);
+      const x = -nx * .53;
+      const lowerFaceBlend = smoothstep(.62, 1, ny);
+      const y = -2.235 + ny * .625 + lowerFaceBlend * TRACKED_FACE_CHIN_DROP;
+      const ellipsoid = Math.max(.018, 1 - Math.pow(x / .305, 2) - Math.pow((y + 1.92) / .365, 2));
+      const surfaceZ = .045 + .292 * Math.sqrt(ellipsoid);
+      const trackedDepth = faceClamp(-neutral.z / frame.width * .045, -.018, .055);
+      return projectPoint({ x, y, z: surfaceZ + trackedDepth + .006, part: 'trackedFace', weight: 1 });
+    }
+    function trackedFaceTessellation(){
+      if (typeof FACEMESH_TESSELATION !== 'undefined' && Array.isArray(FACEMESH_TESSELATION)) {
+        return FACEMESH_TESSELATION;
+      }
+      return Array.isArray(window.FACEMESH_TESSELATION) ? window.FACEMESH_TESSELATION : [];
+    }
+    function drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth){
+      const jaw = TRACKED_FACE_LOWER_JAW.map(index => mappedLandmarks[index]).filter(point => point?.visible);
+      if (jaw.length !== TRACKED_FACE_LOWER_JAW.length) {
+        faceTracking.neckBufferConnectionCount = 0;
+        return;
+      }
+      const neck = jaw.map((_, index) => {
+        const across = index / (jaw.length - 1) * 2 - 1;
+        return projectPoint({ x: across * .108, y: -1.572, z: .108, part: 'neck', weight: 1 });
+      });
+      const rows = [jaw];
+      for (let row = 1; row <= TRACKED_FACE_NECK_BUFFER_ROWS; row++) {
+        const amount = smoothstep(0, 1, row / (TRACKED_FACE_NECK_BUFFER_ROWS + 1));
+        rows.push(jaw.map((point, index) => ({
+          sx: point.sx + (neck[index].sx - point.sx) * amount,
+          sy: point.sy + (neck[index].sy - point.sy) * amount,
+          visible: point.visible && neck[index].visible
+        })));
+      }
+      rows.push(neck);
+
+      ctx.globalAlpha = frame.opacity * (displayTheme === 'dark' ? .25 : .20);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = Math.max(.32, baseWidth * .38);
+      ctx.beginPath();
+      let connectionCount = 0;
+      for (const row of rows) {
+        for (let index = 0; index < row.length - 1; index++) {
+          if (!row[index]?.visible || !row[index + 1]?.visible) continue;
+          ctx.moveTo(row[index].sx, row[index].sy);
+          ctx.lineTo(row[index + 1].sx, row[index + 1].sy);
+          connectionCount++;
+        }
+      }
+      for (let row = 0; row < rows.length - 1; row++) {
+        for (let index = 0; index < rows[row].length; index++) {
+          const a = rows[row][index], b = rows[row + 1][index];
+          if (!a?.visible || !b?.visible) continue;
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(b.sx, b.sy);
+          connectionCount++;
+          const diagonalIndex = row % 2 === 0 ? index + 1 : index - 1;
+          if (diagonalIndex < 0 || diagonalIndex >= rows[row].length) continue;
+          const diagonal = rows[row + 1][diagonalIndex];
+          if (!diagonal?.visible) continue;
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(diagonal.sx, diagonal.sy);
+          connectionCount++;
+        }
+      }
+      ctx.stroke();
+      faceTracking.neckBufferConnectionCount = connectionCount;
+    }
+    function drawTrackedFace(){
+      const frame = trackedFaceMappingFrame();
+      if (!frame) {
+        faceTracking.meshConnectionCount = 0;
+        faceTracking.neckBufferConnectionCount = 0;
+        return;
+      }
+      const stroke = displayTheme === 'dark' ? '#9DD7FF' : '#111111';
+      const pointInk = displayTheme === 'dark' ? '#9DD7FF' : '#050505';
+      const baseWidth = Math.max(.58, scale / 150);
+      const mappedLandmarks = frame.lm.map(point => mapTrackedFacePoint(point, frame));
+      const meshConnections = trackedFaceTessellation();
+      faceTracking.meshConnectionCount = meshConnections.length;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (meshConnections.length) {
+        ctx.globalAlpha = frame.opacity * (displayTheme === 'dark' ? .30 : .25);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = Math.max(.34, baseWidth * .43);
+        ctx.beginPath();
+        for (const connection of meshConnections) {
+          const a = mappedLandmarks[connection[0]];
+          const b = mappedLandmarks[connection[1]];
+          if (!a?.visible || !b?.visible) continue;
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(b.sx, b.sy);
+        }
+        ctx.stroke();
+      }
+      drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth);
+      for (const path of TRACKED_FACE_PATHS) {
+        if (path.kind === 'outer' && !SHOW_TRACKED_FACE_OUTER_CONTOUR) continue;
+        const mapped = path.indices
+          .map(index => mappedLandmarks[index])
+          .filter(point => point?.visible);
+        if (mapped.length < 2) continue;
+        ctx.globalAlpha = frame.opacity * (path.width < 1 ? .58 : .92);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = baseWidth * path.width;
+        ctx.beginPath();
+        ctx.moveTo(mapped[0].sx, mapped[0].sy);
+        for (let i = 1; i < mapped.length; i++) ctx.lineTo(mapped[i].sx, mapped[i].sy);
+        if (path.closed) ctx.closePath();
+        ctx.stroke();
+      }
+
+      for (const index of [468, 473]) {
+        const point = mappedLandmarks[index];
+        if (!point?.visible) continue;
+        ctx.globalAlpha = frame.opacity * .92;
+        ctx.fillStyle = pointInk;
+        ctx.beginPath();
+        ctx.arc(point.sx, point.sy, Math.max(.8, baseWidth * 1.45) * point.perspective, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
     function partInk(part){
       if (isHiddenPart(part)) return 'rgba(0,0,0,0)';
       const key=meshControlKey(part); if(key) return meshDisplayColor(part);
@@ -2065,6 +3420,10 @@ Z: ${cz.toFixed(3)}`;
     function draw(now = performance.now()){
       const frameStep = lastFrameStamp ? Math.min(2.2, Math.max(.25, (now - lastFrameStamp) / 16.6667)) : 1;
       lastFrameStamp = now;
+      captureLearningFrame(now);
+      const desiredHeadRoll = (faceTracking.enabled || learningMode.playing) && faceTracking.hasFace ? faceTracking.targetHeadRoll : 0;
+      faceTracking.headRoll += (desiredHeadRoll - faceTracking.headRoll) * Math.min(1, .18 * frameStep);
+      if (Math.abs(desiredHeadRoll - faceTracking.headRoll) < .0001) faceTracking.headRoll = desiredHeadRoll;
       updateCameraReadout();
       const previousState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${crouchBlend.toFixed(4)}:${squatBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
       updateAutoMoves(frameStep);
@@ -2089,12 +3448,15 @@ Z: ${cz.toFixed(3)}`;
         if (jumpTime >= 1) jumpActive = false;
       }
       const currentState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${crouchBlend.toFixed(4)}:${squatBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
-      if (runMotion || moonwalkMotion || spinMotion || crouchMotion || squatMotion || jumpActive || gaitBlend > 0 || spinBlend > 0 || crouchBlend > 0 || squatBlend > 0 || previousState !== currentState) buildHuman();
+      if (runMotion || moonwalkMotion || spinMotion || crouchMotion || squatMotion || jumpActive || gaitBlend > 0 || spinBlend > 0 || crouchBlend > 0 || squatBlend > 0 || previousState !== currentState || upperBodyTracking.dirty) {
+        buildHuman();
+        upperBodyTracking.dirty = false;
+      }
       ctx.clearRect(0,0,width,height);
       if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY*=.985; }
       rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01*frameStep;
       syncCameraViewButtons();
-      const projected=points.map(projectPoint); lastProjected=projected; ctx.save(); ctx.translate(width/2,height/2+scale*.06+height*cameraVerticalOffset);
+      const projected=points.map(projectPoint); lastProjected=projected; const showTrackedFace=trackedFaceOverlayVisible(); ctx.save(); ctx.translate(width/2,height/2+scale*.06+height*cameraVerticalOffset);
       const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,displayTheme==='dark'?'rgba(226,229,230,.10)':'rgba(255,255,255,.42)'); aura.addColorStop(.55,displayTheme==='dark'?'rgba(226,229,230,.035)':'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
       drawCoordinatePlane();
       const orderedFaces=faces.map(face=>{
@@ -2115,24 +3477,29 @@ Z: ${cz.toFixed(3)}`;
       for(const link of links){
         const a=projected[link.a], b=projected[link.b];
         if(!a||!b||!a.visible||!b.visible||isHiddenPart(a.part)||isHiddenPart(b.part)) continue;
+        if(showTrackedFace && (a.part === 'head' || b.part === 'head')) continue;
         const depth=smoothstep(-1.8,1.3,(a.rz+b.rz)/2);
         const pulse=.88+.12*Math.sin(tick*3+link.a*.13);
         const isShadeLink = a.part === 'cap' || b.part === 'cap';
         const isBootLink = isBootPart(a.part) || isBootPart(b.part);
-        ctx.globalAlpha=isShadeLink ? 1 : (isBootLink ? Math.min(.76,link.strength*(.34+.64*depth)*pulse) : Math.min(.48,link.strength*(.18+.62*depth)*pulse));
+        const linkAlpha=isShadeLink ? 1 : (isBootLink ? Math.min(.76,link.strength*(.34+.64*depth)*pulse) : Math.min(.48,link.strength*(.18+.62*depth)*pulse));
+        ctx.globalAlpha=linkAlpha;
         ctx.strokeStyle=strokeInkForLink(a,b);
         ctx.lineWidth=Math.max(.35,scale/320)*(.5+link.strength*.55)*((a.perspective+b.perspective)/2)*(isShadeLink ? 1.35 : (isBootLink ? 1.18 : 1));
         ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
       }
       const ordered=projected.filter(p=>p.visible&&!isHiddenPart(p.part)).sort((a,b)=>a.rz-b.rz);
       for(const p of ordered){
+        if(showTrackedFace && p.part === 'head') continue;
         const depth=smoothstep(-1.75,1.35,p.rz);
         const scan=.93+.07*Math.sin(tick*7+p.ry*14+p.jitter*8);
         const isBootPoint=isBootPart(p.part);
         const size=Math.max(.65,scale/138)*p.weight*p.perspective*(.82+.36*depth)*(p.part === 'cap' ? 1.28 : (isBootPoint ? 1.10 : 1));
-        ctx.globalAlpha=p.part === 'cap' ? 1 : (isBootPoint ? Math.max(.42,Math.min(.98,(.38+.74*depth)*scan)) : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)));
+        const pointAlpha=p.part === 'cap' ? 1 : (isBootPoint ? Math.max(.42,Math.min(.98,(.38+.74*depth)*scan)) : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)));
+        ctx.globalAlpha=pointAlpha;
         ctx.fillStyle=partInk(p.part); ctx.beginPath(); ctx.arc(p.sx,p.sy,size,0,Math.PI*2); ctx.fill();
       }
+      drawTrackedFace();
       ctx.globalAlpha=.16; ctx.strokeStyle=displayTheme==='dark'?hexToRgba(DARK_FIGURE_INK,.72):'rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
       ctx.restore(); requestAnimationFrame(draw);
     }
@@ -2243,10 +3610,15 @@ Z: ${cz.toFixed(3)}`;
       setWalkKey(key, false);
       e.preventDefault();
     });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && (faceTracking.enabled || faceTracking.starting)) stopFaceTracking();
+    });
+    window.addEventListener('pagehide', () => stopFaceTracking());
     window.addEventListener('resize',resize);
     window.render_game_to_text = () => JSON.stringify({
       coordinateSystem: 'Figure-local X is left/right, Y increases downward, Z is depth; walk X/Z are ground displacement.',
       theme: displayTheme,
+      ui: { meshColorMenuExpanded },
       camera: { rotationX, rotationY, zoom: zoomScale, verticalOffset: cameraVerticalOffset },
       motion: {
         run: runMotion,
@@ -2259,10 +3631,55 @@ Z: ${cz.toFixed(3)}`;
         squatBlend,
         autoMoves: autoMovesActive
       },
+      faceTracking: {
+        enabled: faceTracking.enabled,
+        starting: faceTracking.starting,
+        status: faceTracking.status,
+        hasFace: faceTracking.hasFace,
+        landmarkCount: faceTracking.landmarks.length,
+        meshConnectionCount: faceTracking.meshConnectionCount,
+        neckBufferConnectionCount: faceTracking.neckBufferConnectionCount,
+        neckBufferRows: TRACKED_FACE_NECK_BUFFER_ROWS,
+        outerContourVisible: SHOW_TRACKED_FACE_OUTER_CONTOUR,
+        frontVisible: trackedFaceOverlayVisible(),
+        baseHeadMeshHidden: trackedFaceOverlayVisible(),
+        headRollRadians: faceTracking.headRoll,
+        headRollDegrees: faceTracking.headRoll * 180 / Math.PI,
+        targetHeadRollDegrees: faceTracking.targetHeadRoll * 180 / Math.PI,
+        chinDrop: TRACKED_FACE_CHIN_DROP,
+        error: faceTracking.error
+      },
+      upperBodyTracking: {
+        hasPose: upperBodyTracking.hasPose,
+        poseLandmarkCount: upperBodyTracking.poseLandmarks.length,
+        leftArmTracked: Boolean(upperBodyTracking.armTargets.left),
+        rightArmTracked: Boolean(upperBodyTracking.armTargets.right),
+        leftHandTracked: upperBodyTracking.handLandmarks.left.length >= 21,
+        rightHandTracked: upperBodyTracking.handLandmarks.right.length >= 21,
+        leftHandLandmarkCount: upperBodyTracking.handLandmarks.left.length,
+        rightHandLandmarkCount: upperBodyTracking.handLandmarks.right.length,
+        pipelineFrame: upperBodyTracking.frameSequence,
+        sendFailures: { ...upperBodyTracking.sendFailures },
+        pipelineError: upperBodyTracking.lastPipelineError
+      },
+      learningMode: {
+        recording: learningMode.recording,
+        playing: learningMode.playing,
+        preparingPlayback: learningMode.preparingPlayback,
+        status: learningMode.status,
+        recordingFrameCount: learningMode.frames.length,
+        savedSessionCount: learningMode.sessions.length,
+        playbackSessionId: learningMode.playbackSessionId,
+        playbackFrameIndex: learningMode.playbackFrameIndex,
+        lowerBody: 'N/A'
+      },
       boots: { leftAttached: bootState.left.attached, rightAttached: bootState.right.attached }
     });
     setDisplayTheme('bright');
-    setupMeshControls(); resize(); draw();
+    setupMeshControls();
+    initializeLearningMode();
+    resize();
+    draw();
   </script>
 </body>
 </html>
