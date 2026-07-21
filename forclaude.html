@@ -2110,6 +2110,32 @@
 
     function isHiddenPart(part) { return part === 'coveredMesh'; }
     function isBootPart(part) { return ['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part); }
+    const HAND_SKIN_PARTS = new Set(['wrist','palm','knuckle','finger','fingerJoint','fingerTip']);
+    function isHandSkinPart(part) { return HAND_SKIN_PARTS.has(part); }
+    function isHandSkinRenderPoint(point) { return Boolean(point) && (isHandSkinPart(point.part) || point.handSkin); }
+    function handSkinColor(part) {
+      const key = meshControlKey(part);
+      if (key && meshControls[key]?.colorized) return meshControls[key].color;
+      return displayTheme === 'dark' ? '#b8795d' : '#c98f70';
+    }
+    const shadedSurfaceColorCache = new Map();
+    function shadedSurfaceColor(hex, shade = 1) {
+      const bucket = Math.round(faceClamp(shade, .52, 1.08) * 28) / 28;
+      const cacheKey = `${hex}:${bucket}`;
+      if (shadedSurfaceColorCache.has(cacheKey)) return shadedSurfaceColorCache.get(cacheKey);
+      const clean = String(hex).replace('#', '');
+      const expanded = clean.length === 3 ? clean.split('').map(value => value + value).join('') : clean;
+      const numeric = Number.parseInt(expanded, 16);
+      const base = Number.isFinite(numeric)
+        ? { r: (numeric >> 16) & 255, g: (numeric >> 8) & 255, b: numeric & 255 }
+        : { r: 201, g: 143, b: 112 };
+      const highlight = Math.max(0, bucket - 1) * 2.25;
+      const channel = value => Math.round(faceClamp(value * Math.min(1, bucket) + (255 - value) * highlight, 0, 255));
+      const color = `rgb(${channel(base.r)},${channel(base.g)},${channel(base.b)})`;
+      if (shadedSurfaceColorCache.size > 160) shadedSurfaceColorCache.clear();
+      shadedSurfaceColorCache.set(cacheKey, color);
+      return color;
+    }
 
     function addPoint(x, y, z, part, weight = 1, meta = null) {
       points.push({ x, y, z, part, weight, ...(meta || {}), jitter: ((points.length * 9301) % 997) / 997 });
@@ -2117,6 +2143,21 @@
     }
     function addLink(a, b, strength = 1) { if (a >= 0 && b >= 0) links.push({ a, b, strength }); }
     function addFace(ids, part, alpha = .16) { if (ids.every(id => id >= 0)) faces.push({ ids, part, alpha }); }
+    function addSkinGridSurface(grid, part, alpha = .98, capEnds = false) {
+      if (!Array.isArray(grid) || grid.length < 2 || !grid[0]?.length) return grid;
+      const radialSteps = grid[0].length;
+      for (let row = 0; row < grid.length - 1; row++) {
+        for (let column = 0; column < radialSteps; column++) {
+          const next = (column + 1) % radialSteps;
+          addFace([grid[row][column], grid[row][next], grid[row + 1][next], grid[row + 1][column]], part, alpha);
+        }
+      }
+      if (capEnds) {
+        addFace([...grid[0]].reverse(), part, alpha);
+        addFace([...grid[grid.length - 1]], part, alpha);
+      }
+      return grid;
+    }
     function normalize(v) { const len = Math.hypot(v.x,v.y,v.z) || 1; return { x:v.x/len, y:v.y/len, z:v.z/len }; }
     function cross(a,b) { return { x:a.y*b.z-a.z*b.y, y:a.z*b.x-a.x*b.z, z:a.x*b.y-a.y*b.x }; }
     function basisFromEndpoints(a,b) {
@@ -2654,6 +2695,63 @@
       return { ankle, heel, arch, forefoot };
     }
 
+    function buildTrackedPalmSkin(mapped, palmCenter) {
+      const across = {
+        x: mapped[5].x - mapped[17].x,
+        y: mapped[5].y - mapped[17].y,
+        z: mapped[5].z - mapped[17].z
+      };
+      const length = {
+        x: mapped[9].x - mapped[0].x,
+        y: mapped[9].y - mapped[0].y,
+        z: mapped[9].z - mapped[0].z
+      };
+      const normal = normalize(cross(across, length));
+      const outline = [0, 1, 2, 5, 9, 13, 17];
+      const front = [];
+      const back = [];
+      for (const index of outline) {
+        const source = mapped[index];
+        const spread = index === 0 ? 1.01 : 1.055;
+        const expanded = {
+          x: palmCenter.x + (source.x - palmCenter.x) * spread,
+          y: palmCenter.y + (source.y - palmCenter.y) * spread,
+          z: palmCenter.z + (source.z - palmCenter.z) * spread
+        };
+        front.push(addPoint(
+          expanded.x + normal.x * .046,
+          expanded.y + normal.y * .046,
+          expanded.z + normal.z * .046,
+          'palm', 1.05
+        ));
+        back.push(addPoint(
+          expanded.x - normal.x * .038,
+          expanded.y - normal.y * .038,
+          expanded.z - normal.z * .038,
+          'palm', 1.05
+        ));
+      }
+      const frontCenter = addPoint(
+        palmCenter.x + normal.x * .060,
+        palmCenter.y + normal.y * .060,
+        palmCenter.z + normal.z * .060,
+        'palm', 1.08
+      );
+      const backCenter = addPoint(
+        palmCenter.x - normal.x * .044,
+        palmCenter.y - normal.y * .044,
+        palmCenter.z - normal.z * .044,
+        'palm', 1.08
+      );
+      for (let index = 0; index < outline.length; index++) {
+        const next = (index + 1) % outline.length;
+        addFace([frontCenter, front[index], front[next]], 'palm', .99);
+        addFace([backCenter, back[next], back[index]], 'palm', .99);
+        addFace([front[index], back[index], back[next], front[next]], 'palm', .99);
+      }
+      return { front, back, frontCenter, backCenter };
+    }
+
     function buildTrackedHand(side, wristX, wristY, wristZ, landmarks) {
       const sourceWrist = landmarks[0];
       const middleBase = landmarks[9];
@@ -2672,31 +2770,47 @@
         y: sum.y + mapped[index].y / palmIndices.length,
         z: sum.z + mapped[index].z / palmIndices.length
       }), { x: 0, y: 0, z: 0 });
-      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const wristDirection = normalize({
+        x: palmCenter.x - mapped[0].x,
+        y: palmCenter.y - mapped[0].y,
+        z: palmCenter.z - mapped[0].z
+      });
+      const wristBase = {
+        x: mapped[0].x - wristDirection.x * .080,
+        y: mapped[0].y - wristDirection.y * .080,
+        z: mapped[0].z - wristDirection.z * .080
+      };
+      const wristEnd = blendPoint(mapped[0], palmCenter, .40);
+      const wrist = addSkinGridSurface(
+        buildTaperedTube(wristBase, wristEnd, .080, .098, 6, 14, 'wrist'),
+        'wrist', .99, true
+      );
       const palm = buildEllipsoid(palmCenter.x, palmCenter.y, palmCenter.z, .082, .135, .125, 7, 15, 'palm');
       connectGridToGrid(wrist, palm, 1, 2, .70);
+      buildTrackedPalmSkin(mapped, palmCenter);
 
       const jointGrids = new Map();
+      jointGrids.set(0, wrist);
       const jointGrid = (index, part = 'knuckle', radius = .038) => {
         if (jointGrids.has(index)) return jointGrids.get(index);
         const point = mapped[index];
-        const grid = buildEllipsoid(point.x, point.y, point.z, radius, radius, radius, 4, 9, part);
+        const grid = addSkinGridSurface(
+          buildEllipsoid(point.x, point.y, point.z, radius, radius, radius, 5, 11, part),
+          part
+        );
         jointGrids.set(index, grid);
         return grid;
       };
       const connectSegment = (fromIndex, toIndex, radiusA, radiusB, part = 'finger') => {
         const from = mapped[fromIndex], to = mapped[toIndex];
-        const tube = buildTaperedTube(from, to, radiusA, radiusB, 4, 9, part);
+        const tube = addSkinGridSurface(
+          buildTaperedTube(from, to, radiusA, radiusB, 5, 11, part),
+          part, .99, true
+        );
         connectGridToGrid(jointGrid(fromIndex, fromIndex === 0 ? 'wrist' : 'fingerJoint', radiusA * 1.03), tube, 1, 2, .68);
         connectGridToGrid(tube, jointGrid(toIndex, toIndex % 4 === 0 ? 'fingerTip' : 'fingerJoint', radiusB * 1.05), 1, 2, .64);
       };
 
-      const palmEdges = [[0,5],[0,17],[5,9],[9,13],[13,17],[5,17]];
-      for (const [a, b] of palmEdges) {
-        const tube = buildTaperedTube(mapped[a], mapped[b], .030, .027, 3, 8, 'palm');
-        connectGridToGrid(palm, tube, 2, 2, .42);
-      }
-      connectGridToGrid(wrist, jointGrid(0, 'wrist', .055), 1, 1, .72);
       for (const index of [5,9,13,17]) connectGridToGrid(palm, jointGrid(index, 'knuckle', .043), 2, 2, .52);
 
       const fingers = [
@@ -2721,14 +2835,16 @@
       const sign = side === 'left' ? -1 : 1;
       const palmX = wristX - sign * .038;
       const palmZ = wristZ + .025;
-      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
-      const palm = buildEllipsoid(palmX, wristY + .150, palmZ, .078, .180, .135, 7, 16, 'palm');
+      const skinGrid = (grid, part, capEnds = false) => addSkinGridSurface(grid, part, .98, capEnds);
+      const handBonePoint = (x, y, z, weight) => addPoint(x, y, z, 'bone', weight, { handSkin: true });
+      const wrist = skinGrid(buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 7, 14, 'wrist'), 'wrist');
+      const palm = skinGrid(buildEllipsoid(palmX, wristY + .150, palmZ, .078, .180, .135, 9, 18, 'palm'), 'palm');
 
       connectGridToGrid(wrist, palm, 1, 2, .68);
 
-      const wristBone = bonePoint(wristX, wristY, wristZ + .020, .70);
-      const palmCenter = bonePoint(palmX, wristY + .140, palmZ + .015, .72);
-      const palmTop = bonePoint(palmX, wristY + .270, palmZ + .016, .66);
+      const wristBone = handBonePoint(wristX, wristY, wristZ + .020, .70);
+      const palmCenter = handBonePoint(palmX, wristY + .140, palmZ + .015, .72);
+      const palmTop = handBonePoint(palmX, wristY + .270, palmZ + .016, .66);
       addLink(wristBone, palmCenter, .76);
       addLink(palmCenter, palmTop, .72);
 
@@ -2746,11 +2862,11 @@
         const curlX = -sign * .010;
         const curlZ = (i - 1.5) * .010;
 
-        const baseKnuckle = buildEllipsoid(baseX, baseY, baseZ, fingerWidths[i] * 1.18, fingerWidths[i] * .96, fingerWidths[i] * 1.05, 4, 10, 'knuckle');
-        const fingerA = buildTaperedTube({ x: baseX, y: baseY + .012, z: baseZ }, { x: baseX + curlX, y: midY, z: baseZ + curlZ }, fingerWidths[i], fingerWidths[i] * .82, 4, 9, 'finger');
-        const middleJoint = buildEllipsoid(baseX + curlX, midY, baseZ + curlZ, fingerWidths[i] * .86, fingerWidths[i] * .80, fingerWidths[i] * .80, 4, 9, 'fingerJoint');
-        const fingerB = buildTaperedTube({ x: baseX + curlX, y: midY + .010, z: baseZ + curlZ }, { x: baseX + curlX * 1.4, y: tipY, z: baseZ + curlZ * 1.5 }, fingerWidths[i] * .78, fingerWidths[i] * .50, 4, 9, 'finger');
-        const tip = buildEllipsoid(baseX + curlX * 1.4, tipY + .010, baseZ + curlZ * 1.5, fingerWidths[i] * .54, fingerWidths[i] * .64, fingerWidths[i] * .54, 4, 9, 'fingerTip');
+        const baseKnuckle = skinGrid(buildEllipsoid(baseX, baseY, baseZ, fingerWidths[i] * 1.18, fingerWidths[i] * .96, fingerWidths[i] * 1.05, 5, 11, 'knuckle'), 'knuckle');
+        const fingerA = skinGrid(buildTaperedTube({ x: baseX, y: baseY + .012, z: baseZ }, { x: baseX + curlX, y: midY, z: baseZ + curlZ }, fingerWidths[i], fingerWidths[i] * .82, 5, 11, 'finger'), 'finger', true);
+        const middleJoint = skinGrid(buildEllipsoid(baseX + curlX, midY, baseZ + curlZ, fingerWidths[i] * .86, fingerWidths[i] * .80, fingerWidths[i] * .80, 5, 11, 'fingerJoint'), 'fingerJoint');
+        const fingerB = skinGrid(buildTaperedTube({ x: baseX + curlX, y: midY + .010, z: baseZ + curlZ }, { x: baseX + curlX * 1.4, y: tipY, z: baseZ + curlZ * 1.5 }, fingerWidths[i] * .78, fingerWidths[i] * .50, 5, 11, 'finger'), 'finger', true);
+        const tip = skinGrid(buildEllipsoid(baseX + curlX * 1.4, tipY + .010, baseZ + curlZ * 1.5, fingerWidths[i] * .54, fingerWidths[i] * .64, fingerWidths[i] * .54, 5, 11, 'fingerTip'), 'fingerTip');
 
         connectGridToGrid(palm, baseKnuckle, 2, 2, .46);
         connectGridToGrid(baseKnuckle, fingerA, 1, 2, .66);
@@ -2758,9 +2874,9 @@
         connectGridToGrid(middleJoint, fingerB, 1, 2, .62);
         connectGridToGrid(fingerB, tip, 1, 2, .58);
 
-        const baseBone = bonePoint(baseX, baseY, baseZ, .52);
-        const midBone = bonePoint(baseX + curlX, midY, baseZ + curlZ, .48);
-        const tipBone = bonePoint(baseX + curlX * 1.4, tipY, baseZ + curlZ * 1.5, .44);
+        const baseBone = handBonePoint(baseX, baseY, baseZ, .52);
+        const midBone = handBonePoint(baseX + curlX, midY, baseZ + curlZ, .48);
+        const tipBone = handBonePoint(baseX + curlX * 1.4, tipY, baseZ + curlZ * 1.5, .44);
         fingerBaseBones.push(baseBone);
         addLink(palmCenter, baseBone, .58);
         addLink(baseBone, midBone, .62);
@@ -2778,11 +2894,11 @@
       const thumbTipX = palmX + sign * .052;
       const thumbTipY = wristY + .305;
       const thumbTipZ = palmZ + .206;
-      const thumbBase = buildEllipsoid(thumbBaseX, thumbBaseY, thumbBaseZ, .048, .052, .045, 4, 10, 'knuckle');
-      const thumbA = buildTaperedTube({ x: thumbBaseX, y: thumbBaseY, z: thumbBaseZ }, { x: thumbMidX, y: thumbMidY, z: thumbMidZ }, .044, .037, 4, 9, 'finger');
-      const thumbJoint = buildEllipsoid(thumbMidX, thumbMidY, thumbMidZ, .036, .038, .034, 4, 9, 'fingerJoint');
-      const thumbB = buildTaperedTube({ x: thumbMidX, y: thumbMidY, z: thumbMidZ }, { x: thumbTipX, y: thumbTipY, z: thumbTipZ }, .034, .024, 4, 9, 'finger');
-      const thumbTip = buildEllipsoid(thumbTipX, thumbTipY, thumbTipZ, .030, .034, .028, 4, 9, 'fingerTip');
+      const thumbBase = skinGrid(buildEllipsoid(thumbBaseX, thumbBaseY, thumbBaseZ, .048, .052, .045, 5, 11, 'knuckle'), 'knuckle');
+      const thumbA = skinGrid(buildTaperedTube({ x: thumbBaseX, y: thumbBaseY, z: thumbBaseZ }, { x: thumbMidX, y: thumbMidY, z: thumbMidZ }, .044, .037, 5, 11, 'finger'), 'finger', true);
+      const thumbJoint = skinGrid(buildEllipsoid(thumbMidX, thumbMidY, thumbMidZ, .036, .038, .034, 5, 11, 'fingerJoint'), 'fingerJoint');
+      const thumbB = skinGrid(buildTaperedTube({ x: thumbMidX, y: thumbMidY, z: thumbMidZ }, { x: thumbTipX, y: thumbTipY, z: thumbTipZ }, .034, .024, 5, 11, 'finger'), 'finger', true);
+      const thumbTip = skinGrid(buildEllipsoid(thumbTipX, thumbTipY, thumbTipZ, .030, .034, .028, 5, 11, 'fingerTip'), 'fingerTip');
 
       connectGridToGrid(palm, thumbBase, 2, 2, .52);
       connectGridToGrid(thumbBase, thumbA, 1, 2, .66);
@@ -2790,9 +2906,9 @@
       connectGridToGrid(thumbJoint, thumbB, 1, 2, .62);
       connectGridToGrid(thumbB, thumbTip, 1, 2, .58);
 
-      const thumbBaseBone = bonePoint(thumbBaseX, thumbBaseY, thumbBaseZ, .50);
-      const thumbMidBone = bonePoint(thumbMidX, thumbMidY, thumbMidZ, .46);
-      const thumbTipBone = bonePoint(thumbTipX, thumbTipY, thumbTipZ, .42);
+      const thumbBaseBone = handBonePoint(thumbBaseX, thumbBaseY, thumbBaseZ, .50);
+      const thumbMidBone = handBonePoint(thumbMidX, thumbMidY, thumbMidZ, .46);
+      const thumbTipBone = handBonePoint(thumbTipX, thumbTipY, thumbTipZ, .42);
       addLink(wristBone, thumbBaseBone, .58);
       addLink(thumbBaseBone, thumbMidBone, .60);
       addLink(thumbMidBone, thumbTipBone, .56);
@@ -3814,8 +3930,24 @@ Z: ${cz.toFixed(3)}`;
       }).filter(Boolean).sort((a,b)=>a.rz-b.rz);
       for(const face of orderedFaces){
         const depth=smoothstep(-1.8,1.3,face.rz);
-        ctx.globalAlpha=face.alpha*(.55+.70*depth);
-        ctx.fillStyle=hexToRgba(meshDisplayColor('boot'), 1);
+        if(isHandSkinPart(face.part)){
+          const a=face.pts[0], b=face.pts[1], c=face.pts[2] || face.pts[1];
+          const ab={x:b.rx-a.rx,y:b.ry-a.ry,z:b.rz-a.rz};
+          const ac={x:c.rx-a.rx,y:c.ry-a.ry,z:c.rz-a.rz};
+          const normal={
+            x:ab.y*ac.z-ab.z*ac.y,
+            y:ab.z*ac.x-ab.x*ac.z,
+            z:ab.x*ac.y-ab.y*ac.x
+          };
+          const normalLength=Math.hypot(normal.x,normal.y,normal.z)||1;
+          const light=Math.abs((normal.x*-.32+normal.y*-.38+normal.z*.868)/normalLength);
+          const cameraFacing=Math.abs(normal.z)/normalLength;
+          ctx.globalAlpha=face.alpha*(.94+.06*depth);
+          ctx.fillStyle=shadedSurfaceColor(handSkinColor(face.part),.60+light*.27+cameraFacing*.13);
+        }else{
+          ctx.globalAlpha=face.alpha*(.55+.70*depth);
+          ctx.fillStyle=hexToRgba(meshDisplayColor('boot'), 1);
+        }
         ctx.beginPath();
         ctx.moveTo(face.pts[0].sx, face.pts[0].sy);
         for(let i=1;i<face.pts.length;i++) ctx.lineTo(face.pts[i].sx, face.pts[i].sy);
@@ -3825,6 +3957,7 @@ Z: ${cz.toFixed(3)}`;
       for(const link of links){
         const a=projected[link.a], b=projected[link.b];
         if(!a||!b||!a.visible||!b.visible||isHiddenPart(a.part)||isHiddenPart(b.part)) continue;
+        if(isHandSkinRenderPoint(a)||isHandSkinRenderPoint(b)) continue;
         if(showTrackedHead && (a.part === 'head' || b.part === 'head')) continue;
         const depth=smoothstep(-1.8,1.3,(a.rz+b.rz)/2);
         const pulse=.88+.12*Math.sin(tick*3+link.a*.13);
@@ -3839,6 +3972,7 @@ Z: ${cz.toFixed(3)}`;
       const ordered=projected.filter(p=>p.visible&&!isHiddenPart(p.part)).sort((a,b)=>a.rz-b.rz);
       for(const p of ordered){
         if(showTrackedHead && p.part === 'head') continue;
+        if(isHandSkinRenderPoint(p)) continue;
         const depth=smoothstep(-1.75,1.35,p.rz);
         const scan=.93+.07*Math.sin(tick*7+p.ry*14+p.jitter*8);
         const isBootPoint=isBootPart(p.part);
@@ -4017,6 +4151,8 @@ Z: ${cz.toFixed(3)}`;
         rightHandTracked: upperBodyTracking.handLandmarks.right.length >= 21,
         leftHandLandmarkCount: upperBodyTracking.handLandmarks.left.length,
         rightHandLandmarkCount: upperBodyTracking.handLandmarks.right.length,
+        solidHandSkin: true,
+        handSkinFaceCount: faces.filter(face => isHandSkinPart(face.part)).length,
         pipelineFrame: upperBodyTracking.frameSequence,
         sendFailures: { ...upperBodyTracking.sendFailures },
         pipelineError: upperBodyTracking.lastPipelineError
