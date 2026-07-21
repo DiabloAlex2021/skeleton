@@ -1,0 +1,4044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legs and Feet Mesh Live Preview</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --ink: #171511;
+      --muted: #70695f;
+      --line: rgba(23, 21, 17, 0.14);
+      --gold: #b48b45;
+      --panel: rgba(255,255,255,.46);
+      --button: rgba(255,255,255,.76);
+      --button-active: #171511;
+      --button-active-ink: #fffaf0;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #1b1c1e;
+      --ink: #e2e5e6;
+      --muted: #aeb3b5;
+      --line: rgba(226, 229, 230, 0.18);
+      --panel: rgba(31,33,35,.82);
+      --button: rgba(226,229,230,.10);
+      --button-active: #d7dbdd;
+      --button-active-ink: #191a1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at 50% 12%, #fffaf0 0%, var(--bg) 42%, #e8dfcf 100%);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(23,21,17,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,21,17,.026) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    :root[data-theme="dark"] body {
+      background: radial-gradient(circle at 50% 12%, #303236 0%, var(--bg) 46%, #101113 100%);
+    }
+
+    :root[data-theme="dark"] body::before {
+      background-image:
+        linear-gradient(rgba(226,229,230,.042) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(226,229,230,.032) 1px, transparent 1px);
+    }
+
+    .page {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 0;
+      padding: 18px clamp(12px, 3vw, 42px);
+    }
+
+    .copy { display: none; }
+
+    .stage {
+      position: relative;
+      height: min(96vh, 920px);
+      display: grid;
+      place-items: center;
+      padding-top: 0;
+      overflow: visible;
+    }
+
+    canvas {
+      width: min(92vw, 820px);
+      height: min(96vh, 920px);
+      max-width: 100%;
+      max-height: 92vh;
+      cursor: grab;
+      touch-action: none;
+      filter: drop-shadow(0 38px 74px rgba(63, 47, 24, .18));
+    }
+
+    #faceTrackingVideo {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    :root[data-theme="dark"] canvas {
+      filter: drop-shadow(0 38px 74px rgba(0, 0, 0, .34));
+    }
+
+    .theme-switcher {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      z-index: 7;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 24px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .theme-mode-btn {
+      min-width: 62px;
+      height: 30px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .theme-mode-btn.active {
+      background: var(--button-active);
+      color: var(--button-active-ink);
+    }
+
+    .camera-readout {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      z-index: 6;
+      display: none;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #171511;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.52);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 24px rgba(63, 47, 24, .10);
+      white-space: pre-line;
+      line-height: 1.45;
+    }
+
+    .hint {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      display: none;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.34);
+      backdrop-filter: blur(10px);
+    }
+
+    .view-console {
+      position: absolute;
+      right: 20px;
+      bottom: 316px;
+      z-index: 6;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(64px, 1fr));
+      gap: 7px;
+      width: 154px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .view-title {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .view-btn {
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .view-btn.active {
+      background: var(--button-active);
+      color: var(--button-active-ink);
+    }
+
+    .direction-console {
+      position: absolute;
+      right: 20px;
+      bottom: 72px;
+      z-index: 6;
+      display: none;
+      grid-template-columns: repeat(3, 38px);
+      gap: 7px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .direction-title,
+    .direction-readout,
+    .direction-turns {
+      grid-column: 1 / -1;
+    }
+
+    .direction-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .direction-readout {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+      min-height: 31px;
+      white-space: pre-line;
+    }
+
+    .dir-btn {
+      width: 38px;
+      height: 34px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .dir-btn.active {
+      background: var(--button-active);
+      color: var(--button-active-ink);
+    }
+
+    .dir-forward,
+    .dir-back {
+      grid-column: 2;
+    }
+
+    .dir-left {
+      grid-column: 1;
+    }
+
+    .direction-turns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .turn-btn {
+      width: 100%;
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .control-panel {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(86px, 1fr));
+      gap: 8px;
+      align-items: center;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .panel-title {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .mesh-color-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mesh-color-menu-toggle {
+      height: 26px;
+      padding: 0 10px;
+      border: 1px solid rgba(23,21,17,.20);
+      border-radius: 999px;
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .mesh-color-menu-toggle:active { transform: scale(.97); }
+
+    .mesh-color-list {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(86px, 1fr));
+      gap: 8px;
+    }
+
+    .mesh-color-list[hidden] { display: none; }
+
+    .toggle {
+      width: 100%; min-width: 86px;
+      height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 999px;
+      background: var(--button-active);
+      color: var(--button-active-ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .toggle.active#toggleAllColors { background: #111511; color: white; }
+    .toggle.active#toggleHead { background: #111111; color: white; }
+    .toggle.active#toggleNeck { background: #565656; color: white; }
+    .toggle.active#toggleTorso { background: #ff7a00; color: white; }
+    .toggle.active#toggleWaist { background: #c96a2b; color: white; }
+    .toggle.active#togglePelvis { background: #8a4f2a; color: white; }
+    .toggle.active#toggleHip { background: #a0522d; color: white; }
+    .toggle.active#toggleShoulder { background: #00a884; color: white; }
+    .toggle.active#toggleArm { background: #00bcd4; color: #171511; }
+    .toggle.active#toggleElbow { background: #00838f; color: white; }
+    .toggle.active#toggleWrist { background: #4dd0e1; color: #171511; }
+    .toggle.active#togglePalm { background: #26a69a; color: white; }
+    .toggle.active#toggleFinger { background: #66bb6a; color: #171511; }
+    .toggle.active#toggleThigh { background: #7b2cff; color: white; }
+    .toggle.active#toggleCalf { background: #1f6fff; color: white; }
+    .toggle.active#toggleKnee { background: #ff2f92; color: white; }
+    .toggle.active#toggleAnkle { background: #d31616; color: white; }
+    .toggle.active#toggleHeel { background: #6d4c41; color: white; }
+    .toggle.active#toggleFoot { background: #e7b900; color: #171511; }
+    .toggle.active#toggleToe { background: #f4a261; color: #171511; }
+    .toggle.active#toggleToeNails { background: #6f1028; color: white; }
+    .toggle.active#toggleBoot { background: #14100c; color: white; }
+    .toggle.active#toggleBone { background: #8b6a2f; color: white; }
+
+    .zoom-title { margin-top: 6px; }
+
+    .zoom-btn { background: var(--button); color: var(--ink); }
+    .zoom-btn:active { transform: scale(.97); }
+    #runToggle.active,
+    #autoMovesToggle.active,
+    #spinToggle.active,
+    #crouchToggle.active,
+    #squatToggle.active,
+    #moonwalkToggle.active { background: var(--button-active); color: var(--button-active-ink); }
+
+    #faceTrackingToggle.active { background: #087f70; color: #ffffff; }
+
+    #faceTrackingToggle.camera-mode-btn {
+      grid-column: 1 / -1;
+      width: 100%;
+      border: 1px solid rgba(23,21,17,.18);
+      background: var(--button);
+      color: var(--ink);
+    }
+
+    #faceTrackingToggle.camera-mode-btn:active { transform: scale(.98); }
+    #faceTrackingToggle.camera-mode-btn:disabled { opacity: .68; cursor: wait; }
+
+    #faceTrackingToggle.camera-mode-btn.active {
+      background: #087f70;
+      color: #ffffff;
+    }
+
+    #faceTrackingToggle[data-state="error"] {
+      border-color: rgba(170, 45, 45, .45);
+      color: #a52f2f;
+    }
+
+    .learning-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 7;
+      width: min(270px, calc(100vw - 40px));
+      max-height: 280px;
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .learning-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .learning-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .learning-toggle,
+    .learning-stop,
+    .session-action {
+      border: 1px solid rgba(23,21,17,.22);
+      background: var(--button);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .learning-toggle,
+    .learning-stop {
+      min-height: 30px;
+      border-radius: 8px;
+      font-size: 11px;
+    }
+
+    .learning-toggle.active {
+      background: #a52f2f;
+      color: #ffffff;
+    }
+
+    .learning-stop.active {
+      background: var(--button-active);
+      color: var(--button-active-ink);
+    }
+
+    .learning-stop:disabled,
+    .session-action:disabled { opacity: .45; cursor: default; }
+
+    .learning-status {
+      min-height: 16px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .learning-sessions-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .learning-session-list {
+      display: grid;
+      gap: 6px;
+      max-height: 126px;
+      overflow-y: auto;
+    }
+
+    .learning-empty {
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 0;
+    }
+
+    .learning-session {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 5px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: color-mix(in srgb, var(--button) 72%, transparent);
+    }
+
+    .session-meta { min-width: 0; }
+    .session-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .session-detail { color: var(--muted); font-size: 9px; margin-top: 2px; }
+    .session-action { height: 26px; padding: 0 7px; border-radius: 7px; font-size: 9px; }
+
+    :root[data-theme="dark"] .theme-switcher,
+    :root[data-theme="dark"] .view-console,
+    :root[data-theme="dark"] .direction-console,
+    :root[data-theme="dark"] .control-panel,
+    :root[data-theme="dark"] .learning-panel {
+      box-shadow: 0 12px 30px rgba(0,0,0,.30);
+    }
+
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      .page { min-height: 100vh; height: auto; grid-template-columns: 1fr; }
+      canvas { width: min(94vw, 680px); height: min(112vw, 860px); }
+      .theme-switcher { right: 0; top: 10px; }
+      .theme-mode-btn { min-width: 52px; }
+      .view-console { right: 10px; bottom: 304px; }
+      .direction-console { right: 10px; bottom: 64px; }
+      .learning-panel { right: 10px; bottom: 10px; width: min(240px, calc(100vw - 20px)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="stage" aria-label="interactive human mesh feet preview">
+      <canvas id="figure"></canvas>
+      <video id="faceTrackingVideo" autoplay playsinline muted aria-hidden="true"></video>
+      <div class="theme-switcher" role="group" aria-label="display and camera controls">
+        <button class="theme-mode-btn active" id="themeBright" type="button" aria-pressed="true">Bright</button>
+        <button class="theme-mode-btn" id="themeDark" type="button" aria-pressed="false">Dark</button>
+        <button class="theme-mode-btn camera-mode-btn" id="faceTrackingToggle" type="button" aria-pressed="false">Track Camera</button>
+      </div>
+      <div class="control-panel" aria-label="mesh color controls">
+        <div class="panel-title mesh-color-header">
+          <span>Mesh Color</span>
+          <button class="mesh-color-menu-toggle" id="meshColorMenuToggle" type="button" aria-expanded="false" aria-controls="meshColorList">Expand</button>
+        </div>
+        <div class="mesh-color-list" id="meshColorList" hidden>
+          <button class="toggle" id="toggleAllColors" type="button">All Off</button>
+          <button class="toggle" id="toggleHead" type="button">Head</button>
+          <button class="toggle" id="toggleNeck" type="button">Neck</button>
+          <button class="toggle" id="toggleTorso" type="button">Torso</button>
+          <button class="toggle" id="toggleWaist" type="button">Waist</button>
+          <button class="toggle" id="togglePelvis" type="button">Pelvis</button>
+          <button class="toggle" id="toggleHip" type="button">Hip</button>
+          <button class="toggle" id="toggleShoulder" type="button">Shoulder</button>
+          <button class="toggle" id="toggleArm" type="button">Arm</button>
+          <button class="toggle" id="toggleElbow" type="button">Elbow</button>
+          <button class="toggle" id="toggleWrist" type="button">Wrist</button>
+          <button class="toggle" id="togglePalm" type="button">Palm</button>
+          <button class="toggle" id="toggleFinger" type="button">Finger</button>
+          <button class="toggle" id="toggleThigh" type="button">Thigh</button>
+          <button class="toggle" id="toggleCalf" type="button">Calf</button>
+          <button class="toggle" id="toggleKnee" type="button">Knee</button>
+          <button class="toggle" id="toggleAnkle" type="button">Ankle</button>
+          <button class="toggle" id="toggleHeel" type="button">Heel</button>
+          <button class="toggle" id="toggleFoot" type="button">Foot</button>
+          <button class="toggle" id="toggleToe" type="button">Toe</button>
+          <button class="toggle" id="toggleToeNails" type="button">Toenails</button>
+          <button class="toggle" id="toggleBoot" type="button">Boot</button>
+          <button class="toggle" id="toggleBone" type="button">Bone</button>
+        </div>
+        <div class="panel-title zoom-title">Zoom</div>
+        <button class="toggle zoom-btn" id="zoomIn" type="button">Zoom In</button>
+        <button class="toggle zoom-btn" id="zoomOut" type="button">Zoom Out</button>
+        <button class="toggle zoom-btn" id="zoomReset" type="button">Reset</button>
+        <div class="panel-title zoom-title">Motion</div>
+        <button class="toggle zoom-btn" id="runToggle" type="button">Run Motion</button>
+        <button class="toggle zoom-btn" id="jumpAction" type="button">Jump</button>
+        <button class="toggle zoom-btn" id="moonwalkToggle" type="button">Moonwalk</button>
+        <button class="toggle zoom-btn" id="spinToggle" type="button">Spin</button>
+        <button class="toggle zoom-btn" id="crouchToggle" type="button">Crouch</button>
+        <button class="toggle zoom-btn" id="squatToggle" type="button">Squat</button>
+        <button class="toggle zoom-btn" id="autoMovesToggle" type="button">Auto Moves</button>
+      </div>
+      <div class="camera-readout" id="cameraReadout">Camera X: 0.58 | Y: -0.47 | Zoom: 1.00</div>
+      <div class="view-console" aria-label="camera view controls">
+        <div class="view-title">Camera View</div>
+        <button class="view-btn active" id="viewInitial" type="button">Initial</button>
+        <button class="view-btn" id="viewFront" type="button">Front</button>
+        <button class="view-btn" id="viewSide" type="button">Side</button>
+        <button class="view-btn" id="viewTop" type="button">Top</button>
+      </div>
+      <div class="direction-console" aria-label="walk direction controls">
+        <div class="direction-title">Walk Direction</div>
+        <div class="direction-readout" id="walkDirectionReadout">Forward 0 deg</div>
+        <button class="dir-btn dir-forward active" id="walkDirForward" type="button" aria-label="walk forward">W</button>
+        <button class="dir-btn dir-left" id="walkDirLeft" type="button" aria-label="walk left">A</button>
+        <button class="dir-btn dir-reset" id="walkDirReset" type="button" aria-label="reset direction">0</button>
+        <button class="dir-btn dir-right" id="walkDirRight" type="button" aria-label="walk right">D</button>
+        <button class="dir-btn dir-back" id="walkDirBack" type="button" aria-label="walk backward">S</button>
+        <div class="direction-turns">
+          <button class="turn-btn" id="walkTurnLeft" type="button">-15</button>
+          <button class="turn-btn" id="walkTurnRight" type="button">+15</button>
+        </div>
+      </div>
+      <section class="learning-panel" aria-label="learning mode sessions">
+        <div class="learning-header">
+          <div class="learning-title">Learning Mode</div>
+          <button class="learning-toggle" id="learningModeToggle" type="button" aria-pressed="false">Start</button>
+        </div>
+        <button class="learning-stop" id="learningPlaybackStop" type="button" aria-pressed="false" disabled>Stop Playing</button>
+        <div class="learning-status" id="learningModeStatus" aria-live="polite">Ready to record face and upper-body gestures.</div>
+        <div class="learning-sessions-label">Saved JSON Sessions</div>
+        <div class="learning-session-list" id="learningSessionList">
+          <div class="learning-empty">No saved sessions yet.</div>
+        </div>
+      </section>
+      <div class="hint">Drag figure to inspect; drag boots on/off</div>
+    </section>
+  </main>
+
+  <script src="./lee_perry_smith_rear_mesh.js"></script>
+  <script>
+    const canvas = document.getElementById('figure');
+    const ctx = canvas.getContext('2d', { alpha: true });
+    const cameraReadout = document.getElementById('cameraReadout');
+    const faceTrackingVideo = document.getElementById('faceTrackingVideo');
+    const faceTrackingToggle = document.getElementById('faceTrackingToggle');
+    const learningModeToggle = document.getElementById('learningModeToggle');
+    const learningPlaybackStop = document.getElementById('learningPlaybackStop');
+    const learningModeStatus = document.getElementById('learningModeStatus');
+    const learningSessionList = document.getElementById('learningSessionList');
+
+    let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    let width = 0, height = 0, scale = 1;
+    let points = [], links = [], faces = [], faceSocketLoops = [], faceMouthPaths = [], tick = 0;
+    let displayTheme = 'bright';
+    const DARK_FIGURE_INK = '#6F86A6';
+    const DARK_FIGURE_HIGHLIGHT = '#8299B8';
+    const DARK_FIGURE_SHADOW = '#5A6D89';
+    const INITIAL_ROTATION_X = 0.005;
+    const INITIAL_ROTATION_Y = -0.686;
+    const INITIAL_ZOOM = 0.84;
+    const INITIAL_VERTICAL_OFFSET = .05;
+    const CAMERA_VIEWS = {
+      initial: { x: INITIAL_ROTATION_X, y: INITIAL_ROTATION_Y, zoom: INITIAL_ZOOM, verticalOffset: INITIAL_VERTICAL_OFFSET, id: 'viewInitial' },
+      front: { x: 0, y: 0, zoom: 1, verticalOffset: 0, id: 'viewFront' },
+      side: { x: 0, y: Math.PI / 2, zoom: 1, verticalOffset: 0, id: 'viewSide' },
+      top: { x: -Math.PI / 2 + .08, y: 0, zoom: 1, verticalOffset: 0, id: 'viewTop' }
+    };
+    let rotationX = INITIAL_ROTATION_X, rotationY = INITIAL_ROTATION_Y, velocityX = 0, velocityY = 0;
+    let isDragging = false, lastPointerX = 0, lastPointerY = 0, lastMoveTime = 0;
+    let zoomScale = INITIAL_ZOOM, cameraVerticalOffset = INITIAL_VERTICAL_OFFSET, runMotion = false, runTime = 0, runBlend = 0;
+    let moonwalkMotion = false, moonwalkBlend = 0;
+    let spinMotion = false, spinBlend = 0, spinAngle = 0;
+    let crouchMotion = false, crouchBlend = 0;
+    let squatMotion = false, squatBlend = 0;
+    let jumpActive = false, jumpTime = 1;
+    let walkHeading = 0, walkHeadingTarget = 0, walkMoveBlend = 0;
+    let walkPosition = { x: 0, z: 0 }, walkVelocity = { x: 0, z: 0 };
+    const walkKeys = { w: false, a: false, s: false, d: false };
+    let autoMovesActive = false, autoMoveIndex = 0, autoMoveClock = 0, autoMovePhase = 'buffer';
+    const AUTO_MOVES = [
+      { label: 'Run', kind: 'run', duration: 150, buffer: 42 },
+      { label: 'Walk W', kind: 'walk', key: 'w', duration: 105, buffer: 34 },
+      { label: 'Jump', kind: 'jump', duration: 72, buffer: 44 },
+      { label: 'Walk D', kind: 'walk', key: 'd', duration: 105, buffer: 34 },
+      { label: 'Spin', kind: 'spin', duration: 132, buffer: 42 },
+      { label: 'Crouch', kind: 'crouch', duration: 110, buffer: 38 },
+      { label: 'Squat', kind: 'squat', duration: 125, buffer: 42 },
+      { label: 'Moonwalk', kind: 'moonwalk', duration: 145, buffer: 42 },
+      { label: 'Walk S', kind: 'walk', key: 's', duration: 105, buffer: 34 },
+      { label: 'Walk A', kind: 'walk', key: 'a', duration: 105, buffer: 34 }
+    ];
+    let lastFrameStamp = 0;
+    const bootState = {
+      left: { offset: { x: 0, y: 0, z: 0 }, attached: true },
+      right: { offset: { x: 0, y: 0, z: 0 }, attached: true }
+    };
+    const bootAnchors = { left: { x: 0, y: 0, z: 0 }, right: { x: 0, y: 0, z: 0 } };
+    let activeDrag = null, lastProjected = [];
+    let meshColorMenuExpanded = false;
+
+    const FACE_MESH_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh';
+    const POSE_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/pose';
+    const HANDS_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands';
+    const faceTrackingScripts = new Map();
+    const faceTracking = {
+      enabled: false,
+      starting: false,
+      status: 'off',
+      hasFace: false,
+      landmarks: [],
+      stream: null,
+      mesh: null,
+      frameId: 0,
+      sessionId: 0,
+      lastSeenAt: 0,
+      inputRoll: 0,
+      targetHeadRoll: 0,
+      headRoll: 0,
+      meshConnectionCount: 0,
+      surfaceTriangleCount: 0,
+      neckBufferConnectionCount: 0,
+      headShellConnectionCount: 0,
+      headShellRingCount: 0,
+      headShellVertexCount: 0,
+      headShellDepth: 0,
+      error: ''
+    };
+    const upperBodyTracking = {
+      poseModel: null,
+      handsModel: null,
+      hasPose: false,
+      poseLandmarks: [],
+      armTargets: { left: null, right: null },
+      armLastSeen: { left: 0, right: 0 },
+      handLandmarks: { left: [], right: [] },
+      handLastSeen: { left: 0, right: 0 },
+      lastPoseSeenAt: 0,
+      frameSequence: 0,
+      sendFailures: { face: 0, pose: 0, hands: 0 },
+      lastPipelineError: '',
+      dirty: false
+    };
+    const LEARNING_SAMPLE_INTERVAL_MS = 125;
+    const LEARNING_DB_NAME = 'figure-learning-sessions';
+    const LEARNING_DB_STORE = 'sessions';
+    const learningMode = {
+      recording: false,
+      playing: false,
+      preparingPlayback: false,
+      startedAt: 0,
+      firstFrameAt: 0,
+      lastCaptureAt: 0,
+      frames: [],
+      sessions: [],
+      databasePromise: null,
+      playbackFrameId: 0,
+      playbackStartedAt: 0,
+      playbackSessionId: '',
+      playbackFrameIndex: -1,
+      playbackRequestId: 0,
+      status: 'ready'
+    };
+    const SHOW_TRACKED_FACE_OUTER_CONTOUR = false;
+    const TRACKED_FACE_CHIN_DROP = .055;
+    const TRACKED_FACE_NECK_BUFFER_ROWS = 3;
+    const TRACKED_FACE_SURFACE_OPACITY = .96;
+    const TRACKED_FACE_SURFACE_OVERSCAN = .42;
+    const TRACKED_FACE_OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+    const TRACKED_FACE_LOWER_JAW = [172,136,150,149,176,148,152,377,400,378,379,365,397];
+    const TRACKED_FACE_PATHS = [
+      { kind: 'outer', closed: true, width: 1.15, indices: TRACKED_FACE_OVAL },
+      { closed: true, width: 1.10, indices: [33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246] },
+      { closed: true, width: 1.10, indices: [263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466] },
+      { closed: false, width: 1.18, indices: [70,63,105,66,107] },
+      { closed: false, width: 1.18, indices: [336,296,334,293,300] },
+      { closed: true, width: 1.25, indices: [61,146,91,181,84,17,314,405,321,375,291,308,324,318,402,317,14,87,178,88,95,78,191,80,81,82,13,312,311,310,415] },
+      { closed: false, width: .82, indices: [33,133,168,362,263] },
+      { closed: true, width: 1.10, indices: [468,469,470,471,472] },
+      { closed: true, width: 1.10, indices: [473,474,475,476,477] }
+    ];
+
+    const meshControls = {
+      head: { color: '#111111', colorized: false },
+      neck: { color: '#565656', colorized: false },
+      torso: { color: '#ff7a00', colorized: false },
+      waist: { color: '#c96a2b', colorized: false },
+      pelvis: { color: '#8a4f2a', colorized: false },
+      hip: { color: '#a0522d', colorized: false },
+      shoulder: { color: '#00a884', colorized: false },
+      arm: { color: '#00bcd4', colorized: false },
+      elbow: { color: '#00838f', colorized: false },
+      wrist: { color: '#4dd0e1', colorized: false },
+      palm: { color: '#26a69a', colorized: false },
+      finger: { color: '#66bb6a', colorized: false },
+      thigh: { color: '#7b2cff', colorized: false },
+      calf: { color: '#1f6fff', colorized: false },
+      knee: { color: '#ff2f92', colorized: false },
+      ankle: { color: '#d31616', colorized: false },
+      heel: { color: '#6d4c41', colorized: false },
+      foot: { color: '#e7b900', colorized: false },
+      toe: { color: '#f4a261', colorized: false },
+      toeNails: { color: '#6f1028', colorized: false },
+      boot: { color: '#14100c', colorized: false },
+      bone: { color: '#8b6a2f', colorized: false }
+    };
+
+    function setDisplayTheme(theme) {
+      displayTheme = theme === 'dark' ? 'dark' : 'bright';
+      document.documentElement.dataset.theme = displayTheme === 'dark' ? 'dark' : 'light';
+      const brightButton = document.getElementById('themeBright');
+      const darkButton = document.getElementById('themeDark');
+      brightButton?.classList.toggle('active', displayTheme === 'bright');
+      darkButton?.classList.toggle('active', displayTheme === 'dark');
+      brightButton?.setAttribute('aria-pressed', String(displayTheme === 'bright'));
+      darkButton?.setAttribute('aria-pressed', String(displayTheme === 'dark'));
+    }
+
+    function syncFaceTrackingButton() {
+      if (!faceTrackingToggle) return;
+      const state = faceTracking.status;
+      const hasTrackedHand = upperBodyTracking.handLandmarks.left.length >= 21 || upperBodyTracking.handLandmarks.right.length >= 21;
+      faceTrackingToggle.dataset.state = state;
+      faceTrackingToggle.disabled = faceTracking.starting;
+      faceTrackingToggle.classList.toggle('active', faceTracking.enabled);
+      faceTrackingToggle.setAttribute('aria-pressed', String(faceTracking.enabled));
+      faceTrackingToggle.textContent = faceTracking.starting
+        ? 'Opening Camera...'
+        : faceTracking.enabled
+          ? (faceTracking.hasFace || upperBodyTracking.hasPose || hasTrackedHand ? 'Stop Camera' : 'Finding Body...')
+          : state === 'error' ? 'Retry Camera' : 'Track Camera';
+      faceTrackingToggle.title = faceTracking.error || upperBodyTracking.lastPipelineError ||
+        (state === 'holding'
+          ? 'Face is out of frame; holding the last tracked facial mesh.'
+          : 'Map webcam face, arm, hand, and finger landmarks onto the figure');
+    }
+
+    function loadFaceTrackingScript(url) {
+      if (faceTrackingScripts.has(url)) return faceTrackingScripts.get(url);
+      const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => reject(new Error(`Unable to load ${url}`));
+        document.head.appendChild(script);
+      }).catch(error => {
+        faceTrackingScripts.delete(url);
+        throw error;
+      });
+      faceTrackingScripts.set(url, promise);
+      return promise;
+    }
+
+    function updateTrackedFaceRoll(landmarks) {
+      const eyeA = landmarks?.[33];
+      const eyeB = landmarks?.[263];
+      if (!eyeA || !eyeB) {
+        faceTracking.inputRoll = 0;
+        faceTracking.targetHeadRoll = 0;
+        return;
+      }
+      const left = eyeA.x <= eyeB.x ? eyeA : eyeB;
+      const right = eyeA.x <= eyeB.x ? eyeB : eyeA;
+      const roll = Math.atan2(right.y - left.y, right.x - left.x);
+      faceTracking.inputRoll = Math.atan2(Math.sin(roll), Math.cos(roll));
+      // Canvas Y grows downward, so a positive image-space roll is clockwise on the figure too.
+      faceTracking.targetHeadRoll = faceClamp(faceTracking.inputRoll, -.72, .72);
+    }
+
+    function handleFaceTrackingResults(results) {
+      if (!faceTracking.enabled) return;
+      const raw = results?.multiFaceLandmarks?.[0];
+      if (!raw?.length) {
+        if (performance.now() - faceTracking.lastSeenAt > 280) {
+          const nextStatus = faceTracking.hasFace ? 'holding' : 'searching';
+          const changed = faceTracking.status !== nextStatus;
+          faceTracking.status = nextStatus;
+          if (changed) syncFaceTrackingButton();
+        }
+        return;
+      }
+
+      const previous = faceTracking.landmarks;
+      const blend = .42;
+      faceTracking.landmarks = raw.map((point, index) => {
+        const old = previous[index];
+        if (!old) return { x: point.x, y: point.y, z: point.z || 0 };
+        return {
+          x: old.x + (point.x - old.x) * blend,
+          y: old.y + (point.y - old.y) * blend,
+          z: old.z + ((point.z || 0) - old.z) * blend
+        };
+      });
+      const changed = !faceTracking.hasFace || faceTracking.status !== 'tracking';
+      faceTracking.hasFace = true;
+      faceTracking.status = 'tracking';
+      faceTracking.lastSeenAt = performance.now();
+      updateTrackedFaceRoll(faceTracking.landmarks);
+      if (changed) syncFaceTrackingButton();
+    }
+
+    function landmarkIsVisible(point, threshold = .42) {
+      return Boolean(point) && (point.visibility == null || point.visibility >= threshold) &&
+        (point.presence == null || point.presence >= threshold);
+    }
+
+    function normalizedBoneDirection(from, to) {
+      const vector = { x: -(to.x - from.x), y: to.y - from.y, z: -(to.z - from.z) * .72 };
+      const length = Math.hypot(vector.x, vector.y, vector.z) || 1;
+      return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+    }
+
+    function mappedArmTarget(side, landmarks) {
+      const indices = side === 'left' ? [11, 13, 15] : [12, 14, 16];
+      const [shoulder, elbow, wrist] = indices.map(index => landmarks[index]);
+      if (![shoulder, elbow, wrist].every(point => landmarkIsVisible(point))) return null;
+      const anchor = { x: side === 'left' ? -.58 : .58, y: -1.05, z: side === 'left' ? .055 : -.055 };
+      const upperDirection = normalizedBoneDirection(shoulder, elbow);
+      const lowerDirection = normalizedBoneDirection(elbow, wrist);
+      const mappedElbow = {
+        x: anchor.x + upperDirection.x * .70,
+        y: anchor.y + upperDirection.y * .70,
+        z: anchor.z + upperDirection.z * .70
+      };
+      const mappedWrist = {
+        x: mappedElbow.x + lowerDirection.x * .76,
+        y: mappedElbow.y + lowerDirection.y * .76,
+        z: mappedElbow.z + lowerDirection.z * .76
+      };
+      return {
+        upperA: blendPoint(anchor, mappedElbow, .055),
+        elbow: mappedElbow,
+        forearmA: blendPoint(mappedElbow, mappedWrist, .070),
+        wrist: mappedWrist
+      };
+    }
+
+    function smoothArmTarget(previous, next, amount = .34) {
+      if (!previous) return next;
+      return {
+        upperA: blendPoint(previous.upperA, next.upperA, amount),
+        elbow: blendPoint(previous.elbow, next.elbow, amount),
+        forearmA: blendPoint(previous.forearmA, next.forearmA, amount),
+        wrist: blendPoint(previous.wrist, next.wrist, amount)
+      };
+    }
+
+    function handlePoseTrackingResults(results) {
+      if (!faceTracking.enabled) return;
+      const landmarks = results?.poseLandmarks;
+      if (!landmarks?.length) {
+        if (performance.now() - upperBodyTracking.lastPoseSeenAt > 360 && upperBodyTracking.hasPose) {
+          upperBodyTracking.hasPose = false;
+          upperBodyTracking.poseLandmarks = [];
+          upperBodyTracking.armTargets.left = null;
+          upperBodyTracking.armTargets.right = null;
+          upperBodyTracking.dirty = true;
+          syncFaceTrackingButton();
+        }
+        return;
+      }
+      const nextTargets = {
+        left: mappedArmTarget('left', landmarks),
+        right: mappedArmTarget('right', landmarks)
+      };
+      const now = performance.now();
+      upperBodyTracking.poseLandmarks = landmarks.map(point => ({ ...point }));
+      for (const side of ['left', 'right']) {
+        const next = nextTargets[side];
+        if (next) {
+          upperBodyTracking.armTargets[side] = smoothArmTarget(upperBodyTracking.armTargets[side], next);
+          upperBodyTracking.armLastSeen[side] = now;
+          upperBodyTracking.dirty = true;
+        } else if (upperBodyTracking.armTargets[side] && now - upperBodyTracking.armLastSeen[side] > 360) {
+          upperBodyTracking.armTargets[side] = null;
+          upperBodyTracking.dirty = true;
+        }
+      }
+      upperBodyTracking.hasPose = Boolean(upperBodyTracking.armTargets.left || upperBodyTracking.armTargets.right);
+      if (upperBodyTracking.hasPose) upperBodyTracking.lastPoseSeenAt = now;
+      syncFaceTrackingButton();
+    }
+
+    function landmarkDistance2D(a, b) {
+      return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : Infinity;
+    }
+
+    function smoothHandLandmarks(previous, next, amount = .40) {
+      return next.map((point, index) => {
+        const old = previous[index];
+        if (!old) return { x: point.x, y: point.y, z: point.z || 0 };
+        return {
+          x: old.x + (point.x - old.x) * amount,
+          y: old.y + (point.y - old.y) * amount,
+          z: old.z + ((point.z || 0) - old.z) * amount
+        };
+      });
+    }
+
+    function handednessLabel(item) {
+      return String(item?.label || item?.classification?.[0]?.label || '').toLowerCase();
+    }
+
+    function handleHandTrackingResults(results) {
+      if (!faceTracking.enabled) return;
+      const detected = results?.multiHandLandmarks || [];
+      const handedness = results?.multiHandedness || [];
+      const pose = upperBodyTracking.poseLandmarks;
+      const poseWrists = { left: pose[15], right: pose[16] };
+      const assignments = {};
+      const available = ['left', 'right'];
+
+      detected.forEach((landmarks, index) => {
+        if (!landmarks?.length) return;
+        let side = '';
+        if (poseWrists.left && poseWrists.right && available.length) {
+          side = available.reduce((best, candidate) =>
+            landmarkDistance2D(landmarks[0], poseWrists[candidate]) < landmarkDistance2D(landmarks[0], poseWrists[best]) ? candidate : best,
+          available[0]);
+        } else {
+          const label = handednessLabel(handedness[index]);
+          side = label === 'left' || label === 'right' ? label : (landmarks[0].x > .5 ? 'left' : 'right');
+          if (!available.includes(side)) side = available[0] || side;
+        }
+        assignments[side] = landmarks;
+        const availableIndex = available.indexOf(side);
+        if (availableIndex >= 0) available.splice(availableIndex, 1);
+      });
+
+      const now = performance.now();
+      for (const side of ['left', 'right']) {
+        const next = assignments[side];
+        if (next) {
+          upperBodyTracking.handLandmarks[side] = smoothHandLandmarks(upperBodyTracking.handLandmarks[side], next);
+          upperBodyTracking.handLastSeen[side] = now;
+          upperBodyTracking.dirty = true;
+        } else if (upperBodyTracking.handLandmarks[side].length && now - upperBodyTracking.handLastSeen[side] > 320) {
+          upperBodyTracking.handLandmarks[side] = [];
+          upperBodyTracking.dirty = true;
+        }
+      }
+    }
+
+    function resetUpperBodyTracking() {
+      upperBodyTracking.hasPose = false;
+      upperBodyTracking.poseLandmarks = [];
+      upperBodyTracking.armTargets.left = null;
+      upperBodyTracking.armTargets.right = null;
+      upperBodyTracking.armLastSeen.left = 0;
+      upperBodyTracking.armLastSeen.right = 0;
+      upperBodyTracking.handLandmarks.left = [];
+      upperBodyTracking.handLandmarks.right = [];
+      upperBodyTracking.handLastSeen.left = 0;
+      upperBodyTracking.handLastSeen.right = 0;
+      upperBodyTracking.lastPoseSeenAt = 0;
+      upperBodyTracking.frameSequence = 0;
+      upperBodyTracking.sendFailures.face = 0;
+      upperBodyTracking.sendFailures.pose = 0;
+      upperBodyTracking.sendFailures.hands = 0;
+      upperBodyTracking.lastPipelineError = '';
+      upperBodyTracking.dirty = true;
+    }
+
+    async function processNextTrackingPipeline(pipelines, image) {
+      const pipeline = pipelines[upperBodyTracking.frameSequence % pipelines.length];
+      upperBodyTracking.frameSequence++;
+      try {
+        await pipeline.model.send({ image });
+        upperBodyTracking.sendFailures[pipeline.name] = 0;
+        if (upperBodyTracking.lastPipelineError) {
+          upperBodyTracking.lastPipelineError = '';
+          syncFaceTrackingButton();
+        }
+        return { ok: true, name: pipeline.name, fatal: false };
+      } catch (error) {
+        upperBodyTracking.sendFailures[pipeline.name]++;
+        const detail = error?.message || String(error) || 'Unknown model error';
+        upperBodyTracking.lastPipelineError = `${pipeline.name} tracking error: ${detail}`;
+        syncFaceTrackingButton();
+        return {
+          ok: false,
+          name: pipeline.name,
+          fatal: upperBodyTracking.sendFailures[pipeline.name] >= 4,
+          error: detail
+        };
+      }
+    }
+
+    function stopFaceTracking(error = '') {
+      faceTracking.sessionId++;
+      faceTracking.enabled = false;
+      faceTracking.starting = false;
+      faceTracking.hasFace = false;
+      faceTracking.landmarks = [];
+      faceTracking.lastSeenAt = 0;
+      faceTracking.inputRoll = 0;
+      faceTracking.targetHeadRoll = 0;
+      faceTracking.meshConnectionCount = 0;
+      faceTracking.surfaceTriangleCount = 0;
+      faceTracking.neckBufferConnectionCount = 0;
+      faceTracking.headShellConnectionCount = 0;
+      faceTracking.headShellRingCount = 0;
+      faceTracking.headShellVertexCount = 0;
+      faceTracking.headShellDepth = 0;
+      if (faceTracking.frameId) cancelAnimationFrame(faceTracking.frameId);
+      faceTracking.frameId = 0;
+
+      const mesh = faceTracking.mesh;
+      faceTracking.mesh = null;
+      try {
+        const closing = mesh?.close?.();
+        if (closing?.catch) closing.catch(() => {});
+      } catch (_) {}
+
+      for (const key of ['poseModel', 'handsModel']) {
+        const model = upperBodyTracking[key];
+        upperBodyTracking[key] = null;
+        try {
+          const closing = model?.close?.();
+          if (closing?.catch) closing.catch(() => {});
+        } catch (_) {}
+      }
+      resetUpperBodyTracking();
+
+      const stream = faceTracking.stream;
+      faceTracking.stream = null;
+      try { stream?.getTracks?.().forEach(track => track.stop()); } catch (_) {}
+      try { faceTrackingVideo?.pause(); } catch (_) {}
+      if (faceTrackingVideo) faceTrackingVideo.srcObject = null;
+
+      faceTracking.error = error;
+      faceTracking.status = error ? 'error' : 'off';
+      syncFaceTrackingButton();
+    }
+
+    async function startFaceTracking() {
+      if (faceTracking.starting || faceTracking.enabled) return;
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback('Playback stopped for live camera.');
+      faceTracking.starting = true;
+      faceTracking.status = 'starting';
+      faceTracking.error = '';
+      syncFaceTrackingButton();
+      const sessionId = ++faceTracking.sessionId;
+
+      try {
+        if (!faceTrackingVideo || !navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Webcam access requires HTTPS or localhost in a supported browser.');
+        }
+
+        // These classic MediaPipe bundles share lazy WebAssembly setup. Load them in order
+        // and never initialize/send multiple graphs at the same time.
+        await loadFaceTrackingScript(`${FACE_MESH_CDN}/face_mesh.js`);
+        await loadFaceTrackingScript(`${POSE_CDN}/pose.js`);
+        await loadFaceTrackingScript(`${HANDS_CDN}/hands.js`);
+        if (sessionId !== faceTracking.sessionId) return;
+        if (typeof window.FaceMesh !== 'function') throw new Error('MediaPipe FaceMesh did not initialize.');
+        if (typeof window.Pose !== 'function') throw new Error('MediaPipe Pose did not initialize.');
+        if (typeof window.Hands !== 'function') throw new Error('MediaPipe Hands did not initialize.');
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        if (sessionId !== faceTracking.sessionId) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        faceTracking.stream = stream;
+        faceTrackingVideo.srcObject = stream;
+        await faceTrackingVideo.play();
+
+        const mesh = new window.FaceMesh({
+          locateFile: file => `${FACE_MESH_CDN}/${file}`
+        });
+        mesh.setOptions({
+          maxNumFaces: 1,
+          refineLandmarks: true,
+          minDetectionConfidence: .5,
+          minTrackingConfidence: .5
+        });
+        mesh.onResults(handleFaceTrackingResults);
+        faceTracking.mesh = mesh;
+
+        const poseModel = new window.Pose({
+          locateFile: file => `${POSE_CDN}/${file}`
+        });
+        poseModel.setOptions({
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          minDetectionConfidence: .55,
+          minTrackingConfidence: .55
+        });
+        poseModel.onResults(handlePoseTrackingResults);
+        upperBodyTracking.poseModel = poseModel;
+
+        const handsModel = new window.Hands({
+          locateFile: file => `${HANDS_CDN}/${file}`
+        });
+        handsModel.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: .55,
+          minTrackingConfidence: .55
+        });
+        handsModel.onResults(handleHandTrackingResults);
+        upperBodyTracking.handsModel = handsModel;
+        faceTracking.enabled = true;
+        faceTracking.starting = false;
+        faceTracking.status = 'searching';
+        syncFaceTrackingButton();
+
+        const pipelines = [
+          { name: 'face', model: mesh },
+          { name: 'pose', model: poseModel },
+          { name: 'hands', model: handsModel }
+        ];
+
+        const pump = async () => {
+          if (!faceTracking.enabled || faceTracking.mesh !== mesh || sessionId !== faceTracking.sessionId) return;
+          if (faceTrackingVideo.readyState >= 2) {
+            const result = await processNextTrackingPipeline(pipelines, faceTrackingVideo);
+            if (result.fatal) {
+              stopFaceTracking(`Unable to run ${result.name} tracking. Stop and retry the camera.`);
+              return;
+            }
+          }
+          if (faceTracking.enabled && faceTracking.mesh === mesh && sessionId === faceTracking.sessionId) {
+            faceTracking.frameId = requestAnimationFrame(pump);
+          }
+        };
+        faceTracking.frameId = requestAnimationFrame(pump);
+      } catch (error) {
+        const message = error?.name === 'NotAllowedError'
+          ? 'Camera permission was denied. Allow webcam access and retry.'
+          : error?.message || 'Unable to start face tracking.';
+        stopFaceTracking(message);
+      } finally {
+        if (sessionId === faceTracking.sessionId && !faceTracking.enabled) {
+          faceTracking.starting = false;
+          syncFaceTrackingButton();
+        }
+      }
+    }
+
+    function setFaceTrackingTestFrame(landmarks) {
+      stopFaceTracking();
+      faceTracking.enabled = true;
+      faceTracking.status = 'tracking';
+      faceTracking.hasFace = Array.isArray(landmarks) && landmarks.length > 0;
+      faceTracking.landmarks = faceTracking.hasFace ? landmarks : [];
+      faceTracking.lastSeenAt = performance.now();
+      updateTrackedFaceRoll(faceTracking.landmarks);
+      syncFaceTrackingButton();
+    }
+
+    function setUpperBodyTrackingTestFrame(frame = {}) {
+      if (!faceTracking.enabled) {
+        stopFaceTracking();
+        faceTracking.enabled = true;
+        faceTracking.status = 'tracking';
+      }
+      handlePoseTrackingResults({ poseLandmarks: frame.poseLandmarks || [] });
+      handleHandTrackingResults({
+        multiHandLandmarks: frame.hands || [],
+        multiHandedness: frame.handedness || []
+      });
+      syncFaceTrackingButton();
+    }
+
+    if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+      window.__setFaceTrackingTestFrame = setFaceTrackingTestFrame;
+      window.__deliverFaceTrackingTestFrame = landmarks => {
+        handleFaceTrackingResults({ multiFaceLandmarks: [landmarks] });
+      };
+      window.__simulateFaceTrackingLoss = (elapsedMs = 500) => {
+        faceTracking.lastSeenAt = performance.now() - Math.max(281, elapsedMs);
+        handleFaceTrackingResults({ multiFaceLandmarks: [] });
+      };
+      window.__getFaceTrackingTestState = () => ({
+        enabled: faceTracking.enabled,
+        status: faceTracking.status,
+        hasFace: faceTracking.hasFace,
+        landmarkCount: faceTracking.landmarks.length,
+        signature: [10, 33, 152, 263, 454].map(index => faceTracking.landmarks[index] || null)
+      });
+      window.__setUpperBodyTrackingTestFrame = setUpperBodyTrackingTestFrame;
+      window.__processNextTrackingPipelineTest = processNextTrackingPipeline;
+      window.__clearFaceTrackingTestFrame = () => stopFaceTracking();
+      window.__clearUpperBodyTrackingTestFrame = () => {
+        resetUpperBodyTracking();
+        syncFaceTrackingButton();
+      };
+    }
+
+    function setLearningStatus(message, status = 'ready') {
+      learningMode.status = status;
+      if (learningModeStatus) learningModeStatus.textContent = message;
+    }
+
+    function syncLearningModeControls() {
+      learningModeToggle?.classList.toggle('active', learningMode.recording);
+      learningModeToggle?.setAttribute('aria-pressed', String(learningMode.recording));
+      if (learningModeToggle) learningModeToggle.textContent = learningMode.recording ? 'Stop & Save' : 'Start';
+      const playbackActive = learningMode.playing || learningMode.preparingPlayback;
+      learningPlaybackStop?.classList.toggle('active', playbackActive);
+      learningPlaybackStop?.setAttribute('aria-pressed', String(playbackActive));
+      if (learningPlaybackStop) {
+        learningPlaybackStop.disabled = !playbackActive;
+        learningPlaybackStop.textContent = learningMode.preparingPlayback ? 'Cancel Playback' : 'Stop Playing';
+      }
+    }
+
+    function openLearningDatabase() {
+      if (learningMode.databasePromise) return learningMode.databasePromise;
+      learningMode.databasePromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error('This browser does not support saved learning sessions.'));
+          return;
+        }
+        const request = indexedDB.open(LEARNING_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains(LEARNING_DB_STORE)) {
+            database.createObjectStore(LEARNING_DB_STORE, { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Unable to open learning-session storage.'));
+      });
+      return learningMode.databasePromise;
+    }
+
+    async function readStoredLearningSessions() {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(LEARNING_DB_STORE, 'readonly').objectStore(LEARNING_DB_STORE).getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error || new Error('Unable to read learning sessions.'));
+      });
+    }
+
+    async function persistLearningSession(session) {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(LEARNING_DB_STORE, 'readwrite').objectStore(LEARNING_DB_STORE).put(session);
+        request.onsuccess = () => resolve(session);
+        request.onerror = () => reject(request.error || new Error('Unable to save this learning session.'));
+      });
+    }
+
+    function learningDurationLabel(durationMs) {
+      const seconds = Math.max(0, durationMs || 0) / 1000;
+      return seconds < 10 ? `${seconds.toFixed(1)}s` : `${Math.round(seconds)}s`;
+    }
+
+    function renderLearningSessions() {
+      if (!learningSessionList) return;
+      learningSessionList.textContent = '';
+      if (!learningMode.sessions.length) {
+        const empty = document.createElement('div');
+        empty.className = 'learning-empty';
+        empty.textContent = 'No saved sessions yet.';
+        learningSessionList.appendChild(empty);
+        return;
+      }
+      for (const session of learningMode.sessions) {
+        const item = document.createElement('div');
+        item.className = 'learning-session';
+        const meta = document.createElement('div');
+        meta.className = 'session-meta';
+        const name = document.createElement('div');
+        name.className = 'session-name';
+        name.textContent = session.name;
+        const detail = document.createElement('div');
+        detail.className = 'session-detail';
+        detail.textContent = `${learningDurationLabel(session.durationMs)} · ${session.frames.length} frames · lower body N/A`;
+        meta.append(name, detail);
+        const play = document.createElement('button');
+        play.className = 'session-action';
+        play.type = 'button';
+        const isCurrentSession = learningMode.playbackSessionId === session.id;
+        play.textContent = learningMode.preparingPlayback && isCurrentSession
+          ? 'Loading'
+          : learningMode.playing && isCurrentSession
+            ? 'Playing'
+            : 'Play';
+        play.disabled = learningMode.recording || learningMode.preparingPlayback || (learningMode.playing && isCurrentSession);
+        play.addEventListener('click', () => playLearningSession(session.id));
+        const download = document.createElement('button');
+        download.className = 'session-action';
+        download.type = 'button';
+        download.textContent = 'JSON';
+        download.disabled = learningMode.recording;
+        download.addEventListener('click', () => downloadLearningSession(session.id));
+        item.append(meta, play, download);
+        learningSessionList.appendChild(item);
+      }
+    }
+
+    function compactLandmark(point) {
+      if (!point) return null;
+      const round = value => Math.round((Number(value) || 0) * 10000) / 10000;
+      return [round(point.x), round(point.y), round(point.z)];
+    }
+
+    function compactLandmarks(landmarks, limit = landmarks?.length || 0) {
+      if (!landmarks?.length) return null;
+      return Array.from({ length: Math.min(limit, landmarks.length) }, (_, index) => compactLandmark(landmarks[index]));
+    }
+
+    function expandLandmarks(compact) {
+      if (!compact?.length) return [];
+      return compact.map(point => point ? { x: point[0], y: point[1], z: point[2] } : null);
+    }
+
+    function captureLearningFrame(now) {
+      if (!learningMode.recording || now - learningMode.lastCaptureAt < LEARNING_SAMPLE_INTERVAL_MS) return;
+      learningMode.lastCaptureAt = now;
+      const hasFace = faceTracking.hasFace && faceTracking.landmarks.length > 0;
+      const hasPose = upperBodyTracking.hasPose && upperBodyTracking.poseLandmarks.length > 0;
+      const hasLeftHand = upperBodyTracking.handLandmarks.left.length >= 21;
+      const hasRightHand = upperBodyTracking.handLandmarks.right.length >= 21;
+      if (!hasFace && !hasPose && !hasLeftHand && !hasRightHand) return;
+      if (!learningMode.firstFrameAt) learningMode.firstFrameAt = now;
+      learningMode.frames.push({
+        timeMs: Math.round(now - learningMode.firstFrameAt),
+        facialExpression: {
+          landmarks: hasFace ? compactLandmarks(faceTracking.landmarks) : null
+        },
+        bodyGesture: {
+          upperBody: {
+            poseLandmarks: hasPose ? compactLandmarks(upperBodyTracking.poseLandmarks, 17) : null,
+            leftHandLandmarks: hasLeftHand ? compactLandmarks(upperBodyTracking.handLandmarks.left, 21) : null,
+            rightHandLandmarks: hasRightHand ? compactLandmarks(upperBodyTracking.handLandmarks.right, 21) : null
+          },
+          lowerBody: 'N/A'
+        }
+      });
+      if (learningMode.frames.length % 8 === 0) {
+        setLearningStatus(`Recording · ${learningDurationLabel(now - learningMode.firstFrameAt)} · ${learningMode.frames.length} frames`, 'recording');
+      }
+    }
+
+    function clearPlaybackTracking() {
+      faceTracking.hasFace = false;
+      faceTracking.landmarks = [];
+      faceTracking.inputRoll = 0;
+      faceTracking.targetHeadRoll = 0;
+      faceTracking.meshConnectionCount = 0;
+      faceTracking.surfaceTriangleCount = 0;
+      faceTracking.neckBufferConnectionCount = 0;
+      faceTracking.headShellConnectionCount = 0;
+      faceTracking.headShellRingCount = 0;
+      faceTracking.headShellVertexCount = 0;
+      faceTracking.headShellDepth = 0;
+      faceTracking.status = faceTracking.enabled ? 'searching' : 'off';
+      resetUpperBodyTracking();
+    }
+
+    function applyLearningFrame(frame) {
+      const face = expandLandmarks(frame?.facialExpression?.landmarks);
+      faceTracking.hasFace = face.length > 0;
+      faceTracking.landmarks = face;
+      faceTracking.status = 'playback';
+      faceTracking.lastSeenAt = performance.now();
+      if (face.length) updateTrackedFaceRoll(face);
+      else {
+        faceTracking.inputRoll = 0;
+        faceTracking.targetHeadRoll = 0;
+      }
+
+      const upperBody = frame?.bodyGesture?.upperBody || {};
+      const pose = expandLandmarks(upperBody.poseLandmarks);
+      upperBodyTracking.poseLandmarks = pose;
+      upperBodyTracking.armTargets.left = pose.length ? mappedArmTarget('left', pose) : null;
+      upperBodyTracking.armTargets.right = pose.length ? mappedArmTarget('right', pose) : null;
+      upperBodyTracking.hasPose = Boolean(upperBodyTracking.armTargets.left || upperBodyTracking.armTargets.right);
+      upperBodyTracking.handLandmarks.left = expandLandmarks(upperBody.leftHandLandmarks);
+      upperBodyTracking.handLandmarks.right = expandLandmarks(upperBody.rightHandLandmarks);
+      upperBodyTracking.dirty = true;
+    }
+
+    function sessionHasFacialTracking(session) {
+      return session?.frames?.some(frame => frame?.facialExpression?.landmarks?.length >= 468);
+    }
+
+    async function prepareLearningPlayback(session) {
+      if (!sessionHasFacialTracking(session) || trackedFaceTessellation().length) return;
+      await loadFaceTrackingScript(`${FACE_MESH_CDN}/face_mesh.js`);
+      if (!trackedFaceTessellation().length) {
+        throw new Error('The saved facial mesh definition could not be initialized.');
+      }
+    }
+
+    function stopLearningPlayback(message = 'Playback stopped.') {
+      learningMode.playbackRequestId++;
+      if (learningMode.playbackFrameId) cancelAnimationFrame(learningMode.playbackFrameId);
+      learningMode.playbackFrameId = 0;
+      learningMode.playing = false;
+      learningMode.preparingPlayback = false;
+      learningMode.playbackSessionId = '';
+      learningMode.playbackFrameIndex = -1;
+      clearPlaybackTracking();
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus(message, 'ready');
+    }
+
+    async function playLearningSession(sessionId) {
+      if (learningMode.recording) return;
+      const session = learningMode.sessions.find(item => item.id === sessionId);
+      if (!session?.frames?.length) {
+        setLearningStatus('This session has no playable tracking frames.', 'error');
+        return;
+      }
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback();
+      if (faceTracking.enabled || faceTracking.starting) stopFaceTracking();
+      const playbackRequestId = ++learningMode.playbackRequestId;
+      learningMode.preparingPlayback = true;
+      learningMode.playbackSessionId = session.id;
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus(`Preparing ${session.name}…`, 'playing');
+      try {
+        await prepareLearningPlayback(session);
+      } catch (error) {
+        if (playbackRequestId !== learningMode.playbackRequestId) return;
+        learningMode.preparingPlayback = false;
+        learningMode.playbackSessionId = '';
+        clearPlaybackTracking();
+        syncLearningModeControls();
+        renderLearningSessions();
+        setLearningStatus(error?.message || 'Unable to prepare saved facial playback.', 'error');
+        return;
+      }
+      if (playbackRequestId !== learningMode.playbackRequestId) return;
+      learningMode.preparingPlayback = false;
+      learningMode.playing = true;
+      learningMode.playbackFrameIndex = -1;
+      learningMode.playbackStartedAt = performance.now();
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus(`Playing ${session.name}`, 'playing');
+      applyLearningFrame(session.frames[0]);
+      learningMode.playbackFrameIndex = 0;
+      const playbackTick = now => {
+        if (!learningMode.playing || learningMode.playbackSessionId !== session.id) return;
+        const elapsed = now - learningMode.playbackStartedAt;
+        while (learningMode.playbackFrameIndex + 1 < session.frames.length &&
+          session.frames[learningMode.playbackFrameIndex + 1].timeMs <= elapsed) {
+          learningMode.playbackFrameIndex++;
+          applyLearningFrame(session.frames[learningMode.playbackFrameIndex]);
+        }
+        if (learningMode.playbackFrameIndex >= session.frames.length - 1 && elapsed >= session.durationMs) {
+          stopLearningPlayback('Playback complete.');
+          return;
+        }
+        learningMode.playbackFrameId = requestAnimationFrame(playbackTick);
+      };
+      learningMode.playbackFrameId = requestAnimationFrame(playbackTick);
+    }
+
+    function downloadLearningSession(sessionId) {
+      const session = learningMode.sessions.find(item => item.id === sessionId);
+      if (!session) return;
+      const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${session.id}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setLearningStatus(`Exported ${session.name} as JSON.`, 'ready');
+    }
+
+    function startLearningRecording() {
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback('Playback stopped for recording.');
+      learningMode.recording = true;
+      learningMode.startedAt = performance.now();
+      learningMode.firstFrameAt = 0;
+      learningMode.lastCaptureAt = 0;
+      learningMode.frames = [];
+      syncLearningModeControls();
+      renderLearningSessions();
+      setLearningStatus('Learning is on · waiting for tracked face or upper body…', 'recording');
+      if (!faceTracking.enabled && !faceTracking.starting) startFaceTracking();
+    }
+
+    async function stopLearningRecording() {
+      if (!learningMode.recording) return;
+      learningMode.recording = false;
+      syncLearningModeControls();
+      if (!learningMode.frames.length) {
+        setLearningStatus('Learning stopped · no tracking data was captured.', 'ready');
+        renderLearningSessions();
+        return;
+      }
+      const createdAt = new Date();
+      const durationMs = learningMode.frames[learningMode.frames.length - 1].timeMs;
+      const session = {
+        schemaVersion: 1,
+        format: 'figure-learning-json',
+        id: `learning-session-${createdAt.getTime()}`,
+        name: `Session ${createdAt.toLocaleString()}`,
+        createdAt: createdAt.toISOString(),
+        durationMs,
+        sampleIntervalMs: LEARNING_SAMPLE_INTERVAL_MS,
+        trackedData: ['facialExpression', 'upperBodyPose', 'leftHand', 'rightHand'],
+        lowerBody: 'N/A',
+        frames: learningMode.frames
+      };
+      learningMode.frames = [];
+      try {
+        await persistLearningSession(session);
+        learningMode.sessions = [session, ...learningMode.sessions.filter(item => item.id !== session.id)];
+        renderLearningSessions();
+        setLearningStatus(`Saved ${session.name} · ${session.frames.length} frames.`, 'saved');
+      } catch (error) {
+        learningMode.sessions = [session, ...learningMode.sessions];
+        renderLearningSessions();
+        setLearningStatus(`Session kept for this page, but browser storage failed: ${error?.message || error}`, 'error');
+      }
+    }
+
+    async function initializeLearningMode() {
+      syncLearningModeControls();
+      try {
+        const sessions = await readStoredLearningSessions();
+        learningMode.sessions = sessions.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+        renderLearningSessions();
+      } catch (error) {
+        renderLearningSessions();
+        setLearningStatus(`Ready, but saved-session storage is unavailable: ${error?.message || error}`, 'error');
+      }
+    }
+
+    learningModeToggle?.addEventListener('click', () => {
+      if (learningMode.recording) stopLearningRecording();
+      else startLearningRecording();
+    });
+    learningPlaybackStop?.addEventListener('click', () => {
+      if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback();
+    });
+
+    if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+      window.__getLearningModeTestState = () => ({
+        recording: learningMode.recording,
+        playing: learningMode.playing,
+        preparingPlayback: learningMode.preparingPlayback,
+        sessionCount: learningMode.sessions.length,
+        sessions: learningMode.sessions
+      });
+    }
+
+    function deactivatePostureMotions() {
+      crouchMotion = false;
+      squatMotion = false;
+      document.getElementById('crouchToggle')?.classList.remove('active');
+      document.getElementById('squatToggle')?.classList.remove('active');
+    }
+
+    function setPostureMotion(kind) {
+      const activating = kind === 'crouch' ? !crouchMotion : !squatMotion;
+      stopAutoMovesForManual();
+      runMotion = false;
+      moonwalkMotion = false;
+      spinMotion = false;
+      jumpActive = false;
+      jumpTime = 1;
+      clearWalkKeys();
+      document.getElementById('runToggle')?.classList.remove('active');
+      document.getElementById('moonwalkToggle')?.classList.remove('active');
+      document.getElementById('spinToggle')?.classList.remove('active');
+      deactivatePostureMotions();
+      if (!activating) return;
+      if (kind === 'crouch') {
+        crouchMotion = true;
+        document.getElementById('crouchToggle')?.classList.add('active');
+      } else {
+        squatMotion = true;
+        document.getElementById('squatToggle')?.classList.add('active');
+      }
+    }
+
+    function setupMeshControls() {
+      const colorBindings = [
+        ['head','toggleHead'], ['neck','toggleNeck'], ['torso','toggleTorso'], ['waist','toggleWaist'],
+        ['pelvis','togglePelvis'], ['hip','toggleHip'], ['shoulder','toggleShoulder'], ['arm','toggleArm'],
+        ['elbow','toggleElbow'], ['wrist','toggleWrist'], ['palm','togglePalm'], ['finger','toggleFinger'],
+        ['thigh','toggleThigh'], ['calf','toggleCalf'], ['knee','toggleKnee'], ['ankle','toggleAnkle'],
+        ['heel','toggleHeel'], ['foot','toggleFoot'], ['toe','toggleToe'], ['toeNails','toggleToeNails'],
+        ['boot','toggleBoot'], ['bone','toggleBone']
+      ];
+
+      colorBindings.forEach(([key, id]) => {
+        const toggle = document.getElementById(id);
+        toggle?.addEventListener('click', () => {
+          meshControls[key].colorized = !meshControls[key].colorized;
+          toggle.classList.toggle('active', meshControls[key].colorized);
+          syncAllColorToggle();
+        });
+      });
+
+      const allToggle = document.getElementById('toggleAllColors');
+      const meshColorList = document.getElementById('meshColorList');
+      const meshColorMenuToggle = document.getElementById('meshColorMenuToggle');
+      function setMeshColorMenuExpanded(expanded) {
+        meshColorMenuExpanded = Boolean(expanded);
+        if (meshColorList) meshColorList.hidden = !meshColorMenuExpanded;
+        if (meshColorMenuToggle) {
+          meshColorMenuToggle.textContent = meshColorMenuExpanded ? 'Collapse' : 'Expand';
+          meshColorMenuToggle.setAttribute('aria-expanded', String(meshColorMenuExpanded));
+        }
+      }
+      function syncAllColorToggle() {
+        const allActive = colorBindings.every(([key]) => meshControls[key]?.colorized);
+        allToggle?.classList.toggle('active', allActive);
+        if (allToggle) allToggle.textContent = allActive ? 'All On' : 'All Off';
+      }
+
+      allToggle?.addEventListener('click', () => {
+        const shouldTurnOn = !colorBindings.every(([key]) => meshControls[key]?.colorized);
+        colorBindings.forEach(([key, id]) => {
+          meshControls[key].colorized = shouldTurnOn;
+          document.getElementById(id)?.classList.toggle('active', shouldTurnOn);
+        });
+        syncAllColorToggle();
+      });
+
+      meshColorMenuToggle?.addEventListener('click', () => setMeshColorMenuExpanded(!meshColorMenuExpanded));
+
+      syncAllColorToggle();
+      setMeshColorMenuExpanded(false);
+      document.getElementById('themeBright')?.addEventListener('click', () => setDisplayTheme('bright'));
+      document.getElementById('themeDark')?.addEventListener('click', () => setDisplayTheme('dark'));
+      document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale = Math.min(2.4, zoomScale * 1.12); resize(); });
+      document.getElementById('zoomOut')?.addEventListener('click', () => { zoomScale = Math.max(.45, zoomScale / 1.12); resize(); });
+      document.getElementById('zoomReset')?.addEventListener('click', () => { zoomScale = 1; setCameraView('initial'); resize(); });
+      document.getElementById('viewInitial')?.addEventListener('click', () => setCameraView('initial'));
+      document.getElementById('viewFront')?.addEventListener('click', () => setCameraView('front'));
+      document.getElementById('viewSide')?.addEventListener('click', () => setCameraView('side'));
+      document.getElementById('viewTop')?.addEventListener('click', () => setCameraView('top'));
+      faceTrackingToggle?.addEventListener('click', () => {
+        if (faceTracking.enabled || faceTracking.starting) stopFaceTracking();
+        else startFaceTracking();
+      });
+      document.getElementById('runToggle')?.addEventListener('click', e => {
+        stopAutoMovesForManual();
+        runMotion = !runMotion;
+        if (runMotion) {
+          deactivatePostureMotions();
+          moonwalkMotion = false;
+          document.getElementById('moonwalkToggle')?.classList.remove('active');
+          spinMotion = false;
+          document.getElementById('spinToggle')?.classList.remove('active');
+          if (runBlend <= .001) runTime = 0;
+        }
+        e.currentTarget.classList.toggle('active', runMotion);
+      });
+      document.getElementById('jumpAction')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        deactivatePostureMotions();
+        jumpActive = true;
+        jumpTime = 0;
+        runMotion = false;
+        moonwalkMotion = false;
+        spinMotion = false;
+        document.getElementById('runToggle')?.classList.remove('active');
+        document.getElementById('moonwalkToggle')?.classList.remove('active');
+        document.getElementById('spinToggle')?.classList.remove('active');
+      });
+      document.getElementById('moonwalkToggle')?.addEventListener('click', e => {
+        stopAutoMovesForManual();
+        moonwalkMotion = !moonwalkMotion;
+        if (moonwalkMotion) {
+          deactivatePostureMotions();
+          runMotion = false;
+          document.getElementById('runToggle')?.classList.remove('active');
+          spinMotion = false;
+          document.getElementById('spinToggle')?.classList.remove('active');
+          if (moonwalkBlend <= .001) runTime = 0;
+        }
+        e.currentTarget.classList.toggle('active', moonwalkMotion);
+      });
+      document.getElementById('spinToggle')?.addEventListener('click', e => {
+        stopAutoMovesForManual();
+        spinMotion = !spinMotion;
+        if (spinMotion) {
+          deactivatePostureMotions();
+          runMotion = false;
+          moonwalkMotion = false;
+          clearWalkKeys();
+          document.getElementById('runToggle')?.classList.remove('active');
+          document.getElementById('moonwalkToggle')?.classList.remove('active');
+          if (spinBlend <= .001) {
+            runTime = 0;
+            spinAngle = 0;
+          }
+        }
+        e.currentTarget.classList.toggle('active', spinMotion);
+      });
+      document.getElementById('crouchToggle')?.addEventListener('click', () => setPostureMotion('crouch'));
+      document.getElementById('squatToggle')?.addEventListener('click', () => setPostureMotion('squat'));
+      document.getElementById('autoMovesToggle')?.addEventListener('click', () => setAutoMoves(!autoMovesActive));
+      bindWalkButton('walkDirForward', 'w');
+      bindWalkButton('walkDirLeft', 'a');
+      bindWalkButton('walkDirRight', 'd');
+      bindWalkButton('walkDirBack', 's');
+      document.getElementById('walkDirReset')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        resetWalkPosition();
+      });
+      document.getElementById('walkTurnLeft')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget - Math.PI / 12);
+      });
+      document.getElementById('walkTurnRight')?.addEventListener('click', () => {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget + Math.PI / 12);
+      });
+      syncCameraViewButtons();
+      syncWalkDirectionConsole();
+      syncFaceTrackingButton();
+    }
+
+    function bindWalkButton(id, key) {
+      const button = document.getElementById(id);
+      if (!button) return;
+      const start = e => {
+        e.preventDefault();
+        stopAutoMovesForManual();
+        deactivatePostureMotions();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkKey(key, true);
+        try { button.setPointerCapture(e.pointerId); } catch (_) {}
+      };
+      const stop = e => {
+        e.preventDefault();
+        setWalkKey(key, false);
+        try { button.releasePointerCapture(e.pointerId); } catch (_) {}
+      };
+      button.addEventListener('pointerdown', start);
+      button.addEventListener('pointerup', stop);
+      button.addEventListener('pointercancel', stop);
+      button.addEventListener('pointerleave', e => { if (walkKeys[key]) stop(e); });
+    }
+
+    function normalizeAngle(angle) {
+      return Math.atan2(Math.sin(angle), Math.cos(angle));
+    }
+
+    function syncCameraViewButtons() {
+      Object.values(CAMERA_VIEWS).forEach(view => {
+        const active = Math.abs(rotationX - view.x) < .012 && Math.abs(normalizeAngle(rotationY - view.y)) < .012;
+        document.getElementById(view.id)?.classList.toggle('active', active);
+      });
+    }
+
+    function setCameraView(name) {
+      const view = CAMERA_VIEWS[name];
+      if (!view) return;
+      rotationX = view.x;
+      rotationY = view.y;
+      zoomScale = view.zoom;
+      cameraVerticalOffset = view.verticalOffset;
+      resize();
+      velocityX = 0;
+      velocityY = 0;
+      syncCameraViewButtons();
+      updateCameraReadout();
+    }
+
+    function angleDegrees(angle) {
+      const deg = Math.round(normalizeAngle(angle) * 180 / Math.PI);
+      return deg === -180 ? 180 : deg;
+    }
+
+    function walkDirectionName(angle) {
+      const deg = angleDegrees(angle);
+      if (Math.abs(deg) <= 22) return 'Forward';
+      if (Math.abs(Math.abs(deg) - 180) <= 22) return 'Back';
+      if (deg < 0 && Math.abs(deg + 90) <= 22) return 'Left';
+      if (deg > 0 && Math.abs(deg - 90) <= 22) return 'Right';
+      return deg < 0 ? 'Turn left' : 'Turn right';
+    }
+
+    function syncWalkDirectionConsole() {
+      const readout = document.getElementById('walkDirectionReadout');
+      const deg = angleDegrees(walkHeadingTarget);
+      if (readout) readout.textContent = `${walkDirectionName(walkHeadingTarget)} ${deg} deg\nX ${walkPosition.x.toFixed(2)}  Z ${walkPosition.z.toFixed(2)}`;
+      const states = [
+        ['walkDirForward', 0],
+        ['walkDirLeft', -Math.PI / 2],
+        ['walkDirRight', Math.PI / 2],
+        ['walkDirBack', Math.PI]
+      ];
+      states.forEach(([id, angle]) => {
+        const active = Math.abs(normalizeAngle(walkHeadingTarget - angle)) < .001;
+        document.getElementById(id)?.classList.toggle('active', active);
+      });
+      document.getElementById('walkDirReset')?.classList.toggle('active', Math.abs(normalizeAngle(walkHeadingTarget)) < .001);
+    }
+
+    function setWalkHeading(angle) {
+      walkHeadingTarget = normalizeAngle(angle);
+      syncWalkDirectionConsole();
+    }
+
+    function setWalkKey(key, active) {
+      if (!Object.prototype.hasOwnProperty.call(walkKeys, key)) return;
+      walkKeys[key] = active;
+      const ids = { w: 'walkDirForward', a: 'walkDirLeft', s: 'walkDirBack', d: 'walkDirRight' };
+      document.getElementById(ids[key])?.classList.toggle('active', active);
+    }
+
+    function clearWalkKeys() {
+      Object.keys(walkKeys).forEach(key => setWalkKey(key, false));
+    }
+
+    function resetWalkPosition() {
+      clearWalkKeys();
+      walkPosition = { x: 0, z: 0 };
+      walkVelocity = { x: 0, z: 0 };
+      walkMoveBlend = 0;
+      setWalkHeading(0);
+    }
+
+    function walkInputVector() {
+      const x = (walkKeys.d ? 1 : 0) - (walkKeys.a ? 1 : 0);
+      const z = (walkKeys.w ? 1 : 0) - (walkKeys.s ? 1 : 0);
+      const length = Math.hypot(x, z);
+      return length > .001 ? { x: x / length, z: z / length, active: true } : { x: 0, z: 0, active: false };
+    }
+
+    function updateWalkDisplacement(frameStep) {
+      const input = walkInputVector();
+      const targetSpeed = .018;
+      const targetVelocity = input.active ? { x: input.x * targetSpeed, z: input.z * targetSpeed } : { x: 0, z: 0 };
+      if (input.active) walkHeadingTarget = normalizeAngle(Math.atan2(input.x, input.z));
+      walkVelocity.x += (targetVelocity.x - walkVelocity.x) * Math.min(1, .22 * frameStep);
+      walkVelocity.z += (targetVelocity.z - walkVelocity.z) * Math.min(1, .22 * frameStep);
+      walkPosition.x = Math.max(-1.18, Math.min(1.18, walkPosition.x + walkVelocity.x * frameStep));
+      walkPosition.z = Math.max(-1.18, Math.min(1.18, walkPosition.z + walkVelocity.z * frameStep));
+      walkMoveBlend = input.active || Math.hypot(walkVelocity.x, walkVelocity.z) > .001
+        ? Math.min(1, walkMoveBlend + .070 * frameStep)
+        : Math.max(0, walkMoveBlend - .050 * frameStep);
+      syncWalkDirectionConsole();
+    }
+
+    function syncAutoMovesToggle() {
+      const button = document.getElementById('autoMovesToggle');
+      if (!button) return;
+      button.classList.toggle('active', autoMovesActive);
+      const step = AUTO_MOVES[autoMoveIndex];
+      button.textContent = autoMovesActive && step
+        ? (autoMovePhase === 'buffer' ? 'Auto Buffer' : `Auto ${step.label}`)
+        : 'Auto Moves';
+    }
+
+    function resetAutoActuators() {
+      runMotion = false;
+      moonwalkMotion = false;
+      spinMotion = false;
+      deactivatePostureMotions();
+      document.getElementById('runToggle')?.classList.remove('active');
+      document.getElementById('moonwalkToggle')?.classList.remove('active');
+      document.getElementById('spinToggle')?.classList.remove('active');
+      clearWalkKeys();
+    }
+
+    function activateAutoMove(move) {
+      resetAutoActuators();
+      if (move.kind === 'run') {
+        runMotion = true;
+        if (runBlend <= .001) runTime = 0;
+        document.getElementById('runToggle')?.classList.add('active');
+      } else if (move.kind === 'moonwalk') {
+        moonwalkMotion = true;
+        if (moonwalkBlend <= .001) runTime = 0;
+        document.getElementById('moonwalkToggle')?.classList.add('active');
+      } else if (move.kind === 'spin') {
+        spinMotion = true;
+        if (spinBlend <= .001) {
+          runTime = 0;
+          spinAngle = 0;
+        }
+        document.getElementById('spinToggle')?.classList.add('active');
+      } else if (move.kind === 'crouch') {
+        crouchMotion = true;
+        document.getElementById('crouchToggle')?.classList.add('active');
+      } else if (move.kind === 'squat') {
+        squatMotion = true;
+        document.getElementById('squatToggle')?.classList.add('active');
+      } else if (move.kind === 'jump') {
+        jumpActive = true;
+        jumpTime = 0;
+      } else if (move.kind === 'walk') {
+        setWalkKey(move.key, true);
+      }
+      syncAutoMovesToggle();
+    }
+
+    function setAutoMoves(active) {
+      autoMovesActive = active;
+      autoMoveIndex = 0;
+      autoMoveClock = 0;
+      autoMovePhase = active ? 'buffer' : 'buffer';
+      resetAutoActuators();
+      if (active) {
+        resetWalkPosition();
+        runTime = 0;
+      }
+      syncAutoMovesToggle();
+    }
+
+    function stopAutoMovesForManual() {
+      if (!autoMovesActive) return;
+      autoMovesActive = false;
+      autoMoveClock = 0;
+      autoMovePhase = 'buffer';
+      resetAutoActuators();
+      syncAutoMovesToggle();
+    }
+
+    function updateAutoMoves(frameStep) {
+      if (!autoMovesActive) return;
+      const move = AUTO_MOVES[autoMoveIndex];
+      autoMoveClock += frameStep;
+      if (autoMovePhase === 'buffer') {
+        resetAutoActuators();
+        if (autoMoveClock >= move.buffer && jumpTime >= 1) {
+          autoMovePhase = 'move';
+          autoMoveClock = 0;
+          activateAutoMove(move);
+        }
+      } else if (autoMoveClock >= move.duration) {
+        resetAutoActuators();
+        autoMoveIndex = (autoMoveIndex + 1) % AUTO_MOVES.length;
+        autoMovePhase = 'buffer';
+        autoMoveClock = 0;
+        syncAutoMovesToggle();
+      }
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+      const clean = hex.replace('#','');
+      const value = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+      return `rgba(${(value>>16)&255},${(value>>8)&255},${value&255},${alpha})`;
+    }
+
+    function meshControlKey(part) {
+      if (part === 'head') return 'head';
+      if (part === 'neck') return 'neck';
+      if (part === 'torso') return 'torso';
+      if (part === 'waist') return 'waist';
+      if (part === 'pelvis') return 'pelvis';
+      if (part === 'hipSurface') return 'hip';
+      if (part === 'shoulder') return 'shoulder';
+      if (part === 'arm') return 'arm';
+      if (part === 'elbow') return 'elbow';
+      if (part === 'wrist') return 'wrist';
+      if (part === 'palm') return 'palm';
+      if (['knuckle','finger','fingerJoint','fingerTip'].includes(part)) return 'finger';
+      if (part === 'leg') return 'thigh';
+      if (part === 'calfMesh') return 'calf';
+      if (part === 'knee') return 'knee';
+      if (part === 'ankle') return 'ankle';
+      if (part === 'heel') return 'heel';
+      if (part === 'foot' || part === 'forefoot') return 'foot';
+      if (['toe','toeJoint','toeTip'].includes(part)) return 'toe';
+      if (part === 'toeNail') return 'toeNails';
+      if (['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part)) return 'boot';
+      if (part === 'bone') return 'bone';
+      return '';
+    }
+    function meshDisplayColor(part) {
+      const key = meshControlKey(part);
+      if (key && meshControls[key].colorized) return meshControls[key].color;
+      if (key) return displayTheme === 'dark' ? DARK_FIGURE_INK : '#111111';
+      return '';
+    }
+
+    function isHiddenPart(part) { return part === 'coveredMesh'; }
+    function isBootPart(part) { return ['boot','bootSole','bootHeel','bootRim','bootSeam'].includes(part); }
+
+    function addPoint(x, y, z, part, weight = 1, meta = null) {
+      points.push({ x, y, z, part, weight, ...(meta || {}), jitter: ((points.length * 9301) % 997) / 997 });
+      return points.length - 1;
+    }
+    function addLink(a, b, strength = 1) { if (a >= 0 && b >= 0) links.push({ a, b, strength }); }
+    function addFace(ids, part, alpha = .16) { if (ids.every(id => id >= 0)) faces.push({ ids, part, alpha }); }
+    function normalize(v) { const len = Math.hypot(v.x,v.y,v.z) || 1; return { x:v.x/len, y:v.y/len, z:v.z/len }; }
+    function cross(a,b) { return { x:a.y*b.z-a.z*b.y, y:a.z*b.x-a.x*b.z, z:a.x*b.y-a.y*b.x }; }
+    function basisFromEndpoints(a,b) {
+      const axis = normalize({ x:b.x-a.x, y:b.y-a.y, z:b.z-a.z });
+      const helper = Math.abs(axis.y) < .95 ? {x:0,y:1,z:0} : {x:1,y:0,z:0};
+      const side = normalize(cross(axis, helper));
+      const forward = normalize(cross(side, axis));
+      return { axis, side, forward };
+    }
+
+    function buildEllipsoid(cx, cy, cz, rx, ry, rz, latSteps, lonSteps, part) {
+      const grid = [];
+      for (let i=0;i<=latSteps;i++) {
+        const v = -Math.PI/2 + Math.PI*i/latSteps, row=[];
+        const ringScale = Math.cos(v);
+        for (let j=0;j<lonSteps;j++) {
+          const u = Math.PI*2*j/lonSteps;
+          row.push(addPoint(cx + rx*ringScale*Math.sin(u), cy + ry*Math.sin(v), cz + rz*ringScale*Math.cos(u), part, 1));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=latSteps;i++) for (let j=0;j<lonSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%lonSteps], .78);
+        if (i < latSteps) addLink(grid[i][j], grid[i+1][j], .78);
+      }
+      return grid;
+    }
+
+    function buildTaperedTube(a,b,rA,rB,ringSteps,radialSteps,part) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps, radius=rA+(rB-rA)*t;
+        const center = { x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, z:a.z+(b.z-a.z)*t };
+        const row=[];
+        for (let j=0;j<radialSteps;j++) {
+          const angle=Math.PI*2*j/radialSteps;
+          row.push(addPoint(
+            center.x + Math.cos(angle)*basis.side.x*radius + Math.sin(angle)*basis.forward.x*radius,
+            center.y + Math.cos(angle)*basis.side.y*radius + Math.sin(angle)*basis.forward.y*radius,
+            center.z + Math.cos(angle)*basis.side.z*radius + Math.sin(angle)*basis.forward.z*radius,
+            part, .96));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=ringSteps;i++) for (let j=0;j<radialSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%radialSteps], .72);
+        if (i < ringSteps) addLink(grid[i][j], grid[i+1][j], .8);
+      }
+      return grid;
+    }
+
+    function buildEllipticalTube(a,b,ringSteps,radialSteps,part,profile) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps;
+        const shape=profile(t);
+        const center = {
+          x:a.x+(b.x-a.x)*t + basis.side.x*(shape.offsetSide||0) + basis.forward.x*(shape.offsetForward||0),
+          y:a.y+(b.y-a.y)*t + basis.side.y*(shape.offsetSide||0) + basis.forward.y*(shape.offsetForward||0),
+          z:a.z+(b.z-a.z)*t + basis.side.z*(shape.offsetSide||0) + basis.forward.z*(shape.offsetForward||0)
+        };
+        const row=[];
+        for (let j=0;j<radialSteps;j++) {
+          const angle=Math.PI*2*j/radialSteps;
+          row.push(addPoint(
+            center.x + Math.cos(angle)*basis.side.x*shape.side + Math.sin(angle)*basis.forward.x*shape.forward,
+            center.y + Math.cos(angle)*basis.side.y*shape.side + Math.sin(angle)*basis.forward.y*shape.forward,
+            center.z + Math.cos(angle)*basis.side.z*shape.side + Math.sin(angle)*basis.forward.z*shape.forward,
+            shape.part || part,
+            shape.weight || 1,
+            shape.meta || null));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<=ringSteps;i++) for (let j=0;j<radialSteps;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%radialSteps], .82);
+        if (i < ringSteps) {
+          addLink(grid[i][j], grid[i+1][j], .88);
+          addFace([grid[i][j], grid[i][(j+1)%radialSteps], grid[i+1][(j+1)%radialSteps], grid[i+1][j]], part, .15);
+        }
+      }
+      return grid;
+    }
+
+    function strengthenRing(row, strength = 1.45) {
+      for (let j=0;j<row.length;j++) addLink(row[j], row[(j+1)%row.length], strength);
+    }
+
+    function capRing(row, part, weight = 1.08, strength = 1.18, meta = null) {
+      const center = row.reduce((acc, id) => {
+        const p = points[id];
+        acc.x += p.x; acc.y += p.y; acc.z += p.z;
+        return acc;
+      }, { x: 0, y: 0, z: 0 });
+      center.x /= row.length; center.y /= row.length; center.z /= row.length;
+      const c = addPoint(center.x, center.y, center.z, part, weight, meta);
+      for (let j=0;j<row.length;j++) {
+        addLink(c, row[j], strength);
+        addLink(row[j], row[(j+Math.floor(row.length/2))%row.length], strength*.52);
+        addFace([c, row[j], row[(j+1)%row.length]], part, .22);
+      }
+      return c;
+    }
+
+    function buildSolePlate(side, ankleX, ankleY, footZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const stations = [
+        { z: footZ - .305, w: .116, y: ankleY + .214, x: 0, t: .060 },
+        { z: footZ - .135, w: .160, y: ankleY + .222, x: 0, t: .064 },
+        { z: footZ + .085, w: .182, y: ankleY + .226, x: sign*.006, t: .066 },
+        { z: footZ + .325, w: .174, y: ankleY + .226, x: sign*.018, t: .064 },
+        { z: footZ + .555, w: .124, y: ankleY + .218, x: sign*.026, t: .058 }
+      ];
+      const topAcross = [-1, -.5, 0, .5, 1];
+      const bottomAcross = [1, .5, 0, -.5, -1];
+      const grid=[];
+      for (const station of stations) {
+        const row=[];
+        for (const sideT of topAcross) {
+          row.push(addPoint(
+            ankleX + station.x + sideT * station.w,
+            station.y,
+            station.z,
+            'bootSole',
+            1.08,
+            { bootSide: side }));
+        }
+        for (const sideT of bottomAcross) {
+          row.push(addPoint(
+            ankleX + station.x + sideT * station.w,
+            station.y + station.t,
+            station.z,
+            'bootSole',
+            1.08,
+            { bootSide: side }));
+        }
+        grid.push(row);
+      }
+      for (let i=0;i<grid.length;i++) for (let j=0;j<grid[i].length;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%grid[i].length], 1.1);
+        if (i < grid.length-1) {
+          addLink(grid[i][j], grid[i+1][j], 1.12);
+          addFace([grid[i][j], grid[i+1][j], grid[i+1][(j+1)%grid[i].length], grid[i][(j+1)%grid[i].length]], 'bootSole', .22);
+        }
+      }
+      addFace(grid[0], 'bootSole', .24);
+      addFace(grid[grid.length-1], 'bootSole', .24);
+      return grid;
+    }
+
+    function buildBootFootShell(a,b,ringSteps,part,profile) {
+      const basis = basisFromEndpoints(a,b), grid=[];
+      const section = [
+        { s: -1, f: 1.00 },
+        { s: -.98, f: .42 },
+        { s: -.78, f: -.22 },
+        { s: -.38, f: -.78 },
+        { s: 0, f: -1.00 },
+        { s: .38, f: -.78 },
+        { s: .78, f: -.22 },
+        { s: .98, f: .42 },
+        { s: 1, f: 1.00 }
+      ];
+      for (let i=0;i<=ringSteps;i++) {
+        const t=i/ringSteps;
+        const shape=profile(t);
+        const center = {
+          x:a.x+(b.x-a.x)*t + basis.side.x*(shape.offsetSide||0) + basis.forward.x*(shape.offsetForward||0),
+          y:a.y+(b.y-a.y)*t + basis.side.y*(shape.offsetSide||0) + basis.forward.y*(shape.offsetForward||0),
+          z:a.z+(b.z-a.z)*t + basis.side.z*(shape.offsetSide||0) + basis.forward.z*(shape.offsetForward||0)
+        };
+        const row = section.map(p => addPoint(
+          center.x + p.s*basis.side.x*shape.side + p.f*basis.forward.x*shape.forward,
+          center.y + p.s*basis.side.y*shape.side + p.f*basis.forward.y*shape.forward,
+          center.z + p.s*basis.side.z*shape.side + p.f*basis.forward.z*shape.forward,
+          part,
+          shape.weight || 1,
+          shape.meta || null));
+        grid.push(row);
+      }
+      for (let i=0;i<grid.length;i++) for (let j=0;j<grid[i].length;j++) {
+        addLink(grid[i][j], grid[i][(j+1)%grid[i].length], j === grid[i].length-1 ? 1.28 : .92);
+        if (i < grid.length-1) {
+          addLink(grid[i][j], grid[i+1][j], .96);
+          addFace([grid[i][j], grid[i][(j+1)%grid[i].length], grid[i+1][(j+1)%grid[i].length], grid[i+1][j]], part, .16);
+        }
+      }
+      return grid;
+    }
+
+    function buildHeelBlock(side, ankleX, ankleY, footZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const x0=ankleX-sign*.070, x1=ankleX+sign*.070;
+      const y0=ankleY+.252, y1=ankleY+.318;
+      const z0=footZ-.238, z1=footZ-.128;
+      const corners=[
+        [x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],
+        [x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]
+      ].map(([x,y,z])=>addPoint(x,y,z,'bootHeel',1.12,{ bootSide: side }));
+      [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b])=>addLink(corners[a],corners[b],1.08));
+      [[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]].forEach(ids=>addFace(ids.map(i=>corners[i]), 'bootHeel', .22));
+      const center=addPoint(ankleX, (y0+y1)/2, (z0+z1)/2, 'bootHeel', 1.02, { bootSide: side });
+      corners.forEach(c=>addLink(center,c,.42));
+      return corners;
+    }
+
+    function buildRidingBoot(side, kneeX, kneeY, kneeZ, ankleX, ankleY, ankleZ, shinBottomY, footZ) {
+      const sign = side === 'left' ? -1 : 1;
+      const radial = 22;
+      const offset = bootState[side].offset;
+      const w = p => ({ x: p.x + offset.x, y: p.y + offset.y, z: p.z + offset.z });
+      const bootMeta = { bootSide: side };
+      const bootAnkleX = ankleX + offset.x;
+      const bootAnkleY = ankleY + offset.y;
+      const bootFootZ = footZ + offset.z;
+      const shaftTop=w({ x:kneeX+sign*.012, y:kneeY+.250, z:kneeZ+.020 });
+      const shaftBottom=w({ x:ankleX+sign*.006, y:shinBottomY+.060, z:ankleZ+.010 });
+      const shaft=buildEllipticalTube(shaftTop, shaftBottom, 13, radial, 'boot', t => {
+        const calf=Math.sin(Math.PI*t);
+        const taper=1-t;
+        return {
+          side: .115 + .042*taper + .020*calf,
+          forward: .105 + .028*taper + .014*calf,
+          weight: 1.08,
+          meta: bootMeta
+        };
+      });
+      strengthenRing(shaft[0], 2.1);
+      strengthenRing(shaft[1], 1.25);
+      strengthenRing(shaft[shaft.length-1], 1.45);
+
+      const ankleWrap=buildEllipticalTube(
+        w({ x:ankleX+sign*.006, y:shinBottomY-.020, z:ankleZ+.005 }),
+        w({ x:ankleX+sign*.018, y:ankleY+.075, z:footZ-.080 }),
+        5, radial, 'boot', t => ({
+          side: .126 - .010*t,
+          forward: .104 + .012*Math.sin(Math.PI*t),
+          weight: 1.10,
+          meta: bootMeta
+        })
+      );
+      connectGridToGrid(shaft, ankleWrap, 3, 2, .92);
+
+      const footShell=buildBootFootShell(
+        w({ x:ankleX+sign*.004, y:ankleY+.125, z:footZ-.270 }),
+        w({ x:ankleX+sign*.038, y:ankleY+.165, z:footZ+.555 }),
+        14, 'boot', t => {
+          const broad=Math.sin(Math.PI*Math.min(1,t*.94));
+          const toe=smoothstep(.68,1,t);
+          const instep=Math.exp(-Math.pow((t-.28)/.18,2));
+          return {
+            side: .092 + .066*broad - .026*toe,
+            forward: .052 + .034*instep + .008*broad - .010*toe,
+            offsetForward: -.012*toe,
+            weight: 1.08,
+            meta: bootMeta
+          };
+        }
+      );
+      strengthenRing(footShell[footShell.length-1], 1.65);
+      capRing(footShell[footShell.length-1], 'boot', 1.22, 1.34, bootMeta);
+      connectGridToGrid(ankleWrap, footShell, 1, 2, .88);
+
+      const sole=buildSolePlate(side, bootAnkleX, bootAnkleY, bootFootZ);
+      connectGridToGrid(footShell, sole, 3, 1, .80);
+      buildHeelBlock(side, bootAnkleX, bootAnkleY, bootFootZ);
+
+      const outsideIndex = side === 'left' ? Math.floor(radial * .78) : Math.floor(radial * .22);
+      for (let i=1;i<shaft.length-1;i++) addLink(shaft[i][outsideIndex], shaft[i+1][outsideIndex], 1.65);
+      for (let i=1;i<footShell.length-1;i++) addLink(footShell[i][Math.floor(radial*.25)], footShell[i+1][Math.floor(radial*.25)], 1.28);
+      return { shaft, ankleWrap, footShell, sole };
+    }
+
+    function connectGridToGrid(gridA, gridB, stepA = 2, stepB = 2, strength = .55) {
+      for (let i=0;i<Math.min(gridA.length, gridB.length);i+=stepA) {
+        const rowA=gridA[i], rowB=gridB[Math.min(gridB.length-1, Math.floor(i*gridB.length/gridA.length))];
+        for (let j=0;j<Math.min(rowA.length,rowB.length);j+=stepB) addLink(rowA[j], rowB[j%rowB.length], strength);
+      }
+    }
+    function bonePoint(x,y,z,weight=1.05) { return addPoint(x,y,z,'bone',weight); }
+
+    function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+    function lerp(a,b,t) { return a + (b - a) * t; }
+    function blendScalar(rest, active, t) { return lerp(rest, active, easeInOut(t)); }
+    function blendPoint(rest, active, t) {
+      return {
+        x: blendScalar(rest.x, active.x, t),
+        y: blendScalar(rest.y, active.y, t),
+        z: blendScalar(rest.z, active.z, t)
+      };
+    }
+    function easeInOut(t) { t = clamp01(t); return t*t*(3-2*t); }
+    function runPhase(offset = 0) {
+      const raw = runTime / (Math.PI * 2) + offset;
+      return raw - Math.floor(raw);
+    }
+    function sampleCycle(frames, phase) {
+      for (let i=0;i<frames.length-1;i++) {
+        const a=frames[i], b=frames[i+1];
+        if (phase >= a.t && phase <= b.t) {
+          const u=easeInOut((phase-a.t)/(b.t-a.t));
+          const out={};
+          Object.keys(a).forEach(key => {
+            if (key !== 't') out[key]=lerp(a[key], b[key], u);
+          });
+          return out;
+        }
+      }
+      return frames[frames.length-1];
+    }
+    function runningLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const p = runPhase(side === 'left' ? 0 : .5);
+      const frames = [
+        { t: 0,    kneeY: 1.54, kneeZ: .24, ankleY: 2.665, ankleZ: .30, footZ: .43, kneeSide: .018 },
+        { t: .12, kneeY: 1.68, kneeZ: .16, ankleY: 2.690, ankleZ: .17, footZ: .30, kneeSide: .010 },
+        { t: .28, kneeY: 1.52, kneeZ: -.06, ankleY: 2.650, ankleZ: -.12, footZ: .02, kneeSide: -.006 },
+        { t: .36, kneeY: 1.40, kneeZ: -.22, ankleY: 2.500, ankleZ: -.29, footZ: -.16, kneeSide: -.012 },
+        { t: .50, kneeY: 1.12, kneeZ: -.05, ankleY: 1.990, ankleZ: -.20, footZ: -.06, kneeSide: -.006 },
+        { t: .68, kneeY: 1.20, kneeZ: .34, ankleY: 2.160, ankleZ: .08, footZ: .23, kneeSide: .012 },
+        { t: .86, kneeY: 1.44, kneeZ: .42, ankleY: 2.470, ankleZ: .29, footZ: .45, kneeSide: .020 },
+        { t: 1,    kneeY: 1.54, kneeZ: .24, ankleY: 2.665, ankleZ: .30, footZ: .43, kneeSide: .018 }
+      ];
+      const pose = sampleCycle(frames, p);
+      const floatLift = p > .36 && p < .50 ? Math.sin((p - .36) / .14 * Math.PI) * .035 :
+        (p > .86 ? Math.sin((p - .86) / .14 * Math.PI) * .025 : 0);
+      return {
+        kneeX: sign * (.30 + pose.kneeSide),
+        ankleX: sign * (.30 + .020 * Math.sin(Math.PI * 2 * p)),
+        kneeY: pose.kneeY - floatLift,
+        shinBottomY: pose.ankleY - .145 - floatLift,
+        ankleY: pose.ankleY - floatLift,
+        kneeZ: pose.kneeZ,
+        ankleZ: pose.ankleZ,
+        footZ: pose.footZ
+      };
+    }
+    function moonwalkLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const p = runPhase(side === 'left' ? 0 : .5);
+      const frames = [
+        { t: 0,    kneeY: 1.55, kneeZ: .48, ankleY: 2.700, ankleZ: .54, footZ: .70, kneeSide: .014 },
+        { t: .24, kneeY: 1.64, kneeZ: .18, ankleY: 2.708, ankleZ: .20, footZ: .32, kneeSide: .008 },
+        { t: .48, kneeY: 1.70, kneeZ: -.22, ankleY: 2.708, ankleZ: -.26, footZ: -.20, kneeSide: -.010 },
+        { t: .62, kneeY: 1.50, kneeZ: -.31, ankleY: 2.520, ankleZ: -.34, footZ: -.30, kneeSide: -.014 },
+        { t: .78, kneeY: 1.34, kneeZ: .12, ankleY: 2.350, ankleZ: .10, footZ: .22, kneeSide: .004 },
+        { t: 1,    kneeY: 1.55, kneeZ: .48, ankleY: 2.700, ankleZ: .54, footZ: .70, kneeSide: .014 }
+      ];
+      const pose = sampleCycle(frames, p);
+      return {
+        kneeX: sign * (.30 + pose.kneeSide),
+        ankleX: sign * (.30 + .010 * Math.sin(Math.PI * 2 * p)),
+        kneeY: pose.kneeY,
+        shinBottomY: pose.ankleY - .145,
+        ankleY: pose.ankleY,
+        kneeZ: pose.kneeZ,
+        ankleZ: pose.ankleZ,
+        footZ: pose.footZ
+      };
+    }
+    function restingLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      return {
+        kneeX: sign*.30,
+        ankleX: sign*.30,
+        kneeY: 1.58,
+        shinBottomY: 2.580,
+        ankleY: 2.725,
+        kneeZ: -.05,
+        ankleZ: -.020,
+        footZ: .10
+      };
+    }
+    function spinningLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const p = runPhase(side === 'left' ? 0 : .5);
+      const twist = Math.sin(Math.PI * 2 * p);
+      const lift = Math.max(0, Math.sin(Math.PI * 2 * p)) * .125;
+      return {
+        kneeX: sign * (.292 + .018 * twist),
+        ankleX: sign * (.282 + .012 * twist),
+        kneeY: 1.58 - lift * .42,
+        shinBottomY: 2.580 - lift,
+        ankleY: 2.725 - lift,
+        kneeZ: -.05 + .075 * twist,
+        ankleZ: -.020 + .090 * twist,
+        footZ: .10 + .115 * twist
+      };
+    }
+    function staticPostureProfile() {
+      const crouch = easeInOut(crouchBlend);
+      const squat = easeInOut(squatBlend);
+      const total = crouch + squat;
+      if (total <= .0001) {
+        return { amount: 0, crouchShare: 0, squatShare: 0, bodyY: 0, lean: 0 };
+      }
+      const crouchShare = crouch / total;
+      const squatShare = squat / total;
+      const amount = clamp01(total);
+      return {
+        amount,
+        crouchShare,
+        squatShare,
+        bodyY: amount * (.43 * crouchShare + .78 * squatShare),
+        lean: amount * (-.18 * crouchShare - .09 * squatShare)
+      };
+    }
+    function staticPostureLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const rest = restingLegPose(side);
+      const posture = staticPostureProfile();
+      const targetKneeY = 1.84 * posture.crouchShare + 2.02 * posture.squatShare;
+      const targetKneeZ = .28 * posture.crouchShare + .46 * posture.squatShare;
+      const targetKneeX = sign * (.32 * posture.crouchShare + .36 * posture.squatShare);
+      const targetAnkleX = sign * (.30 * posture.crouchShare + .34 * posture.squatShare);
+      return {
+        kneeX: lerp(rest.kneeX, targetKneeX, posture.amount),
+        ankleX: lerp(rest.ankleX, targetAnkleX, posture.amount),
+        kneeY: lerp(rest.kneeY, targetKneeY, posture.amount) - posture.bodyY,
+        shinBottomY: rest.shinBottomY - posture.bodyY,
+        ankleY: rest.ankleY - posture.bodyY,
+        kneeZ: lerp(rest.kneeZ, targetKneeZ, posture.amount),
+        ankleZ: lerp(rest.ankleZ, .015, posture.amount),
+        footZ: lerp(rest.footZ, .14, posture.amount)
+      };
+    }
+    function blendedLegPose(side) {
+      const rest = restingLegPose(side);
+      if (jumpTime < 1) return jumpingLegPose(side);
+      if (crouchBlend > .001 || squatBlend > .001) return staticPostureLegPose(side);
+      if (moonwalkBlend > .001) {
+        const active = moonwalkLegPose(side);
+        const pose = {};
+        Object.keys(rest).forEach(key => { pose[key] = blendScalar(rest[key], active[key], moonwalkBlend); });
+        return pose;
+      }
+      if (spinBlend > .001) {
+        const active = spinningLegPose(side);
+        const pose = {};
+        Object.keys(rest).forEach(key => { pose[key] = blendScalar(rest[key], active[key], spinBlend); });
+        return pose;
+      }
+      const forwardBlend = Math.max(runBlend, walkMoveBlend);
+      if (forwardBlend <= .001) return rest;
+      const active = runningLegPose(side);
+      const pose = {};
+      Object.keys(rest).forEach(key => { pose[key] = blendScalar(rest[key], active[key], forwardBlend); });
+      return pose;
+    }
+    function jumpLift() {
+      return -jumpProfile().bodyY;
+    }
+    function jumpCrouch() {
+      return jumpProfile().crouch;
+    }
+    function jumpProfile() {
+      if (jumpTime >= 1) {
+        return { bodyY: 0, crouch: 0, lean: 0, armLift: 0, armReach: 0, armBack: 0, kneeY: 1.58, ankleY: 2.725, shinBottomY: 2.580, kneeZ: -.05, ankleZ: -.020, footZ: .10, kneeSide: 0 };
+      }
+      return sampleCycle([
+        { t: 0,    bodyY: 0,     crouch: 0,    lean: 0,     armLift: 0,   armReach: 0,   armBack: 0,     kneeY: 1.58, ankleY: 2.725, shinBottomY: 2.580, kneeZ: -.05, ankleZ: -.020, footZ: .10, kneeSide: 0 },
+        { t: .13,  bodyY: .090,  crouch: .34,  lean: -.075, armLift: -.10, armReach: .02, armBack: -.10,  kneeY: 1.74, ankleY: 2.725, shinBottomY: 2.580, kneeZ: .080, ankleZ: .000, footZ: .13, kneeSide: .005 },
+        { t: .34,  bodyY: .310,  crouch: 1,    lean: -.280, armLift: -.26, armReach: .05, armBack: -.26,  kneeY: 1.88, ankleY: 2.725, shinBottomY: 2.580, kneeZ: .430, ankleZ: .020, footZ: .15, kneeSide: .018 },
+        { t: .48,  bodyY: -.260, crouch: .10,  lean: -.075, armLift: .72,  armReach: .08, armBack: .18,   kneeY: 1.33, ankleY: 2.270, shinBottomY: 2.125, kneeZ: .150, ankleZ: .055, footZ: .17, kneeSide: .008 },
+        { t: .64,  bodyY: -.930, crouch: 0,    lean: .020,  armLift: .92,  armReach: .12, armBack: .10,   kneeY: 1.06, ankleY: 2.010, shinBottomY: 1.865, kneeZ: .040, ankleZ: .015, footZ: .12, kneeSide: .000 },
+        { t: .78,  bodyY: -.390, crouch: .12,  lean: -.045, armLift: .28,  armReach: .06, armBack: -.03,  kneeY: 1.32, ankleY: 2.260, shinBottomY: 2.115, kneeZ: .095, ankleZ: .020, footZ: .12, kneeSide: .004 },
+        { t: .90,  bodyY: .060,  crouch: .78,  lean: -.145, armLift: -.04, armReach: .04, armBack: -.15,  kneeY: 1.78, ankleY: 2.725, shinBottomY: 2.580, kneeZ: .310, ankleZ: .020, footZ: .13, kneeSide: .014 },
+        { t: 1,    bodyY: 0,     crouch: 0,    lean: 0,     armLift: 0,   armReach: 0,   armBack: 0,     kneeY: 1.58, ankleY: 2.725, shinBottomY: 2.580, kneeZ: -.05, ankleZ: -.020, footZ: .10, kneeSide: 0 }
+      ], jumpTime);
+    }
+    function jumpingLegPose(side) {
+      const sign = side === 'left' ? -1 : 1;
+      const j = jumpProfile();
+      return {
+        kneeX: sign * (.30 + j.kneeSide),
+        ankleX: sign * .30,
+        kneeY: j.kneeY - j.bodyY,
+        shinBottomY: j.shinBottomY - j.bodyY,
+        ankleY: j.ankleY - j.bodyY,
+        kneeZ: j.kneeZ,
+        ankleZ: j.ankleZ,
+        footZ: j.footZ
+      };
+    }
+    function applyRunBodyPosture() {
+      const j = jumpProfile();
+      const posture = staticPostureProfile();
+      const forwardBlend = Math.max(runBlend, walkMoveBlend);
+      const lean = (-0.115 * easeInOut(forwardBlend)) + (0.070 * easeInOut(moonwalkBlend)) + j.lean + posture.lean;
+      const cy = .36, cz = -.045;
+      const c = Math.cos(lean), s = Math.sin(lean);
+      const upperParts = new Set([
+        'head','neck','torso','waist','pelvis','shoulder','arm','elbow',
+        'wrist','palm','knuckle','finger','fingerJoint','fingerTip','hipSurface'
+      ]);
+      if (Math.abs(lean) > .001) {
+        for (const p of points) {
+          if (!upperParts.has(p.part)) continue;
+          const dy = p.y - cy, dz = p.z - cz;
+          p.y = cy + dy*c - dz*s;
+          p.z = cz + dy*s + dz*c;
+        }
+      }
+      const vertical = j.bodyY + posture.bodyY;
+      if (Math.abs(vertical) > .001) {
+        for (const p of points) p.y += vertical;
+      }
+    }
+
+    function buildFoot(side, ankleX, ankleY, ankleZ, covered = false) {
+      const sign = side === 'left' ? -1 : 1, footScale=.72, talusZ=ankleZ-.125, footZ=ankleZ-.145;
+      const hiddenPart = covered ? 'coveredMesh' : '';
+      const footBonePoint = (x,y,z,weight=1.05) => hiddenPart ? addPoint(x,y,z,hiddenPart,weight) : bonePoint(x,y,z,weight);
+      const ankle = buildEllipsoid(ankleX, ankleY-.085, talusZ, .092,.082,.092,7,14,hiddenPart || 'ankle');
+      const heel = buildEllipsoid(ankleX, ankleY+.105, footZ-.095*footScale, .158*footScale,.100*footScale,.145*footScale,7,16,hiddenPart || 'heel');
+      const arch = buildTaperedTube({x:ankleX,y:ankleY+.075,z:footZ+.075}, {x:ankleX+sign*.012,y:ankleY+.135,z:footZ+.335*footScale}, .122*footScale,.102*footScale,8,14,hiddenPart || 'foot');
+      const forefoot = buildEllipsoid(ankleX+sign*.014, ankleY+.170, footZ+.488*footScale, .202*footScale,.074*footScale,.158*footScale,6,18,hiddenPart || 'forefoot');
+      connectGridToGrid(ankle, heel,1,2,.72); connectGridToGrid(ankle, arch,1,2,.72); connectGridToGrid(heel, arch,1,2,.66); connectGridToGrid(arch, forefoot,1,2,.72);
+      const navicularMidfoot=footBonePoint(ankleX+sign*.012, ankleY+.115, footZ+.260*footScale,.72);
+      const toeOffsets=[-.145,-.065,.012,.085,.150].map(v=>v*sign*footScale);
+      const toeLengths=[.235,.214,.192,.168,.145].map(v=>v*footScale);
+      const toeWidths=[.064,.052,.048,.041,.036].map(v=>v*footScale);
+      const toeBaseBones=[];
+      for(let i=0;i<5;i++){
+        const baseX=ankleX+toeOffsets[i], baseY=ankleY+.176+Math.abs(i-2)*.004, baseZ=footZ+.575*footScale-i*.004, tipZ=baseZ+toeLengths[i];
+        const toe=buildTaperedTube({x:baseX,y:baseY,z:baseZ},{x:baseX+sign*(i-2)*.008,y:baseY+.014,z:tipZ},toeWidths[i],toeWidths[i]*.60,4,10,hiddenPart || 'toe');
+        const joint=buildEllipsoid(baseX,baseY,baseZ+.024,toeWidths[i]*.86,toeWidths[i]*.58,toeWidths[i]*.82,4,10,hiddenPart || 'toeJoint');
+        const tip=buildEllipsoid(baseX+sign*(i-2)*.008,baseY+.014,tipZ+.016,toeWidths[i]*.54,toeWidths[i]*.40,toeWidths[i]*.52,4,10,hiddenPart || 'toeTip');
+        connectGridToGrid(forefoot,joint,2,2,.46); connectGridToGrid(joint,toe,1,2,.64); connectGridToGrid(toe,tip,1,2,.60);
+        const toeBaseBone=footBonePoint(baseX,baseY+.015,baseZ+.008,.60), toeTipBone=footBonePoint(baseX+sign*(i-2)*.008,baseY+.018,tipZ+.010,.56);
+        const nail=addPoint(baseX+sign*(i-2)*.008,baseY-.010,tipZ+.042,hiddenPart || 'toeNail',.92);
+        addLink(toeTipBone,nail,.34); toeBaseBones.push(toeBaseBone); addLink(navicularMidfoot,toeBaseBone,.62); addLink(toeBaseBone,toeTipBone,.64);
+      }
+      for(let i=0;i<toeBaseBones.length-1;i++) addLink(toeBaseBones[i],toeBaseBones[i+1],.52);
+      return { ankle, heel, arch, forefoot };
+    }
+
+    function buildTrackedHand(side, wristX, wristY, wristZ, landmarks) {
+      const sourceWrist = landmarks[0];
+      const middleBase = landmarks[9];
+      const palmSpan = Math.max(.055, landmarkDistance2D(sourceWrist, middleBase));
+      const handScale = faceClamp(.245 / palmSpan, 1.20, 4.20);
+      const mapped = landmarks.map(point => ({
+        x: wristX - (point.x - sourceWrist.x) * handScale,
+        y: wristY + (point.y - sourceWrist.y) * handScale,
+        z: wristZ - ((point.z || 0) - (sourceWrist.z || 0)) * handScale * .82
+      }));
+      mapped[0] = { x: wristX, y: wristY, z: wristZ };
+
+      const palmIndices = [0, 5, 9, 13, 17];
+      const palmCenter = palmIndices.reduce((sum, index) => ({
+        x: sum.x + mapped[index].x / palmIndices.length,
+        y: sum.y + mapped[index].y / palmIndices.length,
+        z: sum.z + mapped[index].z / palmIndices.length
+      }), { x: 0, y: 0, z: 0 });
+      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const palm = buildEllipsoid(palmCenter.x, palmCenter.y, palmCenter.z, .082, .135, .125, 7, 15, 'palm');
+      connectGridToGrid(wrist, palm, 1, 2, .70);
+
+      const jointGrids = new Map();
+      const jointGrid = (index, part = 'knuckle', radius = .038) => {
+        if (jointGrids.has(index)) return jointGrids.get(index);
+        const point = mapped[index];
+        const grid = buildEllipsoid(point.x, point.y, point.z, radius, radius, radius, 4, 9, part);
+        jointGrids.set(index, grid);
+        return grid;
+      };
+      const connectSegment = (fromIndex, toIndex, radiusA, radiusB, part = 'finger') => {
+        const from = mapped[fromIndex], to = mapped[toIndex];
+        const tube = buildTaperedTube(from, to, radiusA, radiusB, 4, 9, part);
+        connectGridToGrid(jointGrid(fromIndex, fromIndex === 0 ? 'wrist' : 'fingerJoint', radiusA * 1.03), tube, 1, 2, .68);
+        connectGridToGrid(tube, jointGrid(toIndex, toIndex % 4 === 0 ? 'fingerTip' : 'fingerJoint', radiusB * 1.05), 1, 2, .64);
+      };
+
+      const palmEdges = [[0,5],[0,17],[5,9],[9,13],[13,17],[5,17]];
+      for (const [a, b] of palmEdges) {
+        const tube = buildTaperedTube(mapped[a], mapped[b], .030, .027, 3, 8, 'palm');
+        connectGridToGrid(palm, tube, 2, 2, .42);
+      }
+      connectGridToGrid(wrist, jointGrid(0, 'wrist', .055), 1, 1, .72);
+      for (const index of [5,9,13,17]) connectGridToGrid(palm, jointGrid(index, 'knuckle', .043), 2, 2, .52);
+
+      const fingers = [
+        { path: [0,1,2,3,4], radii: [.041,.038,.033,.027,.021] },
+        { path: [5,6,7,8], radii: [.039,.034,.029,.021] },
+        { path: [9,10,11,12], radii: [.041,.035,.030,.022] },
+        { path: [13,14,15,16], radii: [.038,.033,.028,.020] },
+        { path: [17,18,19,20], radii: [.034,.030,.025,.018] }
+      ];
+      for (const finger of fingers) {
+        for (let index = 0; index < finger.path.length - 1; index++) {
+          connectSegment(finger.path[index], finger.path[index + 1], finger.radii[index], finger.radii[index + 1]);
+        }
+      }
+      return { wrist, palm };
+    }
+
+    function buildHand(side, wristX, wristY, wristZ, forearmPitch = 0) {
+      const trackedLandmarks = upperBodyTracking.handLandmarks[side];
+      if (trackedLandmarks?.length >= 21) return buildTrackedHand(side, wristX, wristY, wristZ, trackedLandmarks);
+      const handPointStart = points.length;
+      const sign = side === 'left' ? -1 : 1;
+      const palmX = wristX - sign * .038;
+      const palmZ = wristZ + .025;
+      const wrist = buildEllipsoid(wristX, wristY, wristZ, .088, .082, .074, 6, 12, 'wrist');
+      const palm = buildEllipsoid(palmX, wristY + .150, palmZ, .078, .180, .135, 7, 16, 'palm');
+
+      connectGridToGrid(wrist, palm, 1, 2, .68);
+
+      const wristBone = bonePoint(wristX, wristY, wristZ + .020, .70);
+      const palmCenter = bonePoint(palmX, wristY + .140, palmZ + .015, .72);
+      const palmTop = bonePoint(palmX, wristY + .270, palmZ + .016, .66);
+      addLink(wristBone, palmCenter, .76);
+      addLink(palmCenter, palmTop, .72);
+
+      const fingerOffsets = [-.078, -.026, .026, .078];
+      const fingerLengths = [.245, .285, .265, .215];
+      const fingerWidths = [.034, .038, .036, .031];
+      const fingerBaseBones = [];
+
+      for (let i = 0; i < 4; i++) {
+        const baseX = palmX - sign * .010;
+        const baseY = wristY + .292;
+        const baseZ = palmZ + fingerOffsets[i];
+        const midY = baseY + fingerLengths[i] * .48;
+        const tipY = baseY + fingerLengths[i];
+        const curlX = -sign * .010;
+        const curlZ = (i - 1.5) * .010;
+
+        const baseKnuckle = buildEllipsoid(baseX, baseY, baseZ, fingerWidths[i] * 1.18, fingerWidths[i] * .96, fingerWidths[i] * 1.05, 4, 10, 'knuckle');
+        const fingerA = buildTaperedTube({ x: baseX, y: baseY + .012, z: baseZ }, { x: baseX + curlX, y: midY, z: baseZ + curlZ }, fingerWidths[i], fingerWidths[i] * .82, 4, 9, 'finger');
+        const middleJoint = buildEllipsoid(baseX + curlX, midY, baseZ + curlZ, fingerWidths[i] * .86, fingerWidths[i] * .80, fingerWidths[i] * .80, 4, 9, 'fingerJoint');
+        const fingerB = buildTaperedTube({ x: baseX + curlX, y: midY + .010, z: baseZ + curlZ }, { x: baseX + curlX * 1.4, y: tipY, z: baseZ + curlZ * 1.5 }, fingerWidths[i] * .78, fingerWidths[i] * .50, 4, 9, 'finger');
+        const tip = buildEllipsoid(baseX + curlX * 1.4, tipY + .010, baseZ + curlZ * 1.5, fingerWidths[i] * .54, fingerWidths[i] * .64, fingerWidths[i] * .54, 4, 9, 'fingerTip');
+
+        connectGridToGrid(palm, baseKnuckle, 2, 2, .46);
+        connectGridToGrid(baseKnuckle, fingerA, 1, 2, .66);
+        connectGridToGrid(fingerA, middleJoint, 1, 2, .62);
+        connectGridToGrid(middleJoint, fingerB, 1, 2, .62);
+        connectGridToGrid(fingerB, tip, 1, 2, .58);
+
+        const baseBone = bonePoint(baseX, baseY, baseZ, .52);
+        const midBone = bonePoint(baseX + curlX, midY, baseZ + curlZ, .48);
+        const tipBone = bonePoint(baseX + curlX * 1.4, tipY, baseZ + curlZ * 1.5, .44);
+        fingerBaseBones.push(baseBone);
+        addLink(palmCenter, baseBone, .58);
+        addLink(baseBone, midBone, .62);
+        addLink(midBone, tipBone, .58);
+      }
+
+      for (let i = 0; i < fingerBaseBones.length - 1; i++) addLink(fingerBaseBones[i], fingerBaseBones[i + 1], .48);
+
+      const thumbBaseX = palmX + sign * .012;
+      const thumbBaseY = wristY + .145;
+      const thumbBaseZ = palmZ + .132;
+      const thumbMidX = palmX + sign * .038;
+      const thumbMidY = wristY + .220;
+      const thumbMidZ = palmZ + .178;
+      const thumbTipX = palmX + sign * .052;
+      const thumbTipY = wristY + .305;
+      const thumbTipZ = palmZ + .206;
+      const thumbBase = buildEllipsoid(thumbBaseX, thumbBaseY, thumbBaseZ, .048, .052, .045, 4, 10, 'knuckle');
+      const thumbA = buildTaperedTube({ x: thumbBaseX, y: thumbBaseY, z: thumbBaseZ }, { x: thumbMidX, y: thumbMidY, z: thumbMidZ }, .044, .037, 4, 9, 'finger');
+      const thumbJoint = buildEllipsoid(thumbMidX, thumbMidY, thumbMidZ, .036, .038, .034, 4, 9, 'fingerJoint');
+      const thumbB = buildTaperedTube({ x: thumbMidX, y: thumbMidY, z: thumbMidZ }, { x: thumbTipX, y: thumbTipY, z: thumbTipZ }, .034, .024, 4, 9, 'finger');
+      const thumbTip = buildEllipsoid(thumbTipX, thumbTipY, thumbTipZ, .030, .034, .028, 4, 9, 'fingerTip');
+
+      connectGridToGrid(palm, thumbBase, 2, 2, .52);
+      connectGridToGrid(thumbBase, thumbA, 1, 2, .66);
+      connectGridToGrid(thumbA, thumbJoint, 1, 2, .62);
+      connectGridToGrid(thumbJoint, thumbB, 1, 2, .62);
+      connectGridToGrid(thumbB, thumbTip, 1, 2, .58);
+
+      const thumbBaseBone = bonePoint(thumbBaseX, thumbBaseY, thumbBaseZ, .50);
+      const thumbMidBone = bonePoint(thumbMidX, thumbMidY, thumbMidZ, .46);
+      const thumbTipBone = bonePoint(thumbTipX, thumbTipY, thumbTipZ, .42);
+      addLink(wristBone, thumbBaseBone, .58);
+      addLink(thumbBaseBone, thumbMidBone, .60);
+      addLink(thumbMidBone, thumbTipBone, .56);
+
+      if (Math.abs(forearmPitch) > .001) {
+        const c = Math.cos(forearmPitch);
+        const s = Math.sin(forearmPitch);
+        for (let i = handPointStart; i < points.length; i++) {
+          const p = points[i];
+          const dy = p.y - wristY;
+          const dz = p.z - wristZ;
+          p.y = wristY + dy * c - dz * s;
+          p.z = wristZ + dy * s + dz * c;
+        }
+      }
+
+      return { wrist, palm };
+    }
+
+    function buildAnatomicalHead() {
+      const rows = 20;
+      const columns = 32;
+      const centerZ = .040;
+      const grid = [];
+      const gaussian = (value, center, spread) => Math.exp(-Math.pow((value - center) / spread, 2));
+      const profileFrames = [
+        { t: 0,    width: .006, depth: .008 },
+        { t: .08,  width: .205, depth: .205 },
+        { t: .20,  width: .292, depth: .272 },
+        { t: .36,  width: .318, depth: .286 },
+        { t: .50,  width: .310, depth: .292 },
+        { t: .62,  width: .296, depth: .288 },
+        { t: .74,  width: .272, depth: .268 },
+        { t: .87,  width: .225, depth: .220 },
+        { t: 1,    width: .006, depth: .010 }
+      ];
+
+      for (let rowIndex = 0; rowIndex <= rows; rowIndex++) {
+        const t = 1 - rowIndex / rows;
+        const y = -2.315 + .775 * t;
+        const profile = sampleCycle(profileFrames, t);
+        const row = [];
+        for (let column = 0; column < columns; column++) {
+          const theta = Math.PI * 2 * column / columns;
+          const angle = Math.atan2(Math.sin(theta), Math.cos(theta));
+          const front = Math.max(0, Math.cos(angle));
+          const x = profile.width * Math.sin(theta);
+
+          const brow = .026 * gaussian(t, .405, .070) * gaussian(angle, 0, .62);
+          const eyeSocket = .045 * gaussian(t, .485, .065) *
+            (gaussian(angle, -.39, .18) + gaussian(angle, .39, .18));
+          const noseBridge = .035 * gaussian(t, .525, .150) * gaussian(angle, 0, .20);
+          const noseTip = .120 * gaussian(t, .625, .075) * gaussian(angle, 0, .125);
+          const cheek = .026 * gaussian(t, .590, .095) *
+            (gaussian(angle, -.61, .20) + gaussian(angle, .61, .20));
+          const muzzle = .030 * gaussian(t, .735, .070) * gaussian(angle, 0, .34);
+          const chin = .038 * gaussian(t, .905, .080) * gaussian(angle, 0, .42);
+          const temple = .018 * gaussian(t, .475, .115) *
+            (gaussian(angle, -1.02, .26) + gaussian(angle, 1.02, .26));
+          const z = centerZ + profile.depth * Math.cos(theta) +
+            front * (brow - eyeSocket + noseBridge + noseTip + cheek + muzzle + chin - temple);
+
+          const inEyeOpening = front > .72 &&
+            Math.pow((Math.abs(x) - .112) / .072, 2) + Math.pow((y + 1.940) / .042, 2) < 1;
+          const hiddenBaseRing = rowIndex <= 1;
+          row.push(addPoint(x, y, z, hiddenBaseRing || inEyeOpening ? 'faceVoid' : 'head', 1.02));
+        }
+        grid.push(row);
+      }
+
+      for (let rowIndex = 0; rowIndex <= rows; rowIndex++) {
+        for (let column = 0; column < columns; column++) {
+          const nextColumn = (column + 1) % columns;
+          addLink(grid[rowIndex][column], grid[rowIndex][nextColumn], .64);
+          if (rowIndex >= rows) continue;
+          addLink(grid[rowIndex][column], grid[rowIndex + 1][column], .70);
+          const diagonal = (rowIndex + column) % 2 === 0 ? nextColumn : (column - 1 + columns) % columns;
+          addLink(grid[rowIndex][column], grid[rowIndex + 1][diagonal], .52);
+        }
+      }
+
+      function featurePath(coords, closed = false, strength = 1.32, weight = 1.12) {
+        const ids = coords.map(p => addPoint(p.x, p.y, p.z, 'head', weight));
+        for (let i = 0; i < ids.length - 1; i++) addLink(ids[i], ids[i + 1], strength);
+        if (closed && ids.length > 2) addLink(ids[ids.length - 1], ids[0], strength);
+        return ids;
+      }
+
+      for (const side of [-1, 1]) {
+        const eyeCenterX = side * .112;
+        const eye = [];
+        for (let i = 0; i < 16; i++) {
+          const q = Math.PI * 2 * i / 16;
+          eye.push({
+            x: eyeCenterX + .076 * Math.cos(q),
+            y: -1.940 + .038 * Math.sin(q) * (.76 + .24 * Math.abs(Math.cos(q))),
+            z: .344 - .012 * Math.abs(Math.sin(q))
+          });
+        }
+        faceSocketLoops.push(featurePath(eye, true, 1.62, 1.18));
+
+        const brow = [];
+        for (let i = 0; i < 7; i++) {
+          const u = i / 6;
+          const x = eyeCenterX + (u - .5) * .168;
+          brow.push({ x, y: -2.005 - .018 * Math.sin(Math.PI * u), z: .342 + .008 * Math.sin(Math.PI * u) });
+        }
+        featurePath(brow, false, 1.48, 1.15);
+
+        featurePath([
+          { x: side*.047, y: -1.988, z: .346 },
+          { x: side*.044, y: -1.918, z: .374 },
+          { x: side*.052, y: -1.850, z: .411 },
+          { x: side*.072, y: -1.812, z: .398 },
+          { x: side*.050, y: -1.794, z: .405 }
+        ], false, 1.38, 1.14);
+
+        const ear = [];
+        const innerEar = [];
+        for (let i = 0; i < 16; i++) {
+          const q = Math.PI * 2 * i / 16;
+          ear.push({
+            x: side * (.320 + .018 * Math.cos(q)),
+            y: -1.910 + .112 * Math.sin(q),
+            z: .040 + .064 * Math.cos(q)
+          });
+          innerEar.push({
+            x: side * (.323 + .009 * Math.cos(q)),
+            y: -1.910 + .070 * Math.sin(q),
+            z: .040 + .037 * Math.cos(q)
+          });
+        }
+        featurePath(ear, true, 1.30, 1.08);
+        featurePath(innerEar, true, 1.08, 1.05);
+      }
+
+      featurePath([
+        { x: 0, y: -2.010, z: .350 },
+        { x: 0, y: -1.948, z: .375 },
+        { x: 0, y: -1.884, z: .414 },
+        { x: 0, y: -1.826, z: .455 },
+        { x: 0, y: -1.798, z: .438 },
+        { x: 0, y: -1.773, z: .402 },
+        { x: 0, y: -1.744, z: .383 },
+        { x: 0, y: -1.718, z: .387 },
+        { x: 0, y: -1.686, z: .357 },
+        { x: 0, y: -1.620, z: .326 },
+        { x: 0, y: -1.558, z: .300 }
+      ], false, 1.62, 1.18);
+
+      featurePath([
+        { x: -.080, y: -1.797, z: .407 },
+        { x: -.048, y: -1.808, z: .425 },
+        { x: 0, y: -1.800, z: .436 },
+        { x: .048, y: -1.808, z: .425 },
+        { x: .080, y: -1.797, z: .407 }
+      ], false, 1.44, 1.14);
+
+      featurePath([
+        { x: -.040, y: -1.777, z: .397 },
+        { x: -.024, y: -1.746, z: .378 },
+        { x: 0, y: -1.734, z: .382 },
+        { x: .024, y: -1.746, z: .378 },
+        { x: .040, y: -1.777, z: .397 }
+      ], false, 1.08, 1.08);
+
+      const outerLip = [];
+      for (let i = 0; i < 20; i++) {
+        const q = Math.PI * 2 * i / 20;
+        const cornerTaper = .72 + .28 * Math.abs(Math.cos(q));
+        outerLip.push({
+          x: .152 * Math.cos(q),
+          y: -1.720 + .029 * Math.sin(q) * cornerTaper,
+          z: .371 + .009 * Math.cos(q * 2)
+        });
+      }
+      faceMouthPaths.push(featurePath(outerLip, true, 1.48, 1.16));
+      faceMouthPaths.push(featurePath([
+        { x: -.145, y: -1.718, z: .375 },
+        { x: -.075, y: -1.714, z: .382 },
+        { x: 0, y: -1.718, z: .387 },
+        { x: .075, y: -1.714, z: .382 },
+        { x: .145, y: -1.718, z: .375 }
+      ], false, 1.58, 1.18));
+
+      return grid;
+    }
+
+    function buildHuman() {
+      points=[]; links=[]; faces=[]; faceSocketLoops=[]; faceMouthPaths=[];
+      const pelvisCenter=buildEllipsoid(0,.26,-.045,.42,.135,.18,7,22,'pelvis');
+      const hipBar=buildTaperedTube({x:-.34,y:.34,z:-.045},{x:.34,y:.34,z:-.045},.145,.145,4,18,'pelvis');
+      connectGridToGrid(pelvisCenter,hipBar,1,2,.72);
+      const waist=buildEllipsoid(0,.02,-.030,.34,.18,.22,8,22,'waist');
+      const abdomen=buildEllipsoid(0,-.38,-.010,.39,.42,.26,12,24,'torso');
+      const chest=buildEllipsoid(0,-.92,-.035,.56,.48,.34,13,28,'torso');
+      const neck=buildTaperedTube({x:0,y:-1.36,z:-.018},{x:0,y:-1.58,z:-.010},.150,.118,4,14,'neck');
+      const head=buildEllipsoid(0,-1.92,.045,.30,.36,.29,11,20,'head');
+      connectGridToGrid(pelvisCenter,waist,1,2,.66); connectGridToGrid(waist,abdomen,1,2,.66); connectGridToGrid(abdomen,chest,1,3,.66); connectGridToGrid(chest,neck,2,2,.62);
+      connectGridToGrid(neck,head,1,3,.58);
+      const lShoulder=buildEllipsoid(-.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
+      const rShoulder=buildEllipsoid(.56,-1.16,-.020,.17,.19,.17,7,16,'shoulder');
+      connectGridToGrid(chest,lShoulder,2,3,.58); connectGridToGrid(chest,rShoulder,2,3,.58);
+      function armPose(side) {
+        const sign = side === 'left' ? -1 : 1;
+        const zBase = side === 'left' ? .055 : -.055;
+        const rest = {
+          upperA: { x: sign*.58, y: -1.05, z: zBase },
+          elbow: { x: sign*.72, y: -.37, z: zBase + sign*.020 },
+          forearmA: { x: sign*.72, y: -.30, z: zBase + sign*.020 },
+          wrist: { x: sign*.62, y: .43, z: zBase + sign*.060 }
+        };
+        let pose = rest;
+        const posture = staticPostureProfile();
+        if (posture.amount > .001) {
+          const crouchPose = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.68, y: -.30, z: zBase + .18 },
+            forearmA: { x: sign*.66, y: -.24, z: zBase + .20 },
+            wrist: { x: sign*.54, y: .31, z: zBase + .38 }
+          };
+          const squatPose = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.64, y: -.72, z: zBase + .43 },
+            forearmA: { x: sign*.62, y: -.69, z: zBase + .49 },
+            wrist: { x: sign*.54, y: -.62, z: zBase + .91 }
+          };
+          const active = {
+            upperA: blendPoint(crouchPose.upperA, squatPose.upperA, posture.squatShare),
+            elbow: blendPoint(crouchPose.elbow, squatPose.elbow, posture.squatShare),
+            forearmA: blendPoint(crouchPose.forearmA, squatPose.forearmA, posture.squatShare),
+            wrist: blendPoint(crouchPose.wrist, squatPose.wrist, posture.squatShare)
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, posture.amount),
+            elbow: blendPoint(rest.elbow, active.elbow, posture.amount),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, posture.amount),
+            wrist: blendPoint(rest.wrist, active.wrist, posture.amount)
+          };
+        } else if (moonwalkBlend > .001) {
+          const p = runPhase(side === 'left' ? 0 : .5);
+          const swing = -Math.cos(Math.PI * 2 * p);
+          const active = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.69, y: -.40, z: zBase + swing*.075 },
+            forearmA: { x: sign*.69, y: -.34, z: zBase + swing*.075 },
+            wrist: { x: sign*.61, y: .360, z: zBase + swing*.180 }
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, moonwalkBlend),
+            elbow: blendPoint(rest.elbow, active.elbow, moonwalkBlend),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, moonwalkBlend),
+            wrist: blendPoint(rest.wrist, active.wrist, moonwalkBlend)
+          };
+        } else if (spinBlend > .001) {
+          const p = runPhase(side === 'left' ? 0 : .5);
+          const sway = Math.sin(Math.PI * 2 * p);
+          const active = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*.82, y: -.52, z: zBase + sway*.105 },
+            forearmA: { x: sign*.82, y: -.46, z: zBase + sway*.105 },
+            wrist: { x: sign*.76, y: .220, z: zBase + sway*.175 }
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, spinBlend),
+            elbow: blendPoint(rest.elbow, active.elbow, spinBlend),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, spinBlend),
+            wrist: blendPoint(rest.wrist, active.wrist, spinBlend)
+          };
+        } else if (Math.max(runBlend, walkMoveBlend) > .001) {
+          const forwardBlend = Math.max(runBlend, walkMoveBlend);
+          const p = runPhase(side === 'left' ? 0 : .5);
+          const armSwing = -Math.cos(Math.PI * 2 * p);
+          const elbowBend = .018 + .014 * (1 - Math.abs(armSwing));
+          const active = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*(.66 + elbowBend), y: -.48, z: zBase + armSwing*.130 },
+            forearmA: { x: sign*(.66 + elbowBend), y: -.42, z: zBase + armSwing*.130 },
+            wrist: { x: sign*(.60 - elbowBend*.40), y: .260, z: zBase + armSwing*.280 }
+          };
+          pose = {
+            upperA: blendPoint(rest.upperA, active.upperA, forwardBlend),
+            elbow: blendPoint(rest.elbow, active.elbow, forwardBlend),
+            forearmA: blendPoint(rest.forearmA, active.forearmA, forwardBlend),
+            wrist: blendPoint(rest.wrist, active.wrist, forwardBlend)
+          };
+        }
+        if (jumpTime < 1) {
+          const j = jumpProfile();
+          const jumpPose = {
+            upperA: { x: sign*.58, y: -1.05, z: zBase },
+            elbow: { x: sign*(.72 + j.armReach*.34), y: -.37 - j.armLift*.70, z: zBase + j.armBack*.55 },
+            forearmA: { x: sign*(.72 + j.armReach*.34), y: -.30 - j.armLift*.66, z: zBase + j.armBack*.55 },
+            wrist: { x: sign*(.62 + j.armReach*.44), y: .43 - j.armLift*1.48, z: zBase + j.armBack*.72 }
+          };
+          pose = {
+            upperA: jumpPose.upperA,
+            elbow: blendPoint(pose.elbow, jumpPose.elbow, .86),
+            forearmA: blendPoint(pose.forearmA, jumpPose.forearmA, .86),
+            wrist: blendPoint(pose.wrist, jumpPose.wrist, .86)
+          };
+        }
+        const trackedPose = upperBodyTracking.hasPose && upperBodyTracking.armTargets[side];
+        if (trackedPose) pose = trackedPose;
+        return pose;
+      }
+      const lArm=armPose('left');
+      const rArm=armPose('right');
+      const lUpperArm=buildTaperedTube(lArm.upperA,lArm.elbow,.128,.108,10,14,'arm');
+      const lElbow=buildEllipsoid(lArm.elbow.x,lArm.elbow.y,lArm.elbow.z,.110,.110,.110,7,14,'elbow');
+      const lForearm=buildTaperedTube(lArm.forearmA,lArm.wrist,.100,.078,11,12,'arm');
+      const lHandPitch=Math.atan2(lArm.wrist.z-lArm.forearmA.z,lArm.wrist.y-lArm.forearmA.y);
+      const lHand=buildHand('left',lArm.wrist.x,lArm.wrist.y,lArm.wrist.z,lHandPitch);
+      const rUpperArm=buildTaperedTube(rArm.upperA,rArm.elbow,.128,.108,10,14,'arm');
+      const rElbow=buildEllipsoid(rArm.elbow.x,rArm.elbow.y,rArm.elbow.z,.110,.110,.110,7,14,'elbow');
+      const rForearm=buildTaperedTube(rArm.forearmA,rArm.wrist,.100,.078,11,12,'arm');
+      const rHandPitch=Math.atan2(rArm.wrist.z-rArm.forearmA.z,rArm.wrist.y-rArm.forearmA.y);
+      const rHand=buildHand('right',rArm.wrist.x,rArm.wrist.y,rArm.wrist.z,rHandPitch);
+      connectGridToGrid(lShoulder,lUpperArm,1,2,.74); connectGridToGrid(lUpperArm,lElbow,1,2,.76); connectGridToGrid(lElbow,lForearm,1,2,.76); connectGridToGrid(lForearm,lHand.wrist,1,2,.56);
+      connectGridToGrid(rShoulder,rUpperArm,1,2,.74); connectGridToGrid(rUpperArm,rElbow,1,2,.76); connectGridToGrid(rElbow,rForearm,1,2,.76); connectGridToGrid(rForearm,rHand.wrist,1,2,.56);
+
+      function buildCorrectedSide(side) {
+        const sign = side === 'left' ? -1 : 1;
+        const hipX=sign*.30, thighTopX=sign*.24;
+        const pose = blendedLegPose(side);
+        const { kneeX, ankleX, kneeY, shinBottomY, ankleY, kneeZ, ankleZ, footZ } = pose;
+        bootAnchors[side] = { x: ankleX, y: ankleY + .120, z: footZ + .115 };
+        const hipBall=buildEllipsoid(hipX,.38,-.055,.145,.130,.130,7,14,'hipSurface');
+        connectGridToGrid(hipBar,hipBall,1,2,.62); connectGridToGrid(pelvisCenter,hipBall,1,2,.52);
+        const thigh=buildTaperedTube({x:thighTopX,y:.42,z:-.045},{x:kneeX,y:kneeY,z:kneeZ},.18,.14,14,14,'leg');
+        const knee=buildEllipsoid(kneeX,kneeY+.08,kneeZ,.155,.155,.155,8,16,'knee');
+        const covered = bootState[side].attached;
+        const lowerLegPart = covered ? 'coveredMesh' : 'calfMesh';
+        const shin=buildTaperedTube({x:kneeX,y:kneeY+.040,z:kneeZ},{x:ankleX,y:shinBottomY,z:ankleZ},.155,.104,14,14,lowerLegPart);
+        const ankleCollar=buildTaperedTube({x:ankleX,y:shinBottomY-.050,z:ankleZ},{x:ankleX,y:shinBottomY+.020,z:ankleZ},.104,.096,3,14,lowerLegPart);
+        const foot=buildFoot(side,ankleX,ankleY,footZ,covered);
+        buildRidingBoot(side,kneeX,kneeY,kneeZ,ankleX,ankleY,ankleZ,shinBottomY,footZ);
+        connectGridToGrid(hipBall,thigh,1,3,.46); connectGridToGrid(thigh,knee,2,2,.76); connectGridToGrid(knee,shin,2,2,.76); connectGridToGrid(shin,ankleCollar,1,1,.78); connectGridToGrid(ankleCollar,foot.ankle,1,2,.30);
+      }
+      buildCorrectedSide('left'); buildCorrectedSide('right');
+      applyRunBodyPosture();
+    }
+
+    function resize() {
+      const rect=canvas.getBoundingClientRect(); width=rect.width; height=rect.height;
+      canvas.width=Math.floor(width*dpr); canvas.height=Math.floor(height*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      scale=Math.min(width*.225,height*.112)*zoomScale;
+      buildHuman();
+    }
+    function figureYaw() {
+      return normalizeAngle(walkHeading + spinAngle * easeInOut(spinBlend));
+    }
+    function rotatePoint(p) {
+      const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
+      let px = p.x, py = p.y, pz = p.z;
+      if ((p.part === 'head' || p.part === 'trackedFace') && Math.abs(faceTracking.headRoll) > .0001) {
+        const hc = Math.cos(faceTracking.headRoll), hs = Math.sin(faceTracking.headRoll);
+        const dx = px;
+        const dy = py + 1.92;
+        px = dx * hc - dy * hs;
+        py = -1.92 + dx * hs + dy * hc;
+      }
+      let hx = px, hz = pz;
+      if (p.part !== 'grid') {
+        const yaw = figureYaw();
+        const hc = Math.cos(yaw), hs = Math.sin(yaw);
+        hx = px * hc + pz * hs + walkPosition.x;
+        hz = -px * hs + pz * hc + walkPosition.z;
+      }
+      let x=hx*cy+hz*sy, z=-hx*sy+hz*cy, y=py;
+      return { x, y:y*cx-z*sx, z:y*sx+z*cx };
+    }
+    function screenVectorToWorld(dx, dy) {
+      const rx = dx / Math.max(1, scale);
+      const ry = dy / Math.max(1, scale);
+      const rz = 0;
+      const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
+      const y = ry*cx + rz*sx;
+      const z1 = -ry*sx + rz*cx;
+      const wx = rx*cy - z1*sy;
+      const wz = rx*sy + z1*cy;
+      const yaw = figureYaw();
+      const hc = Math.cos(yaw), hs = Math.sin(yaw);
+      return { x: wx*hc - wz*hs, y, z: wx*hs + wz*hc };
+    }
+    function smoothstep(e0,e1,x){ const v=Math.max(0,Math.min(1,(x-e0)/(e1-e0))); return v*v*(3-2*v); }
+    function projectPoint(p){ const r=rotatePoint(p), camera=5.2, perspective=camera/(camera-r.z); return {...p,rx:r.x,ry:r.y,rz:r.z,perspective,sx:r.x*scale*perspective,sy:r.y*scale*perspective,visible:camera-r.z>.5}; }
+    function faceClamp(value, min, max){ return Math.max(min, Math.min(max, value)); }
+    function trackedFaceFacingDot(){
+      return Math.cos(normalizeAngle(figureYaw() + rotationY)) * Math.cos(rotationX);
+    }
+    function trackedFaceFacingAmount(){
+      return Math.max(0, trackedFaceFacingDot());
+    }
+    function trackedFaceSurfaceOpacity(){
+      return smoothstep(-.32, .58, trackedFaceFacingDot());
+    }
+    function trackedHeadScanMesh(){
+      const asset = window.LEE_PERRY_SMITH_REAR_MESH;
+      if (!asset || !Array.isArray(asset.vertices) || !Array.isArray(asset.edges) || asset.vertices.length < 9) return null;
+      if (!asset.bounds) {
+        const bounds = {
+          minX: Infinity, maxX: -Infinity,
+          minY: Infinity, maxY: -Infinity,
+          minZ: Infinity, maxZ: -Infinity
+        };
+        for (let index = 0; index < asset.vertices.length; index += 3) {
+          const x = asset.vertices[index], y = asset.vertices[index + 1], z = asset.vertices[index + 2];
+          bounds.minX = Math.min(bounds.minX, x); bounds.maxX = Math.max(bounds.maxX, x);
+          bounds.minY = Math.min(bounds.minY, y); bounds.maxY = Math.max(bounds.maxY, y);
+          bounds.minZ = Math.min(bounds.minZ, z); bounds.maxZ = Math.max(bounds.maxZ, z);
+        }
+        asset.bounds = bounds;
+      }
+      return asset;
+    }
+    function trackedHeadShellActive(){
+      if (!trackedHeadScanMesh()) return false;
+      if (!(faceTracking.enabled || learningMode.playing) || !faceTracking.hasFace || faceTracking.landmarks.length < 468) return false;
+      return TRACKED_FACE_OVAL.every(index => Boolean(faceTracking.landmarks[index]));
+    }
+    function trackedFaceOverlayVisible(){
+      return trackedHeadShellActive() && trackedFaceFacingAmount() > .08;
+    }
+    function trackedFaceSurfaceVisible(){
+      return trackedHeadShellActive() && trackedFaceSurfaceOpacity() > .02;
+    }
+    function trackedFaceMappingFrame(){
+      if (!trackedHeadShellActive()) return null;
+      const lm = faceTracking.landmarks;
+      const left = lm[234], right = lm[454], top = lm[10], bottom = lm[152];
+      if (!left || !right || !top || !bottom) return null;
+      const rawCenterX = (top.x + bottom.x) * .5;
+      const rawCenterY = (top.y + bottom.y) * .5;
+      const rollCos = Math.cos(faceTracking.inputRoll);
+      const rollSin = Math.sin(faceTracking.inputRoll);
+      const unroll = point => {
+        const dx = point.x - rawCenterX;
+        const dy = point.y - rawCenterY;
+        return {
+          x: rawCenterX + dx * rollCos + dy * rollSin,
+          y: rawCenterY - dx * rollSin + dy * rollCos,
+          z: point.z || 0
+        };
+      };
+      const unrolledLeft = unroll(left);
+      const unrolledRight = unroll(right);
+      const unrolledTop = unroll(top);
+      const unrolledBottom = unroll(bottom);
+      const width = Math.max(.08, Math.abs(unrolledRight.x - unrolledLeft.x));
+      const topY = Math.min(unrolledTop.y, unrolledBottom.y);
+      const bottomY = Math.max(unrolledTop.y, unrolledBottom.y);
+      const facingDot = trackedFaceFacingDot();
+      return {
+        lm,
+        unroll,
+        centerX: (unrolledLeft.x + unrolledRight.x) * .5,
+        width,
+        topY,
+        height: Math.max(.10, bottomY - topY),
+        opacity: smoothstep(-.32, .58, facingDot),
+        featureOpacity: smoothstep(.02, .44, Math.max(0, facingDot)),
+        neckOpacity: smoothstep(-.18, .34, facingDot)
+      };
+    }
+    function mappedTrackedFaceModelPoint(point, frame){
+      if (!point || !frame) return null;
+      const neutral = frame.unroll(point);
+      const nx = faceClamp((neutral.x - frame.centerX) / frame.width, -.54, .54);
+      const ny = faceClamp((neutral.y - frame.topY) / frame.height, 0, 1);
+      const x = -nx * .53;
+      const lowerFaceBlend = smoothstep(.62, 1, ny);
+      const y = -2.235 + ny * .625 + lowerFaceBlend * TRACKED_FACE_CHIN_DROP;
+      const ellipsoid = Math.max(.018, 1 - Math.pow(x / .305, 2) - Math.pow((y + 1.92) / .365, 2));
+      const surfaceZ = .045 + .292 * Math.sqrt(ellipsoid);
+      const trackedDepth = faceClamp(-neutral.z / frame.width * .045, -.018, .055);
+      return { x, y, z: surfaceZ + trackedDepth + .006, part: 'trackedFace', weight: 1 };
+    }
+    function trackedFaceTessellation(){
+      if (typeof FACEMESH_TESSELATION !== 'undefined' && Array.isArray(FACEMESH_TESSELATION)) {
+        return FACEMESH_TESSELATION;
+      }
+      return Array.isArray(window.FACEMESH_TESSELATION) ? window.FACEMESH_TESSELATION : [];
+    }
+    const trackedFaceTriangleCache = { source: null, length: 0, triangles: [] };
+    function trackedFaceTriangles(){
+      const connections = trackedFaceTessellation();
+      if (trackedFaceTriangleCache.source === connections && trackedFaceTriangleCache.length === connections.length) {
+        return trackedFaceTriangleCache.triangles;
+      }
+
+      const triangles = [];
+      const seen = new Set();
+      const addTriangle = (a, b, c) => {
+        if (![a, b, c].every(Number.isInteger) || a === b || b === c || c === a) return;
+        const key = [a, b, c].sort((left, right) => left - right).join(':');
+        if (seen.has(key)) return;
+        seen.add(key);
+        triangles.push([a, b, c]);
+      };
+
+      // MediaPipe publishes the tessellation as three consecutive edges per
+      // triangle. Keeping that order preserves a stable winding for lighting.
+      for (let index = 0; index + 2 < connections.length; index += 3) {
+        const first = connections[index];
+        const second = connections[index + 1];
+        const third = connections[index + 2];
+        if (!Array.isArray(first) || !Array.isArray(second) || !Array.isArray(third)) continue;
+        const unique = [...new Set([...first, ...second, ...third])];
+        if (unique.length !== 3) continue;
+        const a = first[0], b = first[1];
+        const c = unique.find(value => value !== a && value !== b);
+        addTriangle(a, b, c);
+      }
+
+      // Keep this compatible with alternate connection lists that are not
+      // grouped in MediaPipe's usual three-edge sequence.
+      if (connections.length && triangles.length * 4 < connections.length) {
+        triangles.length = 0;
+        seen.clear();
+        const neighbors = new Map();
+        for (const connection of connections) {
+          const [a, b] = connection || [];
+          if (!Number.isInteger(a) || !Number.isInteger(b) || a === b) continue;
+          if (!neighbors.has(a)) neighbors.set(a, new Set());
+          if (!neighbors.has(b)) neighbors.set(b, new Set());
+          neighbors.get(a).add(b);
+          neighbors.get(b).add(a);
+        }
+        for (const [a, linked] of neighbors) {
+          for (const b of linked) {
+            if (b <= a) continue;
+            const bLinked = neighbors.get(b);
+            if (!bLinked) continue;
+            for (const c of linked) {
+              if (c <= b || !bLinked.has(c)) continue;
+              addTriangle(a, b, c);
+            }
+          }
+        }
+      }
+
+      trackedFaceTriangleCache.source = connections;
+      trackedFaceTriangleCache.length = connections.length;
+      trackedFaceTriangleCache.triangles = triangles;
+      return triangles;
+    }
+    function trackedFaceSurfaceRgb(){
+      const hex = meshControls.head.colorized
+        ? meshControls.head.color
+        : displayTheme === 'dark' ? '#54788a' : '#d8c7ad';
+      const clean = String(hex).replace('#', '');
+      const expanded = clean.length === 3 ? clean.split('').map(value => value + value).join('') : clean;
+      const numeric = Number.parseInt(expanded, 16);
+      if (!Number.isFinite(numeric)) return { r: 216, g: 199, b: 173 };
+      return { r: (numeric >> 16) & 255, g: (numeric >> 8) & 255, b: numeric & 255 };
+    }
+    function drawTrackedFaceSurface(modelLandmarks, mappedLandmarks, frame){
+      const topology = trackedFaceTriangles();
+      if (!topology.length || frame.opacity <= .001) {
+        faceTracking.surfaceTriangleCount = 0;
+        return;
+      }
+
+      const surface = [];
+      for (const triangle of topology) {
+        const modelA = modelLandmarks[triangle[0]], modelB = modelLandmarks[triangle[1]], modelC = modelLandmarks[triangle[2]];
+        const a = mappedLandmarks[triangle[0]], b = mappedLandmarks[triangle[1]], c = mappedLandmarks[triangle[2]];
+        if (!modelA || !modelB || !modelC || !a?.visible || !b?.visible || !c?.visible) continue;
+        const screenArea = (b.sx - a.sx) * (c.sy - a.sy) - (b.sy - a.sy) * (c.sx - a.sx);
+        if (Math.abs(screenArea) < .025) continue;
+
+        const ab = { x: b.rx - a.rx, y: b.ry - a.ry, z: b.rz - a.rz };
+        const ac = { x: c.rx - a.rx, y: c.ry - a.ry, z: c.rz - a.rz };
+        const normal = {
+          x: ab.y * ac.z - ab.z * ac.y,
+          y: ab.z * ac.x - ab.x * ac.z,
+          z: ab.x * ac.y - ab.y * ac.x
+        };
+        const normalLength = Math.hypot(normal.x, normal.y, normal.z) || 1;
+        const light = Math.abs((normal.x * -.32 + normal.y * -.38 + normal.z * .868) / normalLength);
+        const cameraFacing = Math.abs(normal.z) / normalLength;
+        surface.push({
+          a, b, c,
+          depth: (a.rz + b.rz + c.rz) / 3,
+          shade: .58 + light * .29 + cameraFacing * .13
+        });
+      }
+      surface.sort((left, right) => left.depth - right.depth);
+
+      const base = trackedFaceSurfaceRgb();
+      const colorCache = new Map();
+      const shadedColor = shade => {
+        const bucket = Math.round(faceClamp(shade, .56, 1.04) * 32) / 32;
+        if (colorCache.has(bucket)) return colorCache.get(bucket);
+        const highlight = Math.max(0, bucket - 1) * 2.4;
+        const value = channel => Math.round(faceClamp(channel * Math.min(1, bucket) + (255 - channel) * highlight, 0, 255));
+        const color = `rgb(${value(base.r)},${value(base.g)},${value(base.b)})`;
+        colorCache.set(bucket, color);
+        return color;
+      };
+      const expandedPoint = (point, centerX, centerY) => {
+        const dx = point.sx - centerX, dy = point.sy - centerY;
+        const length = Math.hypot(dx, dy) || 1;
+        return {
+          x: point.sx + dx / length * TRACKED_FACE_SURFACE_OVERSCAN,
+          y: point.sy + dy / length * TRACKED_FACE_SURFACE_OVERSCAN
+        };
+      };
+
+      ctx.save();
+      ctx.globalAlpha = frame.opacity * TRACKED_FACE_SURFACE_OPACITY;
+      for (const triangle of surface) {
+        const centerX = (triangle.a.sx + triangle.b.sx + triangle.c.sx) / 3;
+        const centerY = (triangle.a.sy + triangle.b.sy + triangle.c.sy) / 3;
+        const a = expandedPoint(triangle.a, centerX, centerY);
+        const b = expandedPoint(triangle.b, centerX, centerY);
+        const c = expandedPoint(triangle.c, centerX, centerY);
+        ctx.fillStyle = shadedColor(triangle.shade);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+      faceTracking.surfaceTriangleCount = surface.length;
+    }
+    function drawTrackedHeadShell(modelLandmarks, frame, stroke, baseWidth){
+      const scan = trackedHeadScanMesh();
+      const boundary = TRACKED_FACE_OVAL.map(index => modelLandmarks[index]).filter(Boolean);
+      if (!scan || boundary.length !== TRACKED_FACE_OVAL.length) {
+        faceTracking.headShellConnectionCount = 0;
+        faceTracking.headShellRingCount = 0;
+        faceTracking.headShellVertexCount = 0;
+        faceTracking.headShellDepth = 0;
+        return;
+      }
+
+      const minX = Math.min(...boundary.map(point => point.x));
+      const maxX = Math.max(...boundary.map(point => point.x));
+      const minY = Math.min(...boundary.map(point => point.y));
+      const maxY = Math.max(...boundary.map(point => point.y));
+      const width = Math.max(.20, maxX - minX);
+      const height = Math.max(.28, maxY - minY);
+      const centerX = boundary.reduce((sum, point) => sum + point.x, 0) / boundary.length;
+      const centerY = (minY + maxY) * .5;
+      const bounds = scan.bounds;
+      const sourceCenterX = (bounds.minX + bounds.maxX) * .5;
+      const sourceCenterY = (bounds.minY + bounds.maxY) * .5;
+      const sourceWidth = Math.max(.001, bounds.maxX - bounds.minX);
+      const sourceHeight = Math.max(.001, bounds.maxY - bounds.minY);
+      const sourceDepth = Math.max(.001, scan.seamZ - bounds.minZ);
+      const scaleX = width * 1.10 / sourceWidth;
+      const scaleY = height * 1.06 / sourceHeight;
+      const shellDepth = faceClamp(width * .70, .32, .43);
+      const scaleZ = shellDepth / sourceDepth;
+      const seamDepth = boundary.reduce((sum, point) => sum + point.z, 0) / boundary.length;
+      const boundaryByAngle = boundary.map(point => ({
+        point,
+        angle: Math.atan2((point.y - centerY) / Math.max(.001, height), (point.x - centerX) / Math.max(.001, width))
+      }));
+      const nearestBoundary = angle => {
+        let closest = boundaryByAngle[0];
+        let closestDistance = Infinity;
+        for (const candidate of boundaryByAngle) {
+          const distance = Math.abs(Math.atan2(Math.sin(angle - candidate.angle), Math.cos(angle - candidate.angle)));
+          if (distance < closestDistance) {
+            closest = candidate;
+            closestDistance = distance;
+          }
+        }
+        return closest.point;
+      };
+
+      // Pull the scan's open front boundary onto the live face oval. The falloff
+      // preserves the donor scan's crown, temples, ears, occiput and nape.
+      const modelVertices = [];
+      const sourceBackness = [];
+      for (let index = 0; index < scan.vertices.length; index += 3) {
+        const sourceX = scan.vertices[index];
+        const sourceY = scan.vertices[index + 1];
+        const sourceZ = scan.vertices[index + 2];
+        const baseX = centerX + (sourceX - sourceCenterX) * scaleX;
+        const baseY = centerY - (sourceY - sourceCenterY) * scaleY;
+        const angle = Math.atan2((baseY - centerY) / Math.max(.001, height), (baseX - centerX) / Math.max(.001, width));
+        const target = nearestBoundary(angle);
+        const seamInfluence = Math.pow(smoothstep(-.78, scan.seamZ, sourceZ), 1.35);
+        const baseZ = seamDepth + (sourceZ - scan.seamZ) * scaleZ;
+        modelVertices.push({
+          x: baseX + (target.x - baseX) * seamInfluence,
+          y: baseY + (target.y - baseY) * seamInfluence,
+          z: baseZ + (target.z - .004 - baseZ) * seamInfluence,
+          part: 'trackedFace',
+          weight: 1
+        });
+        sourceBackness.push(1 - smoothstep(bounds.minZ, scan.seamZ, sourceZ));
+      }
+
+      const projectedVertices = modelVertices.map(projectPoint);
+      const segments = [];
+      const addSegment = (a, b, seam, backness) => {
+        if (!a?.visible || !b?.visible) return;
+        segments.push({ a, b, seam, backness, depth: (a.rz + b.rz) * .5 });
+      };
+      for (let edgeIndex = 0; edgeIndex < scan.edges.length; edgeIndex += 2) {
+        const aIndex = scan.edges[edgeIndex], bIndex = scan.edges[edgeIndex + 1];
+        const sourceZA = scan.vertices[aIndex * 3 + 2], sourceZB = scan.vertices[bIndex * 3 + 2];
+        addSegment(
+          projectedVertices[aIndex],
+          projectedVertices[bIndex],
+          Math.max(sourceZA, sourceZB) > -.04,
+          (sourceBackness[aIndex] + sourceBackness[bIndex]) * .5
+        );
+      }
+      segments.sort((a, b) => a.depth - b.depth);
+
+      const rearViewBoost = 1 - frame.opacity;
+      const viewVisibility = .26 + rearViewBoost * .74;
+      const shellAlpha = (displayTheme === 'dark' ? .23 : .18) * (1 + rearViewBoost * .40) * viewVisibility;
+      ctx.save();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = Math.max(.28, baseWidth * .34);
+      ctx.lineCap = 'round';
+      for (const segment of segments) {
+        const depthFade = .58 + .46 * smoothstep(-.48, .42, segment.depth);
+        const anatomicalFade = .62 + segment.backness * .38;
+        const seamFade = segment.seam ? .10 + rearViewBoost * .90 : 1;
+        ctx.globalAlpha = shellAlpha * depthFade * anatomicalFade * seamFade;
+        ctx.beginPath();
+        ctx.moveTo(segment.a.sx, segment.a.sy);
+        ctx.lineTo(segment.b.sx, segment.b.sy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = stroke;
+      ctx.globalAlpha = shellAlpha * .58;
+      const nodeRadius = Math.max(.30, baseWidth * .30);
+      for (let index = 0; index < projectedVertices.length; index += 3) {
+        const point = projectedVertices[index];
+        if (!point?.visible) continue;
+        ctx.beginPath();
+        ctx.arc(point.sx, point.sy, nodeRadius * point.perspective, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      faceTracking.headShellConnectionCount = segments.length;
+      faceTracking.headShellRingCount = 0;
+      faceTracking.headShellVertexCount = projectedVertices.length;
+      faceTracking.headShellDepth = shellDepth;
+    }
+    function drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth){
+      const jaw = TRACKED_FACE_LOWER_JAW.map(index => mappedLandmarks[index]).filter(point => point?.visible);
+      if (jaw.length !== TRACKED_FACE_LOWER_JAW.length) {
+        faceTracking.neckBufferConnectionCount = 0;
+        return;
+      }
+      const neck = jaw.map((_, index) => {
+        const across = index / (jaw.length - 1) * 2 - 1;
+        return projectPoint({ x: across * .108, y: -1.572, z: .108, part: 'neck', weight: 1 });
+      });
+      const rows = [jaw];
+      for (let row = 1; row <= TRACKED_FACE_NECK_BUFFER_ROWS; row++) {
+        const amount = smoothstep(0, 1, row / (TRACKED_FACE_NECK_BUFFER_ROWS + 1));
+        rows.push(jaw.map((point, index) => ({
+          sx: point.sx + (neck[index].sx - point.sx) * amount,
+          sy: point.sy + (neck[index].sy - point.sy) * amount,
+          visible: point.visible && neck[index].visible
+        })));
+      }
+      rows.push(neck);
+
+      ctx.globalAlpha = frame.neckOpacity * (displayTheme === 'dark' ? .25 : .20);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = Math.max(.32, baseWidth * .38);
+      ctx.beginPath();
+      let connectionCount = 0;
+      for (const row of rows) {
+        for (let index = 0; index < row.length - 1; index++) {
+          if (!row[index]?.visible || !row[index + 1]?.visible) continue;
+          ctx.moveTo(row[index].sx, row[index].sy);
+          ctx.lineTo(row[index + 1].sx, row[index + 1].sy);
+          connectionCount++;
+        }
+      }
+      for (let row = 0; row < rows.length - 1; row++) {
+        for (let index = 0; index < rows[row].length; index++) {
+          const a = rows[row][index], b = rows[row + 1][index];
+          if (!a?.visible || !b?.visible) continue;
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(b.sx, b.sy);
+          connectionCount++;
+          const diagonalIndex = row % 2 === 0 ? index + 1 : index - 1;
+          if (diagonalIndex < 0 || diagonalIndex >= rows[row].length) continue;
+          const diagonal = rows[row + 1][diagonalIndex];
+          if (!diagonal?.visible) continue;
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(diagonal.sx, diagonal.sy);
+          connectionCount++;
+        }
+      }
+      ctx.stroke();
+      faceTracking.neckBufferConnectionCount = connectionCount;
+    }
+    function drawTrackedFace(){
+      const frame = trackedFaceMappingFrame();
+      if (!frame) {
+        faceTracking.meshConnectionCount = 0;
+        faceTracking.surfaceTriangleCount = 0;
+        faceTracking.neckBufferConnectionCount = 0;
+        faceTracking.headShellConnectionCount = 0;
+        faceTracking.headShellRingCount = 0;
+        faceTracking.headShellVertexCount = 0;
+        faceTracking.headShellDepth = 0;
+        return;
+      }
+      const stroke = displayTheme === 'dark' ? '#9DD7FF' : '#111111';
+      const pointInk = displayTheme === 'dark' ? '#9DD7FF' : '#050505';
+      const baseWidth = Math.max(.58, scale / 150);
+      const modelLandmarks = frame.lm.map(point => mappedTrackedFaceModelPoint(point, frame));
+      const mappedLandmarks = modelLandmarks.map(point => point ? projectPoint(point) : null);
+      const meshConnections = trackedFaceTessellation();
+      faceTracking.meshConnectionCount = meshConnections.length;
+
+      drawTrackedHeadShell(modelLandmarks, frame, stroke, baseWidth);
+      drawTrackedFaceSurface(modelLandmarks, mappedLandmarks, frame);
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (meshConnections.length) {
+        const facingDetail = smoothstep(.04, .46, trackedFaceFacingAmount());
+        ctx.globalAlpha = frame.opacity * (displayTheme === 'dark' ? .30 : .25) * (.38 + facingDetail * .62);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = Math.max(.28, baseWidth * .43 * (.62 + facingDetail * .38));
+        ctx.beginPath();
+        for (let connectionIndex = 0; connectionIndex < meshConnections.length; connectionIndex++) {
+          const connection = meshConnections[connectionIndex];
+          const a = mappedLandmarks[connection[0]];
+          const b = mappedLandmarks[connection[1]];
+          if (!a?.visible || !b?.visible) continue;
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(b.sx, b.sy);
+        }
+        ctx.stroke();
+      }
+      if (frame.neckOpacity > .001) drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth);
+      else faceTracking.neckBufferConnectionCount = 0;
+      for (const path of TRACKED_FACE_PATHS) {
+        if (path.kind === 'outer' && !SHOW_TRACKED_FACE_OUTER_CONTOUR) continue;
+        const mapped = path.indices
+          .map(index => mappedLandmarks[index])
+          .filter(point => point?.visible);
+        if (mapped.length < 2) continue;
+        ctx.globalAlpha = frame.featureOpacity * (path.width < 1 ? .58 : .92);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = baseWidth * path.width;
+        ctx.beginPath();
+        ctx.moveTo(mapped[0].sx, mapped[0].sy);
+        for (let i = 1; i < mapped.length; i++) ctx.lineTo(mapped[i].sx, mapped[i].sy);
+        if (path.closed) ctx.closePath();
+        ctx.stroke();
+      }
+
+      for (const index of [468, 473]) {
+        const point = mappedLandmarks[index];
+        if (!point?.visible) continue;
+        ctx.globalAlpha = frame.featureOpacity * .92;
+        ctx.fillStyle = pointInk;
+        ctx.beginPath();
+        ctx.arc(point.sx, point.sy, Math.max(.8, baseWidth * 1.45) * point.perspective, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    function partInk(part){
+      if (isHiddenPart(part)) return 'rgba(0,0,0,0)';
+      const key=meshControlKey(part); if(key) return meshDisplayColor(part);
+      if(displayTheme==='dark'){
+        if(part==='cap') return DARK_FIGURE_HIGHLIGHT;
+        if(part==='head'||part==='torso'||part==='knee'||part==='elbow') return DARK_FIGURE_HIGHLIGHT;
+        if(part==='pelvis') return DARK_FIGURE_SHADOW;
+        return DARK_FIGURE_INK;
+      }
+      if(part==='cap') return '#020202'; if(part==='bone') return '#8b6a2f'; if(part==='head') return '#111111'; if(part==='torso') return '#171511'; if(part==='pelvis') return '#26231d'; if(part==='knee'||part==='elbow') return '#15120d';
+      return '#37322b';
+    }
+    function strokeInkForLink(a,b){
+      if (isHiddenPart(a.part) || isHiddenPart(b.part)) return 'rgba(0,0,0,0)';
+      const aKey=meshControlKey(a.part), bKey=meshControlKey(b.part);
+      if(isBootPart(a.part)||isBootPart(b.part)) return hexToRgba(meshDisplayColor('boot'), .95);
+      if(a.part==='bone'||b.part==='bone') return hexToRgba(meshDisplayColor('bone'), .82);
+      if(a.part==='cap'||b.part==='cap') return displayTheme==='dark' ? hexToRgba(DARK_FIGURE_HIGHLIGHT,1) : 'rgba(0,0,0,1)';
+      if(aKey&&aKey===bKey) return hexToRgba(meshDisplayColor(a.part),.90);
+      if(aKey&&!bKey) return hexToRgba(meshDisplayColor(a.part),.62);
+      if(bKey&&!aKey) return hexToRgba(meshDisplayColor(b.part),.62);
+      return displayTheme==='dark' ? hexToRgba(DARK_FIGURE_INK,.92) : 'rgba(23,21,17,.74)';
+    }
+    function updateCameraReadout() {
+      if (!cameraReadout) return;
+      const cx = Math.sin(rotationY) * Math.cos(rotationX);
+      const cy = Math.sin(rotationX);
+      const cz = Math.cos(rotationY) * Math.cos(rotationX);
+      cameraReadout.textContent = `Camera Angle
+X rot: ${rotationX.toFixed(3)} rad / ${(rotationX * 180 / Math.PI).toFixed(1)}°
+Y rot: ${rotationY.toFixed(3)} rad / ${(rotationY * 180 / Math.PI).toFixed(1)}°
+Zoom: ${zoomScale.toFixed(2)}
+
+Camera XYZ Direction
+X: ${cx.toFixed(3)}
+Y: ${cy.toFixed(3)}
+Z: ${cz.toFixed(3)}`;
+    }
+
+
+    function drawCoordinatePlane() {
+      const planeY = 2.94;
+      const gridSize = 1.25;
+      const step = 0.25;
+      const gridInk = displayTheme === 'dark' ? 'rgba(205,210,212,.62)' : 'rgba(23,21,17,.55)';
+      const originInk = displayTheme === 'dark' ? 'rgba(226,229,230,.88)' : 'rgba(23,21,17,.80)';
+      const origin = projectPoint({ x: 0, y: planeY, z: 0, part: 'grid', weight: 1 });
+
+      function screenPoint(x, y, z) {
+        const p = projectPoint({ x, y, z, part: 'grid', weight: 1 });
+        return { x: p.sx, y: p.sy, visible: p.visible };
+      }
+      function line3D(a, b, color, width = 1, alpha = .34) {
+        const pa = screenPoint(a.x, a.y, a.z);
+        const pb = screenPoint(b.x, b.y, b.z);
+        if (!pa.visible || !pb.visible) return;
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.stroke();
+      }
+      function label3D(text, x, y, z, color) {
+        const p = screenPoint(x, y, z);
+        if (!p.visible) return;
+        ctx.globalAlpha = .78;
+        ctx.fillStyle = color;
+        ctx.font = `700 ${Math.max(11, scale / 9)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.fillText(text, p.x + 6, p.y - 6);
+      }
+
+      for (let v = -gridSize; v <= gridSize + .001; v += step) {
+        const major = Math.abs(v) < .001 || Math.abs((v / .5) - Math.round(v / .5)) < .001;
+        line3D({x:-gridSize,y:planeY,z:v},{x:gridSize,y:planeY,z:v},gridInk, major ? .9 : .55, major ? .22 : .12);
+        line3D({x:v,y:planeY,z:-gridSize},{x:v,y:planeY,z:gridSize},gridInk, major ? .9 : .55, major ? .22 : .12);
+      }
+
+      line3D({x:-gridSize,y:planeY,z:0},{x:gridSize*1.18,y:planeY,z:0},'rgba(120,40,40,.95)',2,.72);
+      line3D({x:0,y:planeY,z:-gridSize},{x:0,y:planeY,z:gridSize*1.18},'rgba(40,80,140,.95)',2,.72);
+      line3D({x:0,y:planeY,z:0},{x:0,y:.95,z:0},'rgba(40,120,70,.95)',2.2,.78);
+
+      label3D('X', gridSize*1.22, planeY, 0, 'rgba(120,40,40,.95)');
+      label3D('Y plane', 0, planeY, gridSize*1.22, 'rgba(40,80,140,.95)');
+      label3D('Z', 0, .88, 0, 'rgba(40,120,70,.95)');
+      if (origin.visible) {
+        ctx.globalAlpha = .85;
+        ctx.fillStyle = originInk;
+        ctx.beginPath();
+        ctx.arc(origin.sx, origin.sy, Math.max(2, scale / 42), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw(now = performance.now()){
+      const frameStep = lastFrameStamp ? Math.min(2.2, Math.max(.25, (now - lastFrameStamp) / 16.6667)) : 1;
+      lastFrameStamp = now;
+      captureLearningFrame(now);
+      const desiredHeadRoll = (faceTracking.enabled || learningMode.playing) && faceTracking.hasFace ? faceTracking.targetHeadRoll : 0;
+      faceTracking.headRoll += (desiredHeadRoll - faceTracking.headRoll) * Math.min(1, .18 * frameStep);
+      if (Math.abs(desiredHeadRoll - faceTracking.headRoll) < .0001) faceTracking.headRoll = desiredHeadRoll;
+      updateCameraReadout();
+      const previousState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${crouchBlend.toFixed(4)}:${squatBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
+      updateAutoMoves(frameStep);
+      runBlend = runMotion ? Math.min(1, runBlend + .045 * frameStep) : Math.max(0, runBlend - .026 * frameStep);
+      moonwalkBlend = moonwalkMotion ? Math.min(1, moonwalkBlend + .045 * frameStep) : Math.max(0, moonwalkBlend - .026 * frameStep);
+      spinBlend = spinMotion ? Math.min(1, spinBlend + .052 * frameStep) : Math.max(0, spinBlend - .040 * frameStep);
+      crouchBlend = crouchMotion ? Math.min(1, crouchBlend + .050 * frameStep) : Math.max(0, crouchBlend - .034 * frameStep);
+      squatBlend = squatMotion ? Math.min(1, squatBlend + .043 * frameStep) : Math.max(0, squatBlend - .030 * frameStep);
+      if (spinMotion) {
+        spinAngle = normalizeAngle(spinAngle + .082 * frameStep);
+      } else if (Math.abs(spinAngle) > .0005) {
+        spinAngle = normalizeAngle(spinAngle - spinAngle * Math.min(1, .090 * frameStep));
+      }
+      updateWalkDisplacement(frameStep);
+      const gaitBlend = Math.max(runBlend, moonwalkBlend, walkMoveBlend);
+      if (gaitBlend > 0) runTime += .075 * (.30 + .70 * gaitBlend) * frameStep;
+      else if (spinBlend > 0) runTime += .062 * (.35 + .65 * spinBlend) * frameStep;
+      const headingDelta = normalizeAngle(walkHeadingTarget - walkHeading);
+      if (Math.abs(headingDelta) > .0005) walkHeading = normalizeAngle(walkHeading + headingDelta * Math.min(1, .14 * frameStep));
+      if (jumpActive || jumpTime < 1) {
+        jumpTime = Math.min(1, jumpTime + .020 * frameStep);
+        if (jumpTime >= 1) jumpActive = false;
+      }
+      const currentState = `${runBlend.toFixed(4)}:${moonwalkBlend.toFixed(4)}:${spinBlend.toFixed(4)}:${crouchBlend.toFixed(4)}:${squatBlend.toFixed(4)}:${walkMoveBlend.toFixed(4)}:${jumpTime.toFixed(4)}`;
+      if (runMotion || moonwalkMotion || spinMotion || crouchMotion || squatMotion || jumpActive || gaitBlend > 0 || spinBlend > 0 || crouchBlend > 0 || squatBlend > 0 || previousState !== currentState || upperBodyTracking.dirty) {
+        buildHuman();
+        upperBodyTracking.dirty = false;
+      }
+      ctx.clearRect(0,0,width,height);
+      if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY*=.985; }
+      rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01*frameStep;
+      syncCameraViewButtons();
+      const projected=points.map(projectPoint); lastProjected=projected; const showTrackedHead=trackedHeadShellActive(); ctx.save(); ctx.translate(width/2,height/2+scale*.06+height*cameraVerticalOffset);
+      const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,displayTheme==='dark'?'rgba(226,229,230,.10)':'rgba(255,255,255,.42)'); aura.addColorStop(.55,displayTheme==='dark'?'rgba(226,229,230,.035)':'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
+      drawCoordinatePlane();
+      const orderedFaces=faces.map(face=>{
+        const pts=face.ids.map(id=>projected[id]);
+        if(pts.some(p=>!p?.visible||isHiddenPart(p.part))) return null;
+        return { ...face, pts, rz: pts.reduce((sum,p)=>sum+p.rz,0)/pts.length };
+      }).filter(Boolean).sort((a,b)=>a.rz-b.rz);
+      for(const face of orderedFaces){
+        const depth=smoothstep(-1.8,1.3,face.rz);
+        ctx.globalAlpha=face.alpha*(.55+.70*depth);
+        ctx.fillStyle=hexToRgba(meshDisplayColor('boot'), 1);
+        ctx.beginPath();
+        ctx.moveTo(face.pts[0].sx, face.pts[0].sy);
+        for(let i=1;i<face.pts.length;i++) ctx.lineTo(face.pts[i].sx, face.pts[i].sy);
+        ctx.closePath();
+        ctx.fill();
+      }
+      for(const link of links){
+        const a=projected[link.a], b=projected[link.b];
+        if(!a||!b||!a.visible||!b.visible||isHiddenPart(a.part)||isHiddenPart(b.part)) continue;
+        if(showTrackedHead && (a.part === 'head' || b.part === 'head')) continue;
+        const depth=smoothstep(-1.8,1.3,(a.rz+b.rz)/2);
+        const pulse=.88+.12*Math.sin(tick*3+link.a*.13);
+        const isShadeLink = a.part === 'cap' || b.part === 'cap';
+        const isBootLink = isBootPart(a.part) || isBootPart(b.part);
+        const linkAlpha=isShadeLink ? 1 : (isBootLink ? Math.min(.76,link.strength*(.34+.64*depth)*pulse) : Math.min(.48,link.strength*(.18+.62*depth)*pulse));
+        ctx.globalAlpha=linkAlpha;
+        ctx.strokeStyle=strokeInkForLink(a,b);
+        ctx.lineWidth=Math.max(.35,scale/320)*(.5+link.strength*.55)*((a.perspective+b.perspective)/2)*(isShadeLink ? 1.35 : (isBootLink ? 1.18 : 1));
+        ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+      }
+      const ordered=projected.filter(p=>p.visible&&!isHiddenPart(p.part)).sort((a,b)=>a.rz-b.rz);
+      for(const p of ordered){
+        if(showTrackedHead && p.part === 'head') continue;
+        const depth=smoothstep(-1.75,1.35,p.rz);
+        const scan=.93+.07*Math.sin(tick*7+p.ry*14+p.jitter*8);
+        const isBootPoint=isBootPart(p.part);
+        const size=Math.max(.65,scale/138)*p.weight*p.perspective*(.82+.36*depth)*(p.part === 'cap' ? 1.28 : (isBootPoint ? 1.10 : 1));
+        const pointAlpha=p.part === 'cap' ? 1 : (isBootPoint ? Math.max(.42,Math.min(.98,(.38+.74*depth)*scan)) : Math.max(.10,Math.min(.96,(.22+.78*depth)*scan)));
+        ctx.globalAlpha=pointAlpha;
+        ctx.fillStyle=partInk(p.part); ctx.beginPath(); ctx.arc(p.sx,p.sy,size,0,Math.PI*2); ctx.fill();
+      }
+      drawTrackedFace();
+      ctx.globalAlpha=.16; ctx.strokeStyle=displayTheme==='dark'?hexToRgba(DARK_FIGURE_INK,.72):'rgba(23,21,17,.55)'; ctx.lineWidth=.9; ctx.beginPath(); ctx.ellipse(0,0,scale*1.36,scale*3.08,Math.sin(rotationY)*.08,0,Math.PI*2); ctx.stroke();
+      ctx.restore(); requestAnimationFrame(draw);
+    }
+    function canvasPoint(e) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left - width/2, y: e.clientY - rect.top - height/2 - scale*.06 - height*cameraVerticalOffset };
+    }
+    function pickBootAt(e) {
+      const pointer = canvasPoint(e);
+      let best = null;
+      for (const p of lastProjected) {
+        if (!p?.visible || !isBootPart(p.part) || !p.bootSide) continue;
+        const d = Math.hypot(pointer.x - p.sx, pointer.y - p.sy);
+        if (d < 52 && (!best || d < best.distance)) best = { side: p.bootSide, distance: d };
+      }
+      return best?.side || '';
+    }
+    function bootOffsetLength(side) {
+      const o = bootState[side].offset;
+      return Math.hypot(o.x, o.y, o.z);
+    }
+    function snapBootIfClose(side, e) {
+      const anchor = projectPoint(bootAnchors[side]);
+      const pointer = e ? canvasPoint(e) : null;
+      const droppedOnSocket = pointer && anchor.visible && Math.hypot(pointer.x - anchor.sx, pointer.y - anchor.sy) < 92;
+      if (bootOffsetLength(side) < .46 || droppedOnSocket) {
+        bootState[side].offset = { x: 0, y: 0, z: 0 };
+        bootState[side].attached = true;
+      } else {
+        bootState[side].attached = false;
+      }
+      buildHuman();
+    }
+    function pointerDown(e){
+      const bootSide = pickBootAt(e);
+      activeDrag = bootSide ? { type: 'boot', side: bootSide } : { type: 'camera' };
+      isDragging = activeDrag.type === 'camera';
+      if (activeDrag.type === 'boot') {
+        bootState[bootSide].attached = false;
+        buildHuman();
+      }
+      canvas.style.cursor='grabbing'; lastPointerX=e.clientX; lastPointerY=e.clientY; lastMoveTime=performance.now(); velocityX=0; velocityY=0; canvas.setPointerCapture(e.pointerId);
+    }
+    function pointerMove(e){
+      if(!activeDrag) return;
+      const now=performance.now(), dx=e.clientX-lastPointerX, dy=e.clientY-lastPointerY, dt=Math.max(16,now-lastMoveTime);
+      if (activeDrag.type === 'boot') {
+        const side = activeDrag.side;
+        const move = screenVectorToWorld(dx, dy);
+        const o = bootState[side].offset;
+        o.x += move.x; o.y += move.y; o.z += move.z;
+        bootState[side].attached = false;
+        buildHuman();
+      } else {
+        const sensitivity=.0065;
+        rotationY+=dx*sensitivity; rotationX+=dy*sensitivity; velocityY=dx*sensitivity*(16/dt); velocityX=dy*sensitivity*(16/dt);
+      }
+      lastPointerX=e.clientX; lastPointerY=e.clientY; lastMoveTime=now;
+    }
+    function pointerUp(e){
+      if (activeDrag?.type === 'boot') snapBootIfClose(activeDrag.side, e);
+      activeDrag=null; isDragging=false; canvas.style.cursor='grab'; try{ canvas.releasePointerCapture(e.pointerId); }catch(_){}
+    }
+    canvas.addEventListener('wheel', e=>{ e.preventDefault(); zoomScale=Math.max(.45,Math.min(2.4,zoomScale*(e.deltaY<0?1.08:1/1.08))); resize(); }, { passive:false });
+    canvas.addEventListener('pointerdown',pointerDown); canvas.addEventListener('pointermove',pointerMove); canvas.addEventListener('pointerup',pointerUp); canvas.addEventListener('pointercancel',pointerUp); canvas.addEventListener('pointerleave',e=>{ if(isDragging) pointerUp(e); });
+    window.addEventListener('keydown', e => {
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      const key = e.key.toLowerCase();
+      if (['w','a','s','d'].includes(key) || ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+        deactivatePostureMotions();
+      }
+      if (['w','a','s','d'].includes(key)) {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkKey(key, true);
+      }
+      else if (e.key === 'ArrowUp') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(0);
+      }
+      else if (e.key === 'ArrowDown') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(Math.PI);
+      }
+      else if (e.key === 'ArrowLeft') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget - Math.PI / 12);
+      }
+      else if (e.key === 'ArrowRight') {
+        stopAutoMovesForManual();
+        spinMotion = false;
+        document.getElementById('spinToggle')?.classList.remove('active');
+        setWalkHeading(walkHeadingTarget + Math.PI / 12);
+      }
+      else return;
+      e.preventDefault();
+    });
+    window.addEventListener('keyup', e => {
+      const key = e.key.toLowerCase();
+      if (!['w','a','s','d'].includes(key)) return;
+      setWalkKey(key, false);
+      e.preventDefault();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && (faceTracking.enabled || faceTracking.starting)) stopFaceTracking();
+    });
+    window.addEventListener('pagehide', () => stopFaceTracking());
+    window.addEventListener('resize',resize);
+    window.render_game_to_text = () => JSON.stringify({
+      coordinateSystem: 'Figure-local X is left/right, Y increases downward, Z is depth; walk X/Z are ground displacement.',
+      theme: displayTheme,
+      ui: { meshColorMenuExpanded },
+      camera: { rotationX, rotationY, zoom: zoomScale, verticalOffset: cameraVerticalOffset },
+      motion: {
+        run: runMotion,
+        jump: jumpActive,
+        moonwalk: moonwalkMotion,
+        spin: spinMotion,
+        crouch: crouchMotion,
+        squat: squatMotion,
+        crouchBlend,
+        squatBlend,
+        autoMoves: autoMovesActive
+      },
+      faceTracking: {
+        enabled: faceTracking.enabled,
+        starting: faceTracking.starting,
+        status: faceTracking.status,
+        holdingLastFace: faceTracking.enabled && faceTracking.status === 'holding',
+        hasFace: faceTracking.hasFace,
+        landmarkCount: faceTracking.landmarks.length,
+        meshConnectionCount: faceTracking.meshConnectionCount,
+        surfaceTriangleCount: faceTracking.surfaceTriangleCount,
+        surfaceOpacity: TRACKED_FACE_SURFACE_OPACITY,
+        neckBufferConnectionCount: faceTracking.neckBufferConnectionCount,
+        neckBufferRows: TRACKED_FACE_NECK_BUFFER_ROWS,
+        headShellActive: trackedHeadShellActive(),
+        headShellConnectionCount: faceTracking.headShellConnectionCount,
+        headShellRingCount: faceTracking.headShellRingCount,
+        headShellVertexCount: faceTracking.headShellVertexCount,
+        headShellDepth: faceTracking.headShellDepth,
+        headShellSource: trackedHeadScanMesh()?.source || null,
+        headShellLicense: trackedHeadScanMesh()?.license || null,
+        outerContourVisible: SHOW_TRACKED_FACE_OUTER_CONTOUR,
+        frontVisible: trackedFaceOverlayVisible(),
+        surfaceVisible: trackedFaceSurfaceVisible(),
+        baseHeadMeshHidden: trackedHeadShellActive(),
+        headRollRadians: faceTracking.headRoll,
+        headRollDegrees: faceTracking.headRoll * 180 / Math.PI,
+        targetHeadRollDegrees: faceTracking.targetHeadRoll * 180 / Math.PI,
+        chinDrop: TRACKED_FACE_CHIN_DROP,
+        error: faceTracking.error
+      },
+      upperBodyTracking: {
+        hasPose: upperBodyTracking.hasPose,
+        poseLandmarkCount: upperBodyTracking.poseLandmarks.length,
+        leftArmTracked: Boolean(upperBodyTracking.armTargets.left),
+        rightArmTracked: Boolean(upperBodyTracking.armTargets.right),
+        leftHandTracked: upperBodyTracking.handLandmarks.left.length >= 21,
+        rightHandTracked: upperBodyTracking.handLandmarks.right.length >= 21,
+        leftHandLandmarkCount: upperBodyTracking.handLandmarks.left.length,
+        rightHandLandmarkCount: upperBodyTracking.handLandmarks.right.length,
+        pipelineFrame: upperBodyTracking.frameSequence,
+        sendFailures: { ...upperBodyTracking.sendFailures },
+        pipelineError: upperBodyTracking.lastPipelineError
+      },
+      learningMode: {
+        recording: learningMode.recording,
+        playing: learningMode.playing,
+        preparingPlayback: learningMode.preparingPlayback,
+        status: learningMode.status,
+        recordingFrameCount: learningMode.frames.length,
+        savedSessionCount: learningMode.sessions.length,
+        playbackSessionId: learningMode.playbackSessionId,
+        playbackFrameIndex: learningMode.playbackFrameIndex,
+        lowerBody: 'N/A'
+      },
+      boots: { leftAttached: bootState.left.attached, rightAttached: bootState.right.attached }
+    });
+    setDisplayTheme('bright');
+    setupMeshControls();
+    initializeLearningMode();
+    resize();
+    draw();
+  </script>
+</body>
+</html>
