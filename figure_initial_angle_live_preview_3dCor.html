@@ -653,6 +653,7 @@
     </section>
   </main>
 
+  <script src="./lee_perry_smith_rear_mesh.js"></script>
   <script>
     const canvas = document.getElementById('figure');
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -734,6 +735,10 @@
       headRoll: 0,
       meshConnectionCount: 0,
       neckBufferConnectionCount: 0,
+      headShellConnectionCount: 0,
+      headShellRingCount: 0,
+      headShellVertexCount: 0,
+      headShellDepth: 0,
       error: ''
     };
     const upperBodyTracking = {
@@ -774,9 +779,10 @@
     const SHOW_TRACKED_FACE_OUTER_CONTOUR = false;
     const TRACKED_FACE_CHIN_DROP = .055;
     const TRACKED_FACE_NECK_BUFFER_ROWS = 3;
+    const TRACKED_FACE_OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
     const TRACKED_FACE_LOWER_JAW = [172,136,150,149,176,148,152,377,400,378,379,365,397];
     const TRACKED_FACE_PATHS = [
-      { kind: 'outer', closed: true, width: 1.15, indices: [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109] },
+      { kind: 'outer', closed: true, width: 1.15, indices: TRACKED_FACE_OVAL },
       { closed: true, width: 1.10, indices: [33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246] },
       { closed: true, width: 1.10, indices: [263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466] },
       { closed: false, width: 1.18, indices: [70,63,105,66,107] },
@@ -836,7 +842,10 @@
         : faceTracking.enabled
           ? (faceTracking.hasFace || upperBodyTracking.hasPose || hasTrackedHand ? 'Stop Camera' : 'Finding Body...')
           : state === 'error' ? 'Retry Camera' : 'Track Camera';
-      faceTrackingToggle.title = faceTracking.error || upperBodyTracking.lastPipelineError || 'Map webcam face, arm, hand, and finger landmarks onto the figure';
+      faceTrackingToggle.title = faceTracking.error || upperBodyTracking.lastPipelineError ||
+        (state === 'holding'
+          ? 'Face is out of frame; holding the last tracked facial mesh.'
+          : 'Map webcam face, arm, hand, and finger landmarks onto the figure');
     }
 
     function loadFaceTrackingScript(url) {
@@ -877,14 +886,9 @@
       const raw = results?.multiFaceLandmarks?.[0];
       if (!raw?.length) {
         if (performance.now() - faceTracking.lastSeenAt > 280) {
-          const changed = faceTracking.hasFace || faceTracking.status !== 'searching';
-          faceTracking.hasFace = false;
-          faceTracking.landmarks = [];
-          faceTracking.inputRoll = 0;
-          faceTracking.targetHeadRoll = 0;
-          faceTracking.meshConnectionCount = 0;
-          faceTracking.neckBufferConnectionCount = 0;
-          faceTracking.status = 'searching';
+          const nextStatus = faceTracking.hasFace ? 'holding' : 'searching';
+          const changed = faceTracking.status !== nextStatus;
+          faceTracking.status = nextStatus;
           if (changed) syncFaceTrackingButton();
         }
         return;
@@ -1107,6 +1111,10 @@
       faceTracking.targetHeadRoll = 0;
       faceTracking.meshConnectionCount = 0;
       faceTracking.neckBufferConnectionCount = 0;
+      faceTracking.headShellConnectionCount = 0;
+      faceTracking.headShellRingCount = 0;
+      faceTracking.headShellVertexCount = 0;
+      faceTracking.headShellDepth = 0;
       if (faceTracking.frameId) cancelAnimationFrame(faceTracking.frameId);
       faceTracking.frameId = 0;
 
@@ -1276,6 +1284,20 @@
 
     if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
       window.__setFaceTrackingTestFrame = setFaceTrackingTestFrame;
+      window.__deliverFaceTrackingTestFrame = landmarks => {
+        handleFaceTrackingResults({ multiFaceLandmarks: [landmarks] });
+      };
+      window.__simulateFaceTrackingLoss = (elapsedMs = 500) => {
+        faceTracking.lastSeenAt = performance.now() - Math.max(281, elapsedMs);
+        handleFaceTrackingResults({ multiFaceLandmarks: [] });
+      };
+      window.__getFaceTrackingTestState = () => ({
+        enabled: faceTracking.enabled,
+        status: faceTracking.status,
+        hasFace: faceTracking.hasFace,
+        landmarkCount: faceTracking.landmarks.length,
+        signature: [10, 33, 152, 263, 454].map(index => faceTracking.landmarks[index] || null)
+      });
       window.__setUpperBodyTrackingTestFrame = setUpperBodyTrackingTestFrame;
       window.__processNextTrackingPipelineTest = processNextTrackingPipeline;
       window.__clearFaceTrackingTestFrame = () => stopFaceTracking();
@@ -1439,6 +1461,12 @@
       faceTracking.landmarks = [];
       faceTracking.inputRoll = 0;
       faceTracking.targetHeadRoll = 0;
+      faceTracking.meshConnectionCount = 0;
+      faceTracking.neckBufferConnectionCount = 0;
+      faceTracking.headShellConnectionCount = 0;
+      faceTracking.headShellRingCount = 0;
+      faceTracking.headShellVertexCount = 0;
+      faceTracking.headShellDepth = 0;
       faceTracking.status = faceTracking.enabled ? 'searching' : 'off';
       resetUpperBodyTracking();
     }
@@ -3149,14 +3177,47 @@
     function smoothstep(e0,e1,x){ const v=Math.max(0,Math.min(1,(x-e0)/(e1-e0))); return v*v*(3-2*v); }
     function projectPoint(p){ const r=rotatePoint(p), camera=5.2, perspective=camera/(camera-r.z); return {...p,rx:r.x,ry:r.y,rz:r.z,perspective,sx:r.x*scale*perspective,sy:r.y*scale*perspective,visible:camera-r.z>.5}; }
     function faceClamp(value, min, max){ return Math.max(min, Math.min(max, value)); }
+    function trackedFaceFacingDot(){
+      return Math.cos(normalizeAngle(figureYaw() + rotationY)) * Math.cos(rotationX);
+    }
     function trackedFaceFacingAmount(){
-      return Math.max(0, Math.cos(normalizeAngle(figureYaw() + rotationY)) * Math.cos(rotationX));
+      return Math.max(0, trackedFaceFacingDot());
+    }
+    function trackedFaceSurfaceOpacity(){
+      return smoothstep(-.32, .58, trackedFaceFacingDot());
+    }
+    function trackedHeadScanMesh(){
+      const asset = window.LEE_PERRY_SMITH_REAR_MESH;
+      if (!asset || !Array.isArray(asset.vertices) || !Array.isArray(asset.edges) || asset.vertices.length < 9) return null;
+      if (!asset.bounds) {
+        const bounds = {
+          minX: Infinity, maxX: -Infinity,
+          minY: Infinity, maxY: -Infinity,
+          minZ: Infinity, maxZ: -Infinity
+        };
+        for (let index = 0; index < asset.vertices.length; index += 3) {
+          const x = asset.vertices[index], y = asset.vertices[index + 1], z = asset.vertices[index + 2];
+          bounds.minX = Math.min(bounds.minX, x); bounds.maxX = Math.max(bounds.maxX, x);
+          bounds.minY = Math.min(bounds.minY, y); bounds.maxY = Math.max(bounds.maxY, y);
+          bounds.minZ = Math.min(bounds.minZ, z); bounds.maxZ = Math.max(bounds.maxZ, z);
+        }
+        asset.bounds = bounds;
+      }
+      return asset;
+    }
+    function trackedHeadShellActive(){
+      if (!trackedHeadScanMesh()) return false;
+      if (!(faceTracking.enabled || learningMode.playing) || !faceTracking.hasFace || faceTracking.landmarks.length < 468) return false;
+      return TRACKED_FACE_OVAL.every(index => Boolean(faceTracking.landmarks[index]));
     }
     function trackedFaceOverlayVisible(){
-      return (faceTracking.enabled || learningMode.playing) && faceTracking.hasFace && faceTracking.landmarks.length > 0 && trackedFaceFacingAmount() > .08;
+      return trackedHeadShellActive() && trackedFaceFacingAmount() > .08;
+    }
+    function trackedFaceSurfaceVisible(){
+      return trackedHeadShellActive() && trackedFaceSurfaceOpacity() > .02;
     }
     function trackedFaceMappingFrame(){
-      if (!trackedFaceOverlayVisible()) return null;
+      if (!trackedHeadShellActive()) return null;
       const lm = faceTracking.landmarks;
       const left = lm[234], right = lm[454], top = lm[10], bottom = lm[152];
       if (!left || !right || !top || !bottom) return null;
@@ -3180,6 +3241,7 @@
       const width = Math.max(.08, Math.abs(unrolledRight.x - unrolledLeft.x));
       const topY = Math.min(unrolledTop.y, unrolledBottom.y);
       const bottomY = Math.max(unrolledTop.y, unrolledBottom.y);
+      const facingDot = trackedFaceFacingDot();
       return {
         lm,
         unroll,
@@ -3187,10 +3249,12 @@
         width,
         topY,
         height: Math.max(.10, bottomY - topY),
-        opacity: smoothstep(.08, .44, trackedFaceFacingAmount())
+        opacity: smoothstep(-.32, .58, facingDot),
+        featureOpacity: smoothstep(.02, .44, Math.max(0, facingDot)),
+        neckOpacity: smoothstep(-.18, .34, facingDot)
       };
     }
-    function mapTrackedFacePoint(point, frame){
+    function mappedTrackedFaceModelPoint(point, frame){
       if (!point || !frame) return null;
       const neutral = frame.unroll(point);
       const nx = faceClamp((neutral.x - frame.centerX) / frame.width, -.54, .54);
@@ -3201,13 +3265,136 @@
       const ellipsoid = Math.max(.018, 1 - Math.pow(x / .305, 2) - Math.pow((y + 1.92) / .365, 2));
       const surfaceZ = .045 + .292 * Math.sqrt(ellipsoid);
       const trackedDepth = faceClamp(-neutral.z / frame.width * .045, -.018, .055);
-      return projectPoint({ x, y, z: surfaceZ + trackedDepth + .006, part: 'trackedFace', weight: 1 });
+      return { x, y, z: surfaceZ + trackedDepth + .006, part: 'trackedFace', weight: 1 };
     }
     function trackedFaceTessellation(){
       if (typeof FACEMESH_TESSELATION !== 'undefined' && Array.isArray(FACEMESH_TESSELATION)) {
         return FACEMESH_TESSELATION;
       }
       return Array.isArray(window.FACEMESH_TESSELATION) ? window.FACEMESH_TESSELATION : [];
+    }
+    function drawTrackedHeadShell(modelLandmarks, frame, stroke, baseWidth){
+      const scan = trackedHeadScanMesh();
+      const boundary = TRACKED_FACE_OVAL.map(index => modelLandmarks[index]).filter(Boolean);
+      if (!scan || boundary.length !== TRACKED_FACE_OVAL.length) {
+        faceTracking.headShellConnectionCount = 0;
+        faceTracking.headShellRingCount = 0;
+        faceTracking.headShellVertexCount = 0;
+        faceTracking.headShellDepth = 0;
+        return;
+      }
+
+      const minX = Math.min(...boundary.map(point => point.x));
+      const maxX = Math.max(...boundary.map(point => point.x));
+      const minY = Math.min(...boundary.map(point => point.y));
+      const maxY = Math.max(...boundary.map(point => point.y));
+      const width = Math.max(.20, maxX - minX);
+      const height = Math.max(.28, maxY - minY);
+      const centerX = boundary.reduce((sum, point) => sum + point.x, 0) / boundary.length;
+      const centerY = (minY + maxY) * .5;
+      const bounds = scan.bounds;
+      const sourceCenterX = (bounds.minX + bounds.maxX) * .5;
+      const sourceCenterY = (bounds.minY + bounds.maxY) * .5;
+      const sourceWidth = Math.max(.001, bounds.maxX - bounds.minX);
+      const sourceHeight = Math.max(.001, bounds.maxY - bounds.minY);
+      const sourceDepth = Math.max(.001, scan.seamZ - bounds.minZ);
+      const scaleX = width * 1.10 / sourceWidth;
+      const scaleY = height * 1.06 / sourceHeight;
+      const shellDepth = faceClamp(width * .70, .32, .43);
+      const scaleZ = shellDepth / sourceDepth;
+      const seamDepth = boundary.reduce((sum, point) => sum + point.z, 0) / boundary.length;
+      const boundaryByAngle = boundary.map(point => ({
+        point,
+        angle: Math.atan2((point.y - centerY) / Math.max(.001, height), (point.x - centerX) / Math.max(.001, width))
+      }));
+      const nearestBoundary = angle => {
+        let closest = boundaryByAngle[0];
+        let closestDistance = Infinity;
+        for (const candidate of boundaryByAngle) {
+          const distance = Math.abs(Math.atan2(Math.sin(angle - candidate.angle), Math.cos(angle - candidate.angle)));
+          if (distance < closestDistance) {
+            closest = candidate;
+            closestDistance = distance;
+          }
+        }
+        return closest.point;
+      };
+
+      // Pull the scan's open front boundary onto the live face oval. The falloff
+      // preserves the donor scan's crown, temples, ears, occiput and nape.
+      const modelVertices = [];
+      const sourceBackness = [];
+      for (let index = 0; index < scan.vertices.length; index += 3) {
+        const sourceX = scan.vertices[index];
+        const sourceY = scan.vertices[index + 1];
+        const sourceZ = scan.vertices[index + 2];
+        const baseX = centerX + (sourceX - sourceCenterX) * scaleX;
+        const baseY = centerY - (sourceY - sourceCenterY) * scaleY;
+        const angle = Math.atan2((baseY - centerY) / Math.max(.001, height), (baseX - centerX) / Math.max(.001, width));
+        const target = nearestBoundary(angle);
+        const seamInfluence = Math.pow(smoothstep(-.78, scan.seamZ, sourceZ), 1.35);
+        const baseZ = seamDepth + (sourceZ - scan.seamZ) * scaleZ;
+        modelVertices.push({
+          x: baseX + (target.x - baseX) * seamInfluence,
+          y: baseY + (target.y - baseY) * seamInfluence,
+          z: baseZ + (target.z - .004 - baseZ) * seamInfluence,
+          part: 'trackedFace',
+          weight: 1
+        });
+        sourceBackness.push(1 - smoothstep(bounds.minZ, scan.seamZ, sourceZ));
+      }
+
+      const projectedVertices = modelVertices.map(projectPoint);
+      const segments = [];
+      const addSegment = (a, b, seam, backness) => {
+        if (!a?.visible || !b?.visible) return;
+        segments.push({ a, b, seam, backness, depth: (a.rz + b.rz) * .5 });
+      };
+      for (let edgeIndex = 0; edgeIndex < scan.edges.length; edgeIndex += 2) {
+        const aIndex = scan.edges[edgeIndex], bIndex = scan.edges[edgeIndex + 1];
+        const sourceZA = scan.vertices[aIndex * 3 + 2], sourceZB = scan.vertices[bIndex * 3 + 2];
+        addSegment(
+          projectedVertices[aIndex],
+          projectedVertices[bIndex],
+          Math.max(sourceZA, sourceZB) > -.04,
+          (sourceBackness[aIndex] + sourceBackness[bIndex]) * .5
+        );
+      }
+      segments.sort((a, b) => a.depth - b.depth);
+
+      const rearViewBoost = 1 - frame.opacity;
+      const viewVisibility = .26 + rearViewBoost * .74;
+      const shellAlpha = (displayTheme === 'dark' ? .23 : .18) * (1 + rearViewBoost * .40) * viewVisibility;
+      ctx.save();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = Math.max(.28, baseWidth * .34);
+      ctx.lineCap = 'round';
+      for (const segment of segments) {
+        const depthFade = .58 + .46 * smoothstep(-.48, .42, segment.depth);
+        const anatomicalFade = .62 + segment.backness * .38;
+        const seamFade = segment.seam ? .10 + rearViewBoost * .90 : 1;
+        ctx.globalAlpha = shellAlpha * depthFade * anatomicalFade * seamFade;
+        ctx.beginPath();
+        ctx.moveTo(segment.a.sx, segment.a.sy);
+        ctx.lineTo(segment.b.sx, segment.b.sy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = stroke;
+      ctx.globalAlpha = shellAlpha * .58;
+      const nodeRadius = Math.max(.30, baseWidth * .30);
+      for (let index = 0; index < projectedVertices.length; index += 3) {
+        const point = projectedVertices[index];
+        if (!point?.visible) continue;
+        ctx.beginPath();
+        ctx.arc(point.sx, point.sy, nodeRadius * point.perspective, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      faceTracking.headShellConnectionCount = segments.length;
+      faceTracking.headShellRingCount = 0;
+      faceTracking.headShellVertexCount = projectedVertices.length;
+      faceTracking.headShellDepth = shellDepth;
     }
     function drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth){
       const jaw = TRACKED_FACE_LOWER_JAW.map(index => mappedLandmarks[index]).filter(point => point?.visible);
@@ -3230,7 +3417,7 @@
       }
       rows.push(neck);
 
-      ctx.globalAlpha = frame.opacity * (displayTheme === 'dark' ? .25 : .20);
+      ctx.globalAlpha = frame.neckOpacity * (displayTheme === 'dark' ? .25 : .20);
       ctx.strokeStyle = stroke;
       ctx.lineWidth = Math.max(.32, baseWidth * .38);
       ctx.beginPath();
@@ -3267,24 +3454,32 @@
       if (!frame) {
         faceTracking.meshConnectionCount = 0;
         faceTracking.neckBufferConnectionCount = 0;
+        faceTracking.headShellConnectionCount = 0;
+        faceTracking.headShellRingCount = 0;
+        faceTracking.headShellVertexCount = 0;
+        faceTracking.headShellDepth = 0;
         return;
       }
       const stroke = displayTheme === 'dark' ? '#9DD7FF' : '#111111';
       const pointInk = displayTheme === 'dark' ? '#9DD7FF' : '#050505';
       const baseWidth = Math.max(.58, scale / 150);
-      const mappedLandmarks = frame.lm.map(point => mapTrackedFacePoint(point, frame));
+      const modelLandmarks = frame.lm.map(point => mappedTrackedFaceModelPoint(point, frame));
+      const mappedLandmarks = modelLandmarks.map(point => point ? projectPoint(point) : null);
       const meshConnections = trackedFaceTessellation();
       faceTracking.meshConnectionCount = meshConnections.length;
 
+      drawTrackedHeadShell(modelLandmarks, frame, stroke, baseWidth);
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       if (meshConnections.length) {
-        ctx.globalAlpha = frame.opacity * (displayTheme === 'dark' ? .30 : .25);
+        const facingDetail = smoothstep(.04, .46, trackedFaceFacingAmount());
+        ctx.globalAlpha = frame.opacity * (displayTheme === 'dark' ? .30 : .25) * (.38 + facingDetail * .62);
         ctx.strokeStyle = stroke;
-        ctx.lineWidth = Math.max(.34, baseWidth * .43);
+        ctx.lineWidth = Math.max(.28, baseWidth * .43 * (.62 + facingDetail * .38));
         ctx.beginPath();
-        for (const connection of meshConnections) {
+        for (let connectionIndex = 0; connectionIndex < meshConnections.length; connectionIndex++) {
+          const connection = meshConnections[connectionIndex];
           const a = mappedLandmarks[connection[0]];
           const b = mappedLandmarks[connection[1]];
           if (!a?.visible || !b?.visible) continue;
@@ -3293,14 +3488,15 @@
         }
         ctx.stroke();
       }
-      drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth);
+      if (frame.neckOpacity > .001) drawTrackedFaceNeckBuffer(mappedLandmarks, frame, stroke, baseWidth);
+      else faceTracking.neckBufferConnectionCount = 0;
       for (const path of TRACKED_FACE_PATHS) {
         if (path.kind === 'outer' && !SHOW_TRACKED_FACE_OUTER_CONTOUR) continue;
         const mapped = path.indices
           .map(index => mappedLandmarks[index])
           .filter(point => point?.visible);
         if (mapped.length < 2) continue;
-        ctx.globalAlpha = frame.opacity * (path.width < 1 ? .58 : .92);
+        ctx.globalAlpha = frame.featureOpacity * (path.width < 1 ? .58 : .92);
         ctx.strokeStyle = stroke;
         ctx.lineWidth = baseWidth * path.width;
         ctx.beginPath();
@@ -3313,7 +3509,7 @@
       for (const index of [468, 473]) {
         const point = mappedLandmarks[index];
         if (!point?.visible) continue;
-        ctx.globalAlpha = frame.opacity * .92;
+        ctx.globalAlpha = frame.featureOpacity * .92;
         ctx.fillStyle = pointInk;
         ctx.beginPath();
         ctx.arc(point.sx, point.sy, Math.max(.8, baseWidth * 1.45) * point.perspective, 0, Math.PI * 2);
@@ -3456,7 +3652,7 @@ Z: ${cz.toFixed(3)}`;
       if(!isDragging){ rotationY+=velocityY; rotationX+=velocityX; velocityX*=.965; velocityY*=.985; }
       rotationX=Math.max(-Math.PI/2+.08,Math.min(Math.PI/2-.08,rotationX)); tick+=.01*frameStep;
       syncCameraViewButtons();
-      const projected=points.map(projectPoint); lastProjected=projected; const showTrackedFace=trackedFaceOverlayVisible(); ctx.save(); ctx.translate(width/2,height/2+scale*.06+height*cameraVerticalOffset);
+      const projected=points.map(projectPoint); lastProjected=projected; const showTrackedHead=trackedHeadShellActive(); ctx.save(); ctx.translate(width/2,height/2+scale*.06+height*cameraVerticalOffset);
       const aura=ctx.createRadialGradient(0,-scale*.5,scale*.2,0,0,scale*2.3); aura.addColorStop(0,displayTheme==='dark'?'rgba(226,229,230,.10)':'rgba(255,255,255,.42)'); aura.addColorStop(.55,displayTheme==='dark'?'rgba(226,229,230,.035)':'rgba(255,255,255,.12)'); aura.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(0,0,scale*2.35,0,Math.PI*2); ctx.fill();
       drawCoordinatePlane();
       const orderedFaces=faces.map(face=>{
@@ -3477,7 +3673,7 @@ Z: ${cz.toFixed(3)}`;
       for(const link of links){
         const a=projected[link.a], b=projected[link.b];
         if(!a||!b||!a.visible||!b.visible||isHiddenPart(a.part)||isHiddenPart(b.part)) continue;
-        if(showTrackedFace && (a.part === 'head' || b.part === 'head')) continue;
+        if(showTrackedHead && (a.part === 'head' || b.part === 'head')) continue;
         const depth=smoothstep(-1.8,1.3,(a.rz+b.rz)/2);
         const pulse=.88+.12*Math.sin(tick*3+link.a*.13);
         const isShadeLink = a.part === 'cap' || b.part === 'cap';
@@ -3490,7 +3686,7 @@ Z: ${cz.toFixed(3)}`;
       }
       const ordered=projected.filter(p=>p.visible&&!isHiddenPart(p.part)).sort((a,b)=>a.rz-b.rz);
       for(const p of ordered){
-        if(showTrackedFace && p.part === 'head') continue;
+        if(showTrackedHead && p.part === 'head') continue;
         const depth=smoothstep(-1.75,1.35,p.rz);
         const scan=.93+.07*Math.sin(tick*7+p.ry*14+p.jitter*8);
         const isBootPoint=isBootPart(p.part);
@@ -3635,14 +3831,23 @@ Z: ${cz.toFixed(3)}`;
         enabled: faceTracking.enabled,
         starting: faceTracking.starting,
         status: faceTracking.status,
+        holdingLastFace: faceTracking.enabled && faceTracking.status === 'holding',
         hasFace: faceTracking.hasFace,
         landmarkCount: faceTracking.landmarks.length,
         meshConnectionCount: faceTracking.meshConnectionCount,
         neckBufferConnectionCount: faceTracking.neckBufferConnectionCount,
         neckBufferRows: TRACKED_FACE_NECK_BUFFER_ROWS,
+        headShellActive: trackedHeadShellActive(),
+        headShellConnectionCount: faceTracking.headShellConnectionCount,
+        headShellRingCount: faceTracking.headShellRingCount,
+        headShellVertexCount: faceTracking.headShellVertexCount,
+        headShellDepth: faceTracking.headShellDepth,
+        headShellSource: trackedHeadScanMesh()?.source || null,
+        headShellLicense: trackedHeadScanMesh()?.license || null,
         outerContourVisible: SHOW_TRACKED_FACE_OUTER_CONTOUR,
         frontVisible: trackedFaceOverlayVisible(),
-        baseHeadMeshHidden: trackedFaceOverlayVisible(),
+        surfaceVisible: trackedFaceSurfaceVisible(),
+        baseHeadMeshHidden: trackedHeadShellActive(),
         headRollRadians: faceTracking.headRoll,
         headRollDegrees: faceTracking.headRoll * 180 / Math.PI,
         targetHeadRollDegrees: faceTracking.targetHeadRoll * 180 / Math.PI,

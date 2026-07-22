@@ -228,3 +228,49 @@ Saved facial-mesh playback fix (2026-07-20):
 
 TODO:
 - None after verifying fresh-reload playback with all 2,556 tessellation connections, 478 saved landmarks, stop cleanup, screenshots, syntax, and zero browser console errors.
+
+Contour-grown real-time back-head shell (2026-07-21):
+- Replaced rear-view fallback to the original base head with a live procedural shell grown directly from the tracked 36-point face oval.
+- Ring zero matches the tracked facial boundary exactly; nine posterior rings follow asymmetric cubic Bezier curves that briefly widen the upper cranium, taper the lower head, and lift into a computed rear pole/nape.
+- Added 936 depth-sorted wireframe connections so the generated shell remains readable in front, side, rear, Bright, and Dark views.
+- Kept the original head hidden for the entire tracked session and restored it immediately when live or saved facial tracking stops.
+- Exposed shell activity, ring count, connection count, and computed depth in `render_game_to_text`.
+
+TODO:
+- None after verifying live synthetic contour growth, side/rear continuity, saved-session playback regression, Dark mode, camera-off restoration, screenshots, syntax, and zero browser console errors.
+
+Last-face hold during camera loss (2026-07-21):
+- Changed temporary face-loss behavior so Track Camera preserves the last valid 478 facial landmarks instead of removing the mapped head after 280 ms.
+- Added an internal holding state while the camera continues searching; returning face data resumes normal smoothed tracking immediately.
+- Preserved the last face roll, 2,556-point tessellation topology, jaw-to-neck buffer, and 936-connection contour-grown back-head shell until the camera is explicitly stopped.
+- Added holding state diagnostics to `render_game_to_text` and deterministic local loss/resume test hooks.
+
+TODO:
+- None after verifying a simulated 10-second face absence, exact landmark-signature retention, active shell retention, resumed tracking, explicit camera-off cleanup, screenshots, syntax, and zero browser console errors.
+
+Held-face side seam completion (2026-07-21):
+- Fixed the half-head/cutaway appearance that remained when a held facial mesh was viewed near the side.
+- Separated front-feature opacity from facial-surface opacity so the tracked 3D tessellation remains as a restrained cap through three-quarter and side angles without showing bold eyes, lips, or nose contours edge-on.
+- Faded only the contour-plane ring of the generated rear shell as it turns away while retaining the curved Bezier bridge rings and rear cranium.
+- Added foreshortening-aware facial-mesh opacity and line width so the side cap closes the head without becoming a solid black band.
+- Added `surfaceVisible` diagnostics while preserving the existing `frontVisible` meaning.
+
+TODO:
+- None after verifying held Initial, Front, Side, Rear, and Dark views, exact landmark retention, live resume, camera-off restoration, screenshots, syntax, and zero browser console errors.
+
+Licensed scan rear-head topology integration (2026-07-21):
+- Replaced the nine-ring procedural Bezier rear shell with geometry derived from the Lee Perry-Smith `Infinite` 3D head scan supplied in `human-face-mesh-threejs`.
+- Cropped the donor shoulders and donor neck before simplification, leaving 495 anatomical head vertices and 1,422 unique scan-topology connections for the crown, temples, ears, occiput, and nape.
+- Fitted the scan's open front boundary to the live 36-point MediaPipe face oval with a depth-decaying deformation, preserving the scanned rear anatomy instead of adding the untouched stock model behind the face.
+- Kept the existing live face tessellation, head roll, last-face hold, original figure neck, camera-off restoration, and saved-session playback behavior.
+- Added visible Lee Perry-Smith / CC BY 3.0 attribution, a bundled license notice, and topology source/vertex/license diagnostics in `render_game_to_text`.
+
+TODO:
+- None after verifying 495 scan vertices / 1,422 connections in Front, Initial, Side, Rear, and Dark views; exact 10-second face-loss hold; camera-off base-head restoration; saved JSON playback/reload; and zero browser console errors.
+
+Rear-head credit label visibility update (2026-07-21):
+- Removed the visible Lee Perry-Smith rear-head attribution label from the left control panel at the user's request.
+- Retained the bundled CC BY 3.0 license notice and scan source/license diagnostics in the code.
+
+TODO:
+- None after verifying the control panel ends cleanly after Auto Moves with no empty attribution spacing, attribution nodes, or console errors.
