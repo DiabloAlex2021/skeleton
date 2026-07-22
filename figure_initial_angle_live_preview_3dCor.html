@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="app-build" content="20260721-cyan-dark-mesh" />
+  <meta name="app-build" content="20260722-local-accounts" />
   <title>Legs and Feet Mesh Live Preview</title>
   <style>
     :root {
@@ -437,11 +437,12 @@
       right: 20px;
       bottom: 20px;
       z-index: 7;
-      width: min(270px, calc(100vw - 40px));
-      max-height: 280px;
+      width: min(292px, calc(100vw - 40px));
+      max-height: min(360px, calc(100vh - 40px));
       display: grid;
       gap: 8px;
       padding: 12px;
+      overflow-y: auto;
       border: 1px solid var(--line);
       border-radius: 16px;
       background: var(--panel);
@@ -449,6 +450,108 @@
       box-shadow: 0 12px 28px rgba(63, 47, 24, .10);
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
+
+    .account-section {
+      display: grid;
+      gap: 7px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .account-header,
+    .account-create-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .account-header { justify-content: space-between; }
+
+    .account-summary {
+      max-width: 190px;
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.3;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .account-manage-toggle,
+    .account-create-button,
+    .account-remove-button,
+    .account-select,
+    .account-name-input {
+      min-height: 30px;
+      border: 1px solid rgba(23,21,17,.22);
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--ink);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .account-manage-toggle,
+    .account-create-button,
+    .account-remove-button { cursor: pointer; }
+
+    .account-manage-toggle { padding: 0 9px; }
+
+    .account-management {
+      display: grid;
+      gap: 7px;
+    }
+
+    .account-management[hidden] { display: none; }
+
+    .account-field-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .account-select {
+      width: 100%;
+      padding: 0 8px;
+    }
+
+    .account-create-row { align-items: stretch; }
+    .account-name-input {
+      min-width: 0;
+      flex: 1;
+      padding: 0 8px;
+      font-weight: 500;
+    }
+    .account-create-button { padding: 0 10px; }
+    .account-remove-button { width: 100%; }
+
+    .account-manage-toggle:disabled,
+    .account-create-button:disabled,
+    .account-remove-button:disabled,
+    .account-select:disabled,
+    .account-name-input:disabled { opacity: .45; cursor: default; }
+
+    .account-manage-toggle:focus-visible,
+    .account-create-button:focus-visible,
+    .account-remove-button:focus-visible,
+    .account-select:focus-visible,
+    .account-name-input:focus-visible {
+      outline: 2px solid #087f70;
+      outline-offset: 2px;
+    }
+
+    .account-status {
+      min-height: 14px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .stage:has(#accountManagement:not([hidden])) .view-console { bottom: 390px; }
 
     .learning-header {
       display: flex;
@@ -491,6 +594,7 @@
       color: var(--button-active-ink);
     }
 
+    .learning-toggle:disabled,
     .learning-stop:disabled,
     .session-action:disabled { opacity: .45; cursor: default; }
 
@@ -560,7 +664,8 @@
       .theme-mode-btn { min-width: 52px; }
       .view-console { right: 10px; bottom: 304px; }
       .direction-console { right: 10px; bottom: 64px; }
-      .learning-panel { right: 10px; bottom: 10px; width: min(240px, calc(100vw - 20px)); }
+      .learning-panel { right: 10px; bottom: 10px; width: min(260px, calc(100vw - 20px)); max-height: min(72vh, 360px); }
+      .stage:has(#accountManagement:not([hidden])) .view-console { bottom: min(74vh, 390px); }
     }
   </style>
 </head>
@@ -638,14 +743,38 @@
           <button class="turn-btn" id="walkTurnRight" type="button">+15</button>
         </div>
       </div>
-      <section class="learning-panel" aria-label="learning mode sessions">
+      <section class="learning-panel" aria-label="account and learning mode sessions">
+        <div class="account-section" aria-labelledby="accountTitle">
+          <div class="account-header">
+            <div>
+              <div class="learning-title" id="accountTitle">Account</div>
+              <div class="account-summary" id="activeAccountSummary">Guest · stored in this browser</div>
+            </div>
+            <button class="account-manage-toggle" id="accountManageToggle" type="button" aria-expanded="false" aria-controls="accountManagement">Manage</button>
+          </div>
+          <div class="account-management" id="accountManagement" hidden>
+            <label class="account-field-label" for="accountSelect">Current profile</label>
+            <select class="account-select" id="accountSelect" aria-label="current local account">
+              <option value="guest">Guest</option>
+            </select>
+            <form id="accountCreateForm">
+              <label class="account-field-label" for="accountName">New local profile</label>
+              <div class="account-create-row">
+                <input class="account-name-input" id="accountName" type="text" maxlength="32" autocomplete="off" placeholder="Profile name" />
+                <button class="account-create-button" id="accountCreateButton" type="submit">Add</button>
+              </div>
+            </form>
+            <button class="account-remove-button" id="accountRemoveButton" type="button" disabled>Remove Profile</button>
+            <div class="account-status" id="accountStatus" role="status" aria-live="polite">No login required · data stays local to this browser.</div>
+          </div>
+        </div>
         <div class="learning-header">
           <div class="learning-title">Learning Mode</div>
           <button class="learning-toggle" id="learningModeToggle" type="button" aria-pressed="false">Start</button>
         </div>
         <button class="learning-stop" id="learningPlaybackStop" type="button" aria-pressed="false" disabled>Stop Playing</button>
         <div class="learning-status" id="learningModeStatus" aria-live="polite">Ready to record face and upper-body gestures.</div>
-        <div class="learning-sessions-label">Saved JSON Sessions</div>
+        <div class="learning-sessions-label" id="learningSessionsLabel">Saved JSON Sessions · Guest</div>
         <div class="learning-session-list" id="learningSessionList">
           <div class="learning-empty">No saved sessions yet.</div>
         </div>
@@ -658,7 +787,7 @@
   <script>
     const canvas = document.getElementById('figure');
     const ctx = canvas.getContext('2d', { alpha: true });
-    const APP_BUILD_ID = '20260721-cyan-dark-mesh';
+    const APP_BUILD_ID = '20260722-local-accounts';
     const cameraReadout = document.getElementById('cameraReadout');
     const faceTrackingVideo = document.getElementById('faceTrackingVideo');
     const faceTrackingToggle = document.getElementById('faceTrackingToggle');
@@ -666,6 +795,16 @@
     const learningPlaybackStop = document.getElementById('learningPlaybackStop');
     const learningModeStatus = document.getElementById('learningModeStatus');
     const learningSessionList = document.getElementById('learningSessionList');
+    const learningSessionsLabel = document.getElementById('learningSessionsLabel');
+    const activeAccountSummary = document.getElementById('activeAccountSummary');
+    const accountManageToggle = document.getElementById('accountManageToggle');
+    const accountManagement = document.getElementById('accountManagement');
+    const accountSelect = document.getElementById('accountSelect');
+    const accountCreateForm = document.getElementById('accountCreateForm');
+    const accountName = document.getElementById('accountName');
+    const accountCreateButton = document.getElementById('accountCreateButton');
+    const accountRemoveButton = document.getElementById('accountRemoveButton');
+    const accountStatus = document.getElementById('accountStatus');
 
     let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     let width = 0, height = 0, scale = 1;
@@ -762,9 +901,33 @@
     };
     const LEARNING_SAMPLE_INTERVAL_MS = 125;
     const LEARNING_DB_NAME = 'figure-learning-sessions';
+    const LEARNING_DB_VERSION = 2;
     const LEARNING_DB_STORE = 'sessions';
+    const LEARNING_ACCOUNT_STORE = 'accounts';
+    const LEARNING_SETTINGS_STORE = 'settings';
+    const ACTIVE_ACCOUNT_SETTING = 'activeAccountId';
+    const GUEST_ACCOUNT_ID = 'guest';
+    const GUEST_ACCOUNT = Object.freeze({
+      schemaVersion: 1,
+      id: GUEST_ACCOUNT_ID,
+      type: 'guest',
+      displayName: 'Guest',
+      createdAt: null,
+      updatedAt: null
+    });
+    const learningAccounts = {
+      accounts: [{ ...GUEST_ACCOUNT }],
+      activeAccountId: GUEST_ACCOUNT_ID,
+      ready: false,
+      mutating: false,
+      managementExpanded: false,
+      removeConfirmAccountId: '',
+      removeConfirmTimer: 0,
+      status: 'No login required · data stays local to this browser.'
+    };
     const learningMode = {
       recording: false,
+      saving: false,
       playing: false,
       preparingPlayback: false,
       startedAt: 0,
@@ -772,7 +935,13 @@
       lastCaptureAt: 0,
       frames: [],
       sessions: [],
+      allSessions: [],
       databasePromise: null,
+      recordingAccountId: '',
+      recordingOwner: null,
+      recordingStartedAtIso: '',
+      manualCaptureForTest: false,
+      testCaptureOrigin: 0,
       playbackFrameId: 0,
       playbackStartedAt: 0,
       playbackSessionId: '',
@@ -1318,10 +1487,148 @@
       if (learningModeStatus) learningModeStatus.textContent = message;
     }
 
+    function setLearningAccountStatus(message) {
+      learningAccounts.status = message;
+      if (accountStatus) accountStatus.textContent = message;
+    }
+
+    function normalizeLearningAccount(account) {
+      if (!account || account.id === GUEST_ACCOUNT_ID) return { ...GUEST_ACCOUNT };
+      const displayName = String(account.displayName || account.name || 'Local Profile').trim().slice(0, 32) || 'Local Profile';
+      return {
+        schemaVersion: 1,
+        id: String(account.id),
+        type: account.type === 'registered' ? 'registered' : 'local',
+        displayName,
+        createdAt: account.createdAt || new Date().toISOString(),
+        updatedAt: account.updatedAt || account.createdAt || new Date().toISOString()
+      };
+    }
+
+    function activeLearningAccount() {
+      return learningAccounts.accounts.find(account => account.id === learningAccounts.activeAccountId) || GUEST_ACCOUNT;
+    }
+
+    function accountSnapshot(account = activeLearningAccount()) {
+      return {
+        id: account.id,
+        type: account.type,
+        displayName: account.displayName
+      };
+    }
+
+    function sessionAccountId(session) {
+      return String(session?.accountId || session?.owner?.id || GUEST_ACCOUNT_ID);
+    }
+
+    function safeFolderSegment(value) {
+      return String(value || 'guest')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'profile';
+    }
+
+    function accountDataFolder(accountId) {
+      return accountId === GUEST_ACCOUNT_ID ? 'data/guest' : `data/users/${safeFolderSegment(accountId)}`;
+    }
+
+    function learningSessionLogicalPath(accountId, sessionId) {
+      return `${accountDataFolder(accountId)}/sessions/${safeFolderSegment(sessionId)}.json`;
+    }
+
+    function legacyLearningCaptureMetadata(session) {
+      const parsedCreatedAt = Date.parse(session?.createdAt);
+      const endedAtMs = Number.isFinite(parsedCreatedAt) ? parsedCreatedAt : 0;
+      const durationMs = Math.max(0, Number(session?.durationMs) || 0);
+      return {
+        source: 'camera-learning-mode',
+        appBuildId: 'legacy-v1',
+        startedAt: new Date(Math.max(0, endedAtMs - durationMs)).toISOString(),
+        endedAt: new Date(Math.max(0, endedAtMs)).toISOString(),
+        migratedFromSchemaVersion: Number(session?.schemaVersion) || 1
+      };
+    }
+
+    function normalizeLearningSession(session) {
+      if (!session || typeof session !== 'object' || !session.id) return null;
+      const accountId = sessionAccountId(session);
+      const matchingAccount = learningAccounts.accounts.find(account => account.id === accountId);
+      const owner = session.owner?.id
+        ? {
+            id: String(session.owner.id),
+            type: session.owner.type === 'registered' ? 'registered' : session.owner.type === 'guest' ? 'guest' : 'local',
+            displayName: String(session.owner.displayName || session.owner.name || 'Local Profile')
+          }
+        : accountSnapshot(matchingAccount || (accountId === GUEST_ACCOUNT_ID ? GUEST_ACCOUNT : {
+            id: accountId,
+            type: 'local',
+            displayName: 'Local Profile'
+          }));
+      return {
+        ...session,
+        schemaVersion: Math.max(2, Number(session.schemaVersion) || 1),
+        accountId,
+        owner,
+        capture: session.capture || legacyLearningCaptureMetadata(session),
+        lowerBody: 'N/A',
+        frames: Array.isArray(session.frames) ? session.frames : [],
+        storage: {
+          backend: 'indexeddb',
+          scope: 'browser-local',
+          ...(session.storage || {}),
+          logicalPath: session.storage?.logicalPath || learningSessionLogicalPath(accountId, session.id)
+        }
+      };
+    }
+
+    function sortLearningAccounts(accounts) {
+      return accounts.sort((a, b) => {
+        if (a.id === GUEST_ACCOUNT_ID) return -1;
+        if (b.id === GUEST_ACCOUNT_ID) return 1;
+        return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' });
+      });
+    }
+
+    function syncLearningAccountControls() {
+      const account = activeLearningAccount();
+      const busy = learningAccounts.mutating || learningMode.recording || learningMode.saving || learningMode.playing || learningMode.preparingPlayback;
+      if (activeAccountSummary) activeAccountSummary.textContent = `${account.displayName} · stored in this browser`;
+      if (learningSessionsLabel) learningSessionsLabel.textContent = `Saved JSON Sessions · ${account.displayName}`;
+      if (accountManagement) accountManagement.hidden = !learningAccounts.managementExpanded;
+      if (accountManageToggle) {
+        accountManageToggle.textContent = learningAccounts.managementExpanded ? 'Done' : 'Manage';
+        accountManageToggle.setAttribute('aria-expanded', String(learningAccounts.managementExpanded));
+      }
+      if (accountSelect) {
+        accountSelect.textContent = '';
+        for (const item of learningAccounts.accounts) {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.id === GUEST_ACCOUNT_ID ? 'Guest (default)' : item.displayName;
+          accountSelect.appendChild(option);
+        }
+        accountSelect.value = account.id;
+        accountSelect.disabled = busy || !learningAccounts.ready;
+      }
+      if (accountName) accountName.disabled = busy || !learningAccounts.ready;
+      if (accountCreateButton) accountCreateButton.disabled = busy || !learningAccounts.ready;
+      if (accountRemoveButton) {
+        const confirming = learningAccounts.removeConfirmAccountId === account.id;
+        accountRemoveButton.textContent = confirming ? `Confirm Remove ${account.displayName}` : 'Remove Profile';
+        accountRemoveButton.disabled = busy || !learningAccounts.ready || account.id === GUEST_ACCOUNT_ID;
+      }
+      if (accountStatus) accountStatus.textContent = learningAccounts.status;
+    }
+
     function syncLearningModeControls() {
       learningModeToggle?.classList.toggle('active', learningMode.recording);
       learningModeToggle?.setAttribute('aria-pressed', String(learningMode.recording));
-      if (learningModeToggle) learningModeToggle.textContent = learningMode.recording ? 'Stop & Save' : 'Start';
+      if (learningModeToggle) {
+        learningModeToggle.textContent = learningMode.recording ? 'Stop & Save' : 'Start';
+        learningModeToggle.disabled = (learningAccounts.mutating || learningMode.saving || !learningAccounts.ready) && !learningMode.recording;
+      }
       const playbackActive = learningMode.playing || learningMode.preparingPlayback;
       learningPlaybackStop?.classList.toggle('active', playbackActive);
       learningPlaybackStop?.setAttribute('aria-pressed', String(playbackActive));
@@ -1329,6 +1636,7 @@
         learningPlaybackStop.disabled = !playbackActive;
         learningPlaybackStop.textContent = learningMode.preparingPlayback ? 'Cancel Playback' : 'Stop Playing';
       }
+      syncLearningAccountControls();
     }
 
     function openLearningDatabase() {
@@ -1338,14 +1646,65 @@
           reject(new Error('This browser does not support saved learning sessions.'));
           return;
         }
-        const request = indexedDB.open(LEARNING_DB_NAME, 1);
+        const request = indexedDB.open(LEARNING_DB_NAME, LEARNING_DB_VERSION);
         request.onupgradeneeded = () => {
           const database = request.result;
-          if (!database.objectStoreNames.contains(LEARNING_DB_STORE)) {
-            database.createObjectStore(LEARNING_DB_STORE, { keyPath: 'id' });
+          const transaction = request.transaction;
+          const sessionStore = database.objectStoreNames.contains(LEARNING_DB_STORE)
+            ? transaction.objectStore(LEARNING_DB_STORE)
+            : database.createObjectStore(LEARNING_DB_STORE, { keyPath: 'id' });
+          if (!sessionStore.indexNames.contains('accountId')) {
+            sessionStore.createIndex('accountId', 'accountId', { unique: false });
           }
+          if (!sessionStore.indexNames.contains('accountCreatedAt')) {
+            sessionStore.createIndex('accountCreatedAt', ['accountId', 'createdAt'], { unique: false });
+          }
+
+          const accountStore = database.objectStoreNames.contains(LEARNING_ACCOUNT_STORE)
+            ? transaction.objectStore(LEARNING_ACCOUNT_STORE)
+            : database.createObjectStore(LEARNING_ACCOUNT_STORE, { keyPath: 'id' });
+          accountStore.put({ ...GUEST_ACCOUNT });
+
+          const settingsStore = database.objectStoreNames.contains(LEARNING_SETTINGS_STORE)
+            ? transaction.objectStore(LEARNING_SETTINGS_STORE)
+            : database.createObjectStore(LEARNING_SETTINGS_STORE, { keyPath: 'key' });
+          const activeSettingRequest = settingsStore.get(ACTIVE_ACCOUNT_SETTING);
+          activeSettingRequest.onsuccess = () => {
+            if (!activeSettingRequest.result) {
+              settingsStore.put({ key: ACTIVE_ACCOUNT_SETTING, value: GUEST_ACCOUNT_ID });
+            }
+          };
+
+          const cursorRequest = sessionStore.openCursor();
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (!cursor) return;
+            const value = cursor.value;
+            if (!value.accountId) {
+              value.capture = value.capture || legacyLearningCaptureMetadata(value);
+              value.schemaVersion = Math.max(2, Number(value.schemaVersion) || 1);
+              value.accountId = value.owner?.id || GUEST_ACCOUNT_ID;
+              value.owner = value.owner?.id ? value.owner : accountSnapshot(GUEST_ACCOUNT);
+              value.storage = {
+                backend: 'indexeddb',
+                scope: 'browser-local',
+                ...(value.storage || {}),
+                logicalPath: learningSessionLogicalPath(value.accountId, value.id)
+              };
+              cursor.update(value);
+            }
+            cursor.continue();
+          };
         };
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+          const database = request.result;
+          database.onversionchange = () => {
+            database.close();
+            learningMode.databasePromise = null;
+          };
+          resolve(database);
+        };
+        request.onblocked = () => reject(new Error('Close the other open preview tab, then reload to upgrade saved-session storage.'));
         request.onerror = () => reject(request.error || new Error('Unable to open learning-session storage.'));
       });
       return learningMode.databasePromise;
@@ -1360,13 +1719,122 @@
       });
     }
 
+    async function readStoredLearningAccounts() {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(LEARNING_ACCOUNT_STORE, 'readonly').objectStore(LEARNING_ACCOUNT_STORE).getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error || new Error('Unable to read local accounts.'));
+      });
+    }
+
+    async function readLearningSetting(key) {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const request = database.transaction(LEARNING_SETTINGS_STORE, 'readonly').objectStore(LEARNING_SETTINGS_STORE).get(key);
+        request.onsuccess = () => resolve(request.result?.value);
+        request.onerror = () => reject(request.error || new Error('Unable to read account settings.'));
+      });
+    }
+
+    async function persistLearningAccount(account) {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(LEARNING_ACCOUNT_STORE, 'readwrite');
+        transaction.objectStore(LEARNING_ACCOUNT_STORE).put(account);
+        transaction.oncomplete = () => resolve(account);
+        transaction.onerror = () => reject(transaction.error || new Error('Unable to save this local account.'));
+        transaction.onabort = () => reject(transaction.error || new Error('Unable to save this local account.'));
+      });
+    }
+
+    async function persistActiveLearningAccount(accountId) {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(LEARNING_SETTINGS_STORE, 'readwrite');
+        transaction.objectStore(LEARNING_SETTINGS_STORE).put({
+          key: ACTIVE_ACCOUNT_SETTING,
+          value: accountId
+        });
+        transaction.oncomplete = () => resolve(accountId);
+        transaction.onerror = () => reject(transaction.error || new Error('Unable to remember the active account.'));
+        transaction.onabort = () => reject(transaction.error || new Error('Unable to remember the active account.'));
+      });
+    }
+
+    async function persistLearningAccountAndActivate(account) {
+      const database = await openLearningDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction([LEARNING_ACCOUNT_STORE, LEARNING_SETTINGS_STORE], 'readwrite');
+        transaction.objectStore(LEARNING_ACCOUNT_STORE).put(account);
+        transaction.objectStore(LEARNING_SETTINGS_STORE).put({
+          key: ACTIVE_ACCOUNT_SETTING,
+          value: account.id
+        });
+        transaction.oncomplete = () => resolve(account);
+        transaction.onerror = () => reject(transaction.error || new Error('Unable to create this local account.'));
+        transaction.onabort = () => reject(transaction.error || new Error('Unable to create this local account.'));
+      });
+    }
+
     async function persistLearningSession(session) {
       const database = await openLearningDatabase();
       return new Promise((resolve, reject) => {
-        const request = database.transaction(LEARNING_DB_STORE, 'readwrite').objectStore(LEARNING_DB_STORE).put(session);
-        request.onsuccess = () => resolve(session);
-        request.onerror = () => reject(request.error || new Error('Unable to save this learning session.'));
+        const transaction = database.transaction(LEARNING_DB_STORE, 'readwrite');
+        transaction.objectStore(LEARNING_DB_STORE).put(session);
+        transaction.oncomplete = () => resolve(session);
+        transaction.onerror = () => reject(transaction.error || new Error('Unable to save this learning session.'));
+        transaction.onabort = () => reject(transaction.error || new Error('Unable to save this learning session.'));
       });
+    }
+
+    async function removeLearningAccountAndReassignSessions(account) {
+      if (!account || account.id === GUEST_ACCOUNT_ID) throw new Error('Guest is the permanent default account.');
+      const database = await openLearningDatabase();
+      const reassignedAt = new Date().toISOString();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(
+          [LEARNING_DB_STORE, LEARNING_ACCOUNT_STORE, LEARNING_SETTINGS_STORE],
+          'readwrite'
+        );
+        const sessionStore = transaction.objectStore(LEARNING_DB_STORE);
+        const cursorRequest = sessionStore.openCursor();
+        cursorRequest.onsuccess = () => {
+          const cursor = cursorRequest.result;
+          if (!cursor) return;
+          const session = cursor.value;
+          if (sessionAccountId(session) === account.id) {
+            session.accountId = GUEST_ACCOUNT_ID;
+            session.storage = {
+              backend: 'indexeddb',
+              scope: 'browser-local',
+              ...(session.storage || {}),
+              previousLogicalPath: session.storage?.logicalPath || learningSessionLogicalPath(account.id, session.id),
+              logicalPath: learningSessionLogicalPath(GUEST_ACCOUNT_ID, session.id),
+              reassignedFromAccountId: account.id,
+              reassignedAt
+            };
+            cursor.update(session);
+          }
+          cursor.continue();
+        };
+        transaction.objectStore(LEARNING_ACCOUNT_STORE).delete(account.id);
+        transaction.objectStore(LEARNING_SETTINGS_STORE).put({ key: ACTIVE_ACCOUNT_SETTING, value: GUEST_ACCOUNT_ID });
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error('Unable to remove this local account.'));
+        transaction.onabort = () => reject(transaction.error || new Error('Account removal was cancelled.'));
+      });
+    }
+
+    function refreshLearningSessionScope() {
+      const activeAccountId = activeLearningAccount().id;
+      learningMode.allSessions = learningMode.allSessions
+        .map(normalizeLearningSession)
+        .filter(Boolean)
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+      learningMode.sessions = learningMode.allSessions.filter(session => sessionAccountId(session) === activeAccountId);
+      renderLearningSessions();
+      syncLearningAccountControls();
     }
 
     function learningDurationLabel(durationMs) {
@@ -1377,10 +1845,11 @@
     function renderLearningSessions() {
       if (!learningSessionList) return;
       learningSessionList.textContent = '';
+      const account = activeLearningAccount();
       if (!learningMode.sessions.length) {
         const empty = document.createElement('div');
         empty.className = 'learning-empty';
-        empty.textContent = 'No saved sessions yet.';
+        empty.textContent = `No sessions saved for ${account.displayName}.`;
         learningSessionList.appendChild(empty);
         return;
       }
@@ -1405,13 +1874,13 @@
           : learningMode.playing && isCurrentSession
             ? 'Playing'
             : 'Play';
-        play.disabled = learningMode.recording || learningMode.preparingPlayback || (learningMode.playing && isCurrentSession);
+        play.disabled = learningMode.recording || learningMode.saving || learningMode.preparingPlayback || (learningMode.playing && isCurrentSession);
         play.addEventListener('click', () => playLearningSession(session.id));
         const download = document.createElement('button');
         download.className = 'session-action';
         download.type = 'button';
         download.textContent = 'JSON';
-        download.disabled = learningMode.recording;
+        download.disabled = learningMode.recording || learningMode.saving;
         download.addEventListener('click', () => downloadLearningSession(session.id));
         item.append(meta, play, download);
         learningSessionList.appendChild(item);
@@ -1434,7 +1903,8 @@
       return compact.map(point => point ? { x: point[0], y: point[1], z: point[2] } : null);
     }
 
-    function captureLearningFrame(now) {
+    function captureLearningFrame(now, force = false) {
+      if (learningMode.manualCaptureForTest && !force) return;
       if (!learningMode.recording || now - learningMode.lastCaptureAt < LEARNING_SAMPLE_INTERVAL_MS) return;
       learningMode.lastCaptureAt = now;
       const hasFace = faceTracking.hasFace && faceTracking.landmarks.length > 0;
@@ -1527,7 +1997,7 @@
     }
 
     async function playLearningSession(sessionId) {
-      if (learningMode.recording) return;
+      if (learningMode.recording || learningMode.saving) return;
       const session = learningMode.sessions.find(item => item.id === sessionId);
       if (!session?.frames?.length) {
         setLearningStatus('This session has no playable tracking frames.', 'error');
@@ -1583,11 +2053,22 @@
     function downloadLearningSession(sessionId) {
       const session = learningMode.sessions.find(item => item.id === sessionId);
       if (!session) return;
-      const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+      const exportedSession = {
+        ...session,
+        exportMetadata: {
+          exportedAt: new Date().toISOString(),
+          appBuildId: APP_BUILD_ID,
+          storageScope: 'browser-local',
+          logicalPath: session.storage?.logicalPath || learningSessionLogicalPath(sessionAccountId(session), session.id),
+          account: session.owner,
+          containsFacialAndGestureLandmarks: true
+        }
+      };
+      const blob = new Blob([JSON.stringify(exportedSession, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${session.id}.json`;
+      link.download = `${safeFolderSegment(session.owner?.displayName || session.accountId)}-${safeFolderSegment(session.id)}.json`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1596,35 +2077,68 @@
     }
 
     function startLearningRecording() {
+      if (!learningAccounts.ready || learningAccounts.mutating || learningMode.saving) {
+        setLearningStatus('Account storage is still preparing. Try again in a moment.', 'error');
+        return;
+      }
       if (learningMode.playing || learningMode.preparingPlayback) stopLearningPlayback('Playback stopped for recording.');
+      const account = activeLearningAccount();
       learningMode.recording = true;
       learningMode.startedAt = performance.now();
+      learningMode.recordingStartedAtIso = new Date().toISOString();
+      learningMode.recordingAccountId = account.id;
+      learningMode.recordingOwner = accountSnapshot(account);
       learningMode.firstFrameAt = 0;
       learningMode.lastCaptureAt = 0;
+      learningMode.testCaptureOrigin = learningMode.startedAt + LEARNING_SAMPLE_INTERVAL_MS;
       learningMode.frames = [];
       syncLearningModeControls();
       renderLearningSessions();
-      setLearningStatus('Learning is on · waiting for tracked face or upper body…', 'recording');
+      setLearningStatus(`Learning is on for ${account.displayName} · waiting for tracked face or upper body…`, 'recording');
       if (!faceTracking.enabled && !faceTracking.starting) startFaceTracking();
     }
 
     async function stopLearningRecording() {
       if (!learningMode.recording) return;
       learningMode.recording = false;
+      learningMode.saving = true;
       syncLearningModeControls();
+      setLearningStatus(`Saving ${learningMode.recordingOwner?.displayName || 'Guest'} session…`, 'saving');
       if (!learningMode.frames.length) {
+        learningMode.recordingAccountId = '';
+        learningMode.recordingOwner = null;
+        learningMode.recordingStartedAtIso = '';
+        learningMode.manualCaptureForTest = false;
+        learningMode.saving = false;
         setLearningStatus('Learning stopped · no tracking data was captured.', 'ready');
         renderLearningSessions();
+        syncLearningModeControls();
         return;
       }
       const createdAt = new Date();
+      const sessionId = `learning-session-${createdAt.getTime()}`;
+      const owner = learningMode.recordingOwner || accountSnapshot(GUEST_ACCOUNT);
+      const accountId = learningMode.recordingAccountId || owner.id || GUEST_ACCOUNT_ID;
       const durationMs = learningMode.frames[learningMode.frames.length - 1].timeMs;
       const session = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         format: 'figure-learning-json',
-        id: `learning-session-${createdAt.getTime()}`,
+        id: sessionId,
         name: `Session ${createdAt.toLocaleString()}`,
         createdAt: createdAt.toISOString(),
+        accountId,
+        owner,
+        capture: {
+          source: 'camera-learning-mode',
+          appBuildId: APP_BUILD_ID,
+          startedAt: learningMode.recordingStartedAtIso || createdAt.toISOString(),
+          endedAt: createdAt.toISOString()
+        },
+        storage: {
+          backend: 'indexeddb',
+          scope: 'browser-local',
+          logicalPath: learningSessionLogicalPath(accountId, sessionId)
+        },
         durationMs,
         sampleIntervalMs: LEARNING_SAMPLE_INTERVAL_MS,
         trackedData: ['facialExpression', 'upperBodyPose', 'leftHand', 'rightHand'],
@@ -1632,29 +2146,204 @@
         frames: learningMode.frames
       };
       learningMode.frames = [];
+      learningMode.recordingAccountId = '';
+      learningMode.recordingOwner = null;
+      learningMode.recordingStartedAtIso = '';
+      learningMode.manualCaptureForTest = false;
       try {
         await persistLearningSession(session);
-        learningMode.sessions = [session, ...learningMode.sessions.filter(item => item.id !== session.id)];
-        renderLearningSessions();
+        learningMode.allSessions = [session, ...learningMode.allSessions.filter(item => item.id !== session.id)];
+        refreshLearningSessionScope();
         setLearningStatus(`Saved ${session.name} · ${session.frames.length} frames.`, 'saved');
       } catch (error) {
-        learningMode.sessions = [session, ...learningMode.sessions];
-        renderLearningSessions();
+        learningMode.allSessions = [session, ...learningMode.allSessions.filter(item => item.id !== session.id)];
+        refreshLearningSessionScope();
         setLearningStatus(`Session kept for this page, but browser storage failed: ${error?.message || error}`, 'error');
+      } finally {
+        learningMode.saving = false;
+        syncLearningModeControls();
+        renderLearningSessions();
+      }
+    }
+
+    function newLearningAccountId() {
+      const randomPart = typeof crypto?.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      return `local-${safeFolderSegment(randomPart)}`;
+    }
+
+    function clearLearningAccountRemoveConfirmation() {
+      learningAccounts.removeConfirmAccountId = '';
+      if (learningAccounts.removeConfirmTimer) clearTimeout(learningAccounts.removeConfirmTimer);
+      learningAccounts.removeConfirmTimer = 0;
+    }
+
+    async function switchLearningAccount(accountId) {
+      const account = learningAccounts.accounts.find(item => item.id === accountId);
+      if (!account) throw new Error('That local account is no longer available.');
+      if (learningMode.recording || learningMode.saving || learningMode.playing || learningMode.preparingPlayback || learningAccounts.mutating) {
+        throw new Error('Stop recording or playback before switching accounts.');
+      }
+      clearLearningAccountRemoveConfirmation();
+      learningAccounts.mutating = true;
+      syncLearningModeControls();
+      try {
+        await persistActiveLearningAccount(account.id);
+        learningAccounts.activeAccountId = account.id;
+        setLearningAccountStatus(`${account.displayName} is active · stored only in this browser.`);
+        refreshLearningSessionScope();
+        setLearningStatus(`Ready to record for ${account.displayName}.`, 'ready');
+      } finally {
+        learningAccounts.mutating = false;
+        syncLearningModeControls();
+      }
+    }
+
+    async function createLearningAccount(displayName) {
+      const normalizedName = String(displayName || '').trim().replace(/\s+/g, ' ').slice(0, 32);
+      if (!normalizedName) throw new Error('Enter a profile name.');
+      if (normalizedName.toLocaleLowerCase() === 'guest') throw new Error('Guest is reserved for the default account.');
+      if (learningAccounts.accounts.some(account => account.displayName.toLocaleLowerCase() === normalizedName.toLocaleLowerCase())) {
+        throw new Error('A local profile with that name already exists.');
+      }
+      if (learningMode.recording || learningMode.saving || learningMode.playing || learningMode.preparingPlayback || learningAccounts.mutating) {
+        throw new Error('Stop recording or playback before adding an account.');
+      }
+      const now = new Date().toISOString();
+      const account = {
+        schemaVersion: 1,
+        id: newLearningAccountId(),
+        type: 'local',
+        displayName: normalizedName,
+        createdAt: now,
+        updatedAt: now
+      };
+      learningAccounts.mutating = true;
+      syncLearningModeControls();
+      try {
+        await persistLearningAccountAndActivate(account);
+        learningAccounts.accounts = sortLearningAccounts([...learningAccounts.accounts, account]);
+        learningAccounts.activeAccountId = account.id;
+        if (accountName) accountName.value = '';
+        setLearningAccountStatus(`${account.displayName} created as a local profile · no login required.`);
+        refreshLearningSessionScope();
+        setLearningStatus(`Ready to record for ${account.displayName}.`, 'ready');
+        return account;
+      } finally {
+        learningAccounts.mutating = false;
+        syncLearningModeControls();
+      }
+    }
+
+    async function requestRemoveActiveLearningAccount() {
+      const account = activeLearningAccount();
+      if (account.id === GUEST_ACCOUNT_ID) {
+        setLearningAccountStatus('Guest is the permanent default account and cannot be removed.');
+        syncLearningAccountControls();
+        return;
+      }
+      if (learningMode.recording || learningMode.saving || learningMode.playing || learningMode.preparingPlayback || learningAccounts.mutating) {
+        setLearningAccountStatus('Stop recording or playback before removing an account.');
+        return;
+      }
+      if (learningAccounts.removeConfirmAccountId !== account.id) {
+        clearLearningAccountRemoveConfirmation();
+        learningAccounts.removeConfirmAccountId = account.id;
+        setLearningAccountStatus(`Click again to remove ${account.displayName}. Its saved sessions will move to Guest.`);
+        learningAccounts.removeConfirmTimer = setTimeout(() => {
+          clearLearningAccountRemoveConfirmation();
+          setLearningAccountStatus('Removal cancelled · no data changed.');
+          syncLearningAccountControls();
+        }, 6000);
+        syncLearningAccountControls();
+        return;
+      }
+      clearLearningAccountRemoveConfirmation();
+      learningAccounts.mutating = true;
+      setLearningAccountStatus(`Removing ${account.displayName} and preserving its sessions…`);
+      syncLearningModeControls();
+      try {
+        await removeLearningAccountAndReassignSessions(account);
+        learningAccounts.accounts = learningAccounts.accounts.filter(item => item.id !== account.id);
+        learningAccounts.activeAccountId = GUEST_ACCOUNT_ID;
+        learningMode.allSessions = (await readStoredLearningSessions()).map(normalizeLearningSession).filter(Boolean);
+        setLearningAccountStatus(`${account.displayName} removed · its saved sessions were moved to Guest.`);
+        refreshLearningSessionScope();
+        setLearningStatus('Ready to record for Guest.', 'ready');
+      } finally {
+        learningAccounts.mutating = false;
+        syncLearningModeControls();
       }
     }
 
     async function initializeLearningMode() {
       syncLearningModeControls();
       try {
-        const sessions = await readStoredLearningSessions();
-        learningMode.sessions = sessions.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-        renderLearningSessions();
+        const [storedAccounts, activeAccountId, sessions] = await Promise.all([
+          readStoredLearningAccounts(),
+          readLearningSetting(ACTIVE_ACCOUNT_SETTING),
+          readStoredLearningSessions()
+        ]);
+        const accounts = storedAccounts.map(normalizeLearningAccount);
+        if (!accounts.some(account => account.id === GUEST_ACCOUNT_ID)) {
+          await persistLearningAccount({ ...GUEST_ACCOUNT });
+          accounts.push({ ...GUEST_ACCOUNT });
+        }
+        learningAccounts.accounts = sortLearningAccounts(accounts);
+        learningAccounts.activeAccountId = learningAccounts.accounts.some(account => account.id === activeAccountId)
+          ? activeAccountId
+          : GUEST_ACCOUNT_ID;
+        if (learningAccounts.activeAccountId !== activeAccountId) {
+          await persistActiveLearningAccount(GUEST_ACCOUNT_ID);
+        }
+        learningMode.allSessions = sessions.map(normalizeLearningSession).filter(Boolean);
+        learningAccounts.ready = true;
+        const account = activeLearningAccount();
+        setLearningAccountStatus(`${account.displayName} is active · no login or cloud sync.`);
+        refreshLearningSessionScope();
+        syncLearningModeControls();
       } catch (error) {
+        learningAccounts.ready = true;
+        learningAccounts.accounts = [{ ...GUEST_ACCOUNT }];
+        learningAccounts.activeAccountId = GUEST_ACCOUNT_ID;
+        setLearningAccountStatus(`Guest is active, but browser storage is unavailable: ${error?.message || error}`);
         renderLearningSessions();
         setLearningStatus(`Ready, but saved-session storage is unavailable: ${error?.message || error}`, 'error');
+        syncLearningModeControls();
       }
     }
+
+    accountManageToggle?.addEventListener('click', () => {
+      learningAccounts.managementExpanded = !learningAccounts.managementExpanded;
+      syncLearningAccountControls();
+    });
+    accountSelect?.addEventListener('change', async event => {
+      try {
+        await switchLearningAccount(event.target.value);
+      } catch (error) {
+        setLearningAccountStatus(error?.message || String(error));
+        syncLearningAccountControls();
+      }
+    });
+    accountCreateForm?.addEventListener('submit', async event => {
+      event.preventDefault();
+      try {
+        await createLearningAccount(accountName?.value);
+      } catch (error) {
+        setLearningAccountStatus(error?.message || String(error));
+        syncLearningAccountControls();
+      }
+    });
+    accountRemoveButton?.addEventListener('click', async () => {
+      try {
+        await requestRemoveActiveLearningAccount();
+      } catch (error) {
+        learningAccounts.mutating = false;
+        setLearningAccountStatus(error?.message || String(error));
+        syncLearningModeControls();
+      }
+    });
 
     learningModeToggle?.addEventListener('click', () => {
       if (learningMode.recording) stopLearningRecording();
@@ -1667,11 +2356,34 @@
     if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
       window.__getLearningModeTestState = () => ({
         recording: learningMode.recording,
+        saving: learningMode.saving,
         playing: learningMode.playing,
         preparingPlayback: learningMode.preparingPlayback,
+        activeAccountId: learningAccounts.activeAccountId,
+        recordingAccountId: learningMode.recordingAccountId,
         sessionCount: learningMode.sessions.length,
+        totalSessionCount: learningMode.allSessions.length,
         sessions: learningMode.sessions
       });
+      window.__getAccountTestState = () => ({
+        ready: learningAccounts.ready,
+        activeAccountId: learningAccounts.activeAccountId,
+        activeAccount: accountSnapshot(activeLearningAccount()),
+        accountCount: learningAccounts.accounts.length,
+        accounts: learningAccounts.accounts,
+        managementExpanded: learningAccounts.managementExpanded,
+        recordingAccountId: learningMode.recordingAccountId,
+        visibleSessionIds: learningMode.sessions.map(session => session.id),
+        totalSessionCount: learningMode.allSessions.length,
+        logicalFolder: accountDataFolder(learningAccounts.activeAccountId)
+      });
+      window.__setLearningManualCaptureTestMode = enabled => {
+        learningMode.manualCaptureForTest = Boolean(enabled);
+      };
+      window.__captureLearningTestFrame = (offsetMs = 0) => {
+        captureLearningFrame(learningMode.testCaptureOrigin + Math.max(0, Number(offsetMs) || 0), true);
+        return learningMode.frames.length;
+      };
     }
 
     function deactivatePostureMotions() {
@@ -3839,6 +4551,16 @@ Z: ${cz.toFixed(3)}`;
       coordinateSystem: 'Figure-local X is left/right, Y increases downward, Z is depth; walk X/Z are ground displacement.',
       theme: displayTheme,
       ui: { meshColorMenuExpanded },
+      account: {
+        ready: learningAccounts.ready,
+        activeId: activeLearningAccount().id,
+        activeName: activeLearningAccount().displayName,
+        type: activeLearningAccount().type,
+        profileCount: learningAccounts.accounts.length,
+        managementExpanded: learningAccounts.managementExpanded,
+        storageScope: 'browser-local',
+        logicalFolder: accountDataFolder(activeLearningAccount().id)
+      },
       camera: { rotationX, rotationY, zoom: zoomScale, verticalOffset: cameraVerticalOffset },
       motion: {
         run: runMotion,
@@ -3893,11 +4615,14 @@ Z: ${cz.toFixed(3)}`;
       },
       learningMode: {
         recording: learningMode.recording,
+        saving: learningMode.saving,
         playing: learningMode.playing,
         preparingPlayback: learningMode.preparingPlayback,
         status: learningMode.status,
         recordingFrameCount: learningMode.frames.length,
         savedSessionCount: learningMode.sessions.length,
+        totalSavedSessionCount: learningMode.allSessions.length,
+        recordingAccountId: learningMode.recordingAccountId,
         playbackSessionId: learningMode.playbackSessionId,
         playbackFrameIndex: learningMode.playbackFrameIndex,
         lowerBody: 'N/A'

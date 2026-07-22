@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/learning-session.schema.json",
+  "title": "Figure learning session",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "format",
+    "id",
+    "name",
+    "createdAt",
+    "accountId",
+    "owner",
+    "capture",
+    "storage",
+    "durationMs",
+    "sampleIntervalMs",
+    "trackedData",
+    "lowerBody",
+    "frames"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "format": { "const": "figure-learning-json" },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "accountId": { "type": "string", "minLength": 1 },
+    "owner": { "$ref": "#/$defs/owner" },
+    "capture": {
+      "type": "object",
+      "required": ["source", "appBuildId", "startedAt", "endedAt"],
+      "properties": {
+        "source": { "const": "camera-learning-mode" },
+        "appBuildId": { "type": "string" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "required": ["backend", "scope", "logicalPath"],
+      "properties": {
+        "backend": { "const": "indexeddb" },
+        "scope": { "const": "browser-local" },
+        "logicalPath": { "type": "string", "pattern": "^data/(guest|users/)" },
+        "previousLogicalPath": { "type": "string" },
+        "reassignedFromAccountId": { "type": "string" },
+        "reassignedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "durationMs": { "type": "number", "minimum": 0 },
+    "sampleIntervalMs": { "type": "number", "minimum": 1 },
+    "trackedData": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "lowerBody": { "const": "N/A" },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timeMs", "facialExpression", "bodyGesture"],
+        "properties": {
+          "timeMs": { "type": "number", "minimum": 0 },
+          "facialExpression": {
+            "type": "object",
+            "required": ["landmarks"],
+            "properties": { "landmarks": { "$ref": "#/$defs/nullableLandmarks" } }
+          },
+          "bodyGesture": {
+            "type": "object",
+            "required": ["upperBody", "lowerBody"],
+            "properties": {
+              "upperBody": {
+                "type": "object",
+                "required": ["poseLandmarks", "leftHandLandmarks", "rightHandLandmarks"],
+                "properties": {
+                  "poseLandmarks": { "$ref": "#/$defs/nullableLandmarks" },
+                  "leftHandLandmarks": { "$ref": "#/$defs/nullableLandmarks" },
+                  "rightHandLandmarks": { "$ref": "#/$defs/nullableLandmarks" }
+                }
+              },
+              "lowerBody": { "const": "N/A" }
+            }
+          }
+        }
+      }
+    },
+    "exportMetadata": { "type": "object" }
+  },
+  "$defs": {
+    "owner": {
+      "type": "object",
+      "required": ["id", "type", "displayName"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["guest", "local", "registered"] },
+        "displayName": { "type": "string", "minLength": 1 }
+      }
+    },
+    "point": {
+      "type": ["array", "null"],
+      "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "nullableLandmarks": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "array", "items": { "$ref": "#/$defs/point" } }
+      ]
+    }
+  }
+}

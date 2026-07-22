@@ -308,3 +308,31 @@ Dark reference-cyan mesh update (2026-07-21):
 
 TODO:
 - None after inspecting the Dark base figure and tracked synthetic face/rear-shell render, confirming exact `#60E6D2` output pixels, checking the unchanged Bright render, and finding zero browser console errors.
+
+Face-tracking fallback diagnosis (2026-07-21):
+- Confirmed the cyan palette change did not modify tracking logic and the deployed build still loads every FaceMesh, Pose, Hands, model, graph, data, and WASM asset successfully.
+- Verified the deployed page end to end in system Google Chrome with a deterministic portrait webcam: 478 face landmarks, 2,556 facial connections, 1,422 rear-head connections, and the base head correctly hidden.
+- Confirmed the original ellipsoid remains by design until the first valid face result, and returns when camera tracking is off or fails.
+
+TODO:
+- If requested, improve face-specific status messaging, preserve detailed pipeline errors after shutdown, and optionally expose a small camera-framing preview.
+
+Camera-off scanned head rollback (2026-07-22):
+- Removed the experimental Lee Perry-Smith static camera-off head and its hidden-line renderer at the user's request.
+- Restored the original closed ellipsoid head, original neck connection, and `20260721-cyan-dark-mesh` build/cache ID.
+- Preserved the existing live MediaPipe face, licensed tracked rear-head shell, camera Front transition, gesture tracking, Dark cyan palette, and learning-mode playback.
+- Moved the generated static-head asset and generator to Trash so they remain recoverable.
+
+TODO:
+- None after confirming the ellipsoid Initial view, restored render-state/build ID, syntax, and zero browser console errors.
+
+Guest and local account data management (2026-07-22):
+- Added an automatic, undeletable Guest account plus a collapsed account manager for creating and switching named device-local profiles without login or signup.
+- Upgraded Learning Mode storage to IndexedDB v2 with account and settings stores, profile-scoped session lists, capture-time owner snapshots, active-account persistence, and automatic migration of all legacy sessions to Guest.
+- Tagged each new camera-learning JSON session with its account, capture/build metadata, browser-local storage scope, and a logical `data/guest` or `data/users/<profile-id>` export path.
+- Made profile removal non-destructive: its stored sessions move to Guest while retaining their original capture owner.
+- Added a versioned `data/` layout with account/session schemas and Git ignores that prevent private face and gesture JSON exports from being committed accidentally.
+- Updated the build/cache ID to `20260722-local-accounts` and exposed account/storage state through deterministic diagnostics.
+
+TODO:
+- None after testing IndexedDB v1 migration, Guest defaults, profile creation/switch/reload isolation, deterministic face/pose/hand recording, JSON export, playback/stop, non-destructive profile removal, direct `file://` use, desktop/mobile/Dark layouts, syntax, and zero browser errors.

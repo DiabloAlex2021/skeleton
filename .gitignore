@@ -1,2 +1,6 @@
 .DS_Store
 spin-proof-webgame/
+
+# Camera-learning exports may contain private biometric/gesture landmarks.
+data/guest/**/*.json
+data/users/**/*.json
