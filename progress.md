@@ -291,3 +291,11 @@ Tracked head posture attachment fix (2026-07-21):
 
 TODO:
 - None after visually verifying standing, full Crouch, full Squat, airborne Jump, Run lean, and camera-off restoration with continuous face/neck attachment and zero browser errors.
+
+GitHub Pages deployment correction (2026-07-21):
+- Added build ID `20260721-head-attachment` to the page metadata and deterministic render-state diagnostics.
+- Added a versioned entry redirect so browsers do not reuse the pre-fix figure document after deployment.
+- Kept the verified camera-on Front preset and shared body/head posture transform unchanged.
+
+TODO:
+- None after independently deploying `gh-pages` and confirming the live HTML reports the build ID, camera-on Front transition, and shared head/body posture transform.

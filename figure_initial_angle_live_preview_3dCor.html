@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="app-build" content="20260721-head-attachment" />
   <title>Legs and Feet Mesh Live Preview</title>
   <style>
     :root {
@@ -657,6 +658,7 @@
   <script>
     const canvas = document.getElementById('figure');
     const ctx = canvas.getContext('2d', { alpha: true });
+    const APP_BUILD_ID = '20260721-head-attachment';
     const cameraReadout = document.getElementById('cameraReadout');
     const faceTrackingVideo = document.getElementById('faceTrackingVideo');
     const faceTrackingToggle = document.getElementById('faceTrackingToggle');
@@ -3832,6 +3834,7 @@ Z: ${cz.toFixed(3)}`;
     window.addEventListener('pagehide', () => stopFaceTracking());
     window.addEventListener('resize',resize);
     window.render_game_to_text = () => JSON.stringify({
+      build: APP_BUILD_ID,
       coordinateSystem: 'Figure-local X is left/right, Y increases downward, Z is depth; walk X/Z are ground displacement.',
       theme: displayTheme,
       ui: { meshColorMenuExpanded },
