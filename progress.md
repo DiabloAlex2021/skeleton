@@ -282,3 +282,12 @@ Camera capture front-view update (2026-07-21):
 
 TODO:
 - None after verifying Side → camera-on switches to Front, the Front button/readout/render state agree, camera-off remains Front, and the successful-start placement leaves failed capture unchanged.
+
+Tracked head posture attachment fix (2026-07-21):
+- Fixed the live/scanned head floating above the neck during Crouch, Squat, Jump, and leaning gait motions.
+- Cached the exact body lean and vertical posture transform applied to the generated figure, then applied it to virtual tracked-face vertices and the jaw-to-neck bridge anchors.
+- Preserved local head roll before applying the shared body posture so facial tilt remains centered on the head while the entire head follows the torso.
+- Confirmed saved-session playback and reload still render the complete 2,556-connection face mesh attached to the neck.
+
+TODO:
+- None after visually verifying standing, full Crouch, full Squat, airborne Jump, Run lean, and camera-off restoration with continuous face/neck attachment and zero browser errors.

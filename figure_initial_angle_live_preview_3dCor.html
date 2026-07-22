@@ -692,6 +692,7 @@
     let jumpActive = false, jumpTime = 1;
     let walkHeading = 0, walkHeadingTarget = 0, walkMoveBlend = 0;
     let walkPosition = { x: 0, z: 0 }, walkVelocity = { x: 0, z: 0 };
+    let figurePostureTransform = { lean: 0, vertical: 0, cy: .36, cz: -.045, cos: 1, sin: 0 };
     const walkKeys = { w: false, a: false, s: false, d: false };
     let autoMovesActive = false, autoMoveIndex = 0, autoMoveClock = 0, autoMovePhase = 'buffer';
     const AUTO_MOVES = [
@@ -2605,6 +2606,8 @@
       const lean = (-0.115 * easeInOut(forwardBlend)) + (0.070 * easeInOut(moonwalkBlend)) + j.lean + posture.lean;
       const cy = .36, cz = -.045;
       const c = Math.cos(lean), s = Math.sin(lean);
+      const vertical = j.bodyY + posture.bodyY;
+      figurePostureTransform = { lean, vertical, cy, cz, cos: c, sin: s };
       const upperParts = new Set([
         'head','neck','torso','waist','pelvis','shoulder','arm','elbow',
         'wrist','palm','knuckle','finger','fingerJoint','fingerTip','hipSurface'
@@ -2617,7 +2620,6 @@
           p.z = cz + dy*s + dz*c;
         }
       }
-      const vertical = j.bodyY + posture.bodyY;
       if (Math.abs(vertical) > .001) {
         for (const p of points) p.y += vertical;
       }
@@ -3143,6 +3145,16 @@
     function figureYaw() {
       return normalizeAngle(walkHeading + spinAngle * easeInOut(spinBlend));
     }
+    function transformVirtualUpperBodyPoint(x, y, z) {
+      const transform = figurePostureTransform;
+      if (Math.abs(transform.lean) > .001) {
+        const dy = y - transform.cy;
+        const dz = z - transform.cz;
+        y = transform.cy + dy * transform.cos - dz * transform.sin;
+        z = transform.cz + dy * transform.sin + dz * transform.cos;
+      }
+      return { x, y: y + transform.vertical, z };
+    }
     function rotatePoint(p) {
       const cx=Math.cos(rotationX), sx=Math.sin(rotationX), cy=Math.cos(rotationY), sy=Math.sin(rotationY);
       let px = p.x, py = p.y, pz = p.z;
@@ -3152,6 +3164,12 @@
         const dy = py + 1.92;
         px = dx * hc - dy * hs;
         py = -1.92 + dx * hs + dy * hc;
+      }
+      if (p.part === 'trackedFace' || p.part === 'trackedFaceNeck') {
+        const transformed = transformVirtualUpperBodyPoint(px, py, pz);
+        px = transformed.x;
+        py = transformed.y;
+        pz = transformed.z;
       }
       let hx = px, hz = pz;
       if (p.part !== 'grid') {
@@ -3406,7 +3424,7 @@
       }
       const neck = jaw.map((_, index) => {
         const across = index / (jaw.length - 1) * 2 - 1;
-        return projectPoint({ x: across * .108, y: -1.572, z: .108, part: 'neck', weight: 1 });
+        return projectPoint({ x: across * .108, y: -1.572, z: .108, part: 'trackedFaceNeck', weight: 1 });
       });
       const rows = [jaw];
       for (let row = 1; row <= TRACKED_FACE_NECK_BUFFER_ROWS; row++) {
