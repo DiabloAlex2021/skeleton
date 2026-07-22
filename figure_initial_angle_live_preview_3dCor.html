@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="app-build" content="20260721-head-attachment" />
+  <meta name="app-build" content="20260721-cyan-dark-mesh" />
   <title>Legs and Feet Mesh Live Preview</title>
   <style>
     :root {
@@ -658,7 +658,7 @@
   <script>
     const canvas = document.getElementById('figure');
     const ctx = canvas.getContext('2d', { alpha: true });
-    const APP_BUILD_ID = '20260721-head-attachment';
+    const APP_BUILD_ID = '20260721-cyan-dark-mesh';
     const cameraReadout = document.getElementById('cameraReadout');
     const faceTrackingVideo = document.getElementById('faceTrackingVideo');
     const faceTrackingToggle = document.getElementById('faceTrackingToggle');
@@ -671,9 +671,10 @@
     let width = 0, height = 0, scale = 1;
     let points = [], links = [], faces = [], faceSocketLoops = [], faceMouthPaths = [], tick = 0;
     let displayTheme = 'bright';
-    const DARK_FIGURE_INK = '#6F86A6';
-    const DARK_FIGURE_HIGHLIGHT = '#8299B8';
-    const DARK_FIGURE_SHADOW = '#5A6D89';
+    const DARK_MESH_INK = '#60E6D2';
+    const DARK_FIGURE_INK = DARK_MESH_INK;
+    const DARK_FIGURE_HIGHLIGHT = DARK_MESH_INK;
+    const DARK_FIGURE_SHADOW = DARK_MESH_INK;
     const INITIAL_ROTATION_X = 0.005;
     const INITIAL_ROTATION_Y = -0.686;
     const INITIAL_ZOOM = 0.84;
@@ -3482,8 +3483,8 @@
         faceTracking.headShellDepth = 0;
         return;
       }
-      const stroke = displayTheme === 'dark' ? '#9DD7FF' : '#111111';
-      const pointInk = displayTheme === 'dark' ? '#9DD7FF' : '#050505';
+      const stroke = displayTheme === 'dark' ? DARK_MESH_INK : '#111111';
+      const pointInk = displayTheme === 'dark' ? DARK_MESH_INK : '#050505';
       const baseWidth = Math.max(.58, scale / 150);
       const modelLandmarks = frame.lm.map(point => mappedTrackedFaceModelPoint(point, frame));
       const mappedLandmarks = modelLandmarks.map(point => point ? projectPoint(point) : null);

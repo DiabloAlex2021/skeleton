@@ -299,3 +299,12 @@ GitHub Pages deployment correction (2026-07-21):
 
 TODO:
 - None after independently deploying `gh-pages` and confirming the live HTML reports the build ID, camera-on Front transition, and shared head/body posture transform.
+
+Dark reference-cyan mesh update (2026-07-21):
+- Matched the supplied wireframe reference's source cyan exactly at `#60E6D2`.
+- Applied the same default Dark-mode ink to the base figure, tracked facial tessellation, facial features, rear-head scan shell, and jaw-to-neck bridge.
+- Preserved explicit per-part colors selected from the mesh color menu.
+- Updated the deployed build/cache ID to `20260721-cyan-dark-mesh` so GitHub Pages and browsers load the new color immediately.
+
+TODO:
+- None after inspecting the Dark base figure and tracked synthetic face/rear-shell render, confirming exact `#60E6D2` output pixels, checking the unchanged Bright render, and finding zero browser console errors.
