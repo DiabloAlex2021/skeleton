@@ -274,3 +274,11 @@ Rear-head credit label visibility update (2026-07-21):
 
 TODO:
 - None after verifying the control panel ends cleanly after Auto Moves with no empty attribution spacing, attribution nodes, or console errors.
+
+Camera capture front-view update (2026-07-21):
+- Successful webcam capture now automatically selects the Front camera preset before tracking frames begin.
+- The deterministic local tracking hook follows the same transition for regression testing.
+- Stopping camera capture leaves the user in Front view; it does not unexpectedly return to the previous angle.
+
+TODO:
+- None after verifying Side → camera-on switches to Front, the Front button/readout/render state agree, camera-off remains Front, and the successful-start placement leaves failed capture unchanged.

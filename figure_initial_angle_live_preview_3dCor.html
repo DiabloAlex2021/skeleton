@@ -1222,6 +1222,7 @@
         faceTracking.enabled = true;
         faceTracking.starting = false;
         faceTracking.status = 'searching';
+        setCameraView('front');
         syncFaceTrackingButton();
 
         const pipelines = [
@@ -1264,6 +1265,7 @@
       faceTracking.hasFace = Array.isArray(landmarks) && landmarks.length > 0;
       faceTracking.landmarks = faceTracking.hasFace ? landmarks : [];
       faceTracking.lastSeenAt = performance.now();
+      setCameraView('front');
       updateTrackedFaceRoll(faceTracking.landmarks);
       syncFaceTrackingButton();
     }
